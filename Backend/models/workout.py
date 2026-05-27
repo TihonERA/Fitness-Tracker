@@ -1,7 +1,9 @@
 from Backend.models.base import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Float, Text
+from sqlalchemy import String, Float, Text, ForeignKey
 from .trainingday import TrainingDay
+from .user import User
+from uuid import UUID
 
 class Workout(Base):
     __tablename__ = "workout"
@@ -9,6 +11,11 @@ class Workout(Base):
     workout_id: Mapped[int] = mapped_column(
         primary_key=True, 
         autoincrement=True
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("user.user_id", ondelete="CASCADE"),
+        index=True,
+        nullable=False
     )
     name: Mapped[str] = mapped_column(
         String(100), 
@@ -26,4 +33,5 @@ class Workout(Base):
         comment="Оценка от 0 до 10"
     )
 
+    user: Mapped["User"] = relationship(back_populates="workout")
     training_days: Mapped[list["TrainingDay"]] = relationship(back_populates="workout")
