@@ -24,5 +24,10 @@ class TrainingDay(Base):
         nullable=False
     )
 
-    workout: Mapped["Workout"] = relationship(back_populates="training_days")
-    day_exercises: Mapped[list["DayExercise"]] = relationship(back_populates="training_days")
+    workout: Mapped["Workout"] = relationship(
+        back_populates="training_days",
+    )
+    day_exercises: Mapped[list["DayExercise"]] = relationship(
+        back_populates="training_days",
+        cascade="all, delete-orphan"
+    )
