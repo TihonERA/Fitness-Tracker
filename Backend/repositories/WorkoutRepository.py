@@ -9,7 +9,7 @@ class WorkoutRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_workout_with_schedule(self, workout: Workout):
+    async def create_workout_with_schedule(self, workout: Workout) -> Workout:
         await self.db.add(workout)
         await self.db.commit()
 
@@ -21,3 +21,14 @@ class WorkoutRepository:
             ]
         )
         return workout
+    
+    async def add(self, instance: object) -> None:
+        await self.db.add(instance=instance)
+
+    async def refresh(self, instance: object) -> None:
+        await self.db.refresh(instance=instance)
+
+    async def commit(self) -> None:
+        await self.db.commit()
+
+    
