@@ -36,7 +36,7 @@ class Workout(Base):
         comment="Оценка от 0 до 10"
     )
 
-    user: Mapped["User"] = relationship(back_populates="workout")
+    user: Mapped["User"] = relationship(back_populates="workouts")
     training_days: Mapped[list["TrainingDay"]] = relationship(
         back_populates="workout",
         cascade="all, delete-orphan"

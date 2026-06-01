@@ -31,6 +31,6 @@ class TrainingDay(Base):
         back_populates="training_days",
     )
     day_exercises: Mapped[list["DayExercise"]] = relationship(
-        back_populates="training_days",
+        back_populates="training_day",
         cascade="all, delete-orphan"
     )

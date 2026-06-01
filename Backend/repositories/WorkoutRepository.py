@@ -3,7 +3,6 @@ from ..models.workout import Workout
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 from ..models.trainingday import TrainingDay
-from ..models.dayexercise import Exercise
 
 class WorkoutRepository:
 

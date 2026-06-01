@@ -16,7 +16,6 @@ class WorkoutScheme(BaseModel):
     user_id: UUID 
     name: str  = Field(max_length=100)
     description: str | None = Field(default=None, max_length=2000) 
-    rate: float = Field(default=0.0, ge=0.0, le=10.0)
     training_days: list[TrainingDayScheme] | None = Field(None)
 
 class BaseResponse(BaseModel):

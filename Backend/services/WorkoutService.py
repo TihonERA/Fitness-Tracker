@@ -18,7 +18,6 @@ class WorkoutService:
             user_id = workout_schem.user_id,
             name=workout_schem.name,
             description=workout_schem.description,
-            rate=workout_schem.rate,
         )
 
         if workout_schem.training_days:
@@ -31,7 +30,7 @@ class WorkoutService:
                 if tr_day.day_exercises:
                     for day_ex in tr_day.day_exercises:
                         day_exercise = DayExercise(
-                            exercises_id=day_ex.exercise_id,
+                            exercise_id=day_ex.exercise_id,
                             exercise_order=day_ex.exercise_order,
                             sets=day_ex.sets,
                             reps=day_ex.reps

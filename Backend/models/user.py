@@ -27,4 +27,4 @@ class User(Base):
         nullable=False
     )
 
-    workout: Mapped[list["Workout"]] = relationship(back_populates="user")
+    workouts: Mapped[list["Workout"]] = relationship(back_populates="user")
