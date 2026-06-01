@@ -1,8 +1,11 @@
 from .base import Base
-from .workout import Workout
-from .dayexercise import DayExercise
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 from sqlalchemy import String, ForeignKey
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .workout import Workout
+    from .dayexercise import DayExercise    
 
 class TrainingDay(Base):
     __tablename__ = "trainingday"

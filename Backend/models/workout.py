@@ -1,9 +1,12 @@
 from Backend.models.base import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Float, Text, ForeignKey
-from .trainingday import TrainingDay
-from .user import User
 from uuid import UUID
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .trainingday import TrainingDay
+    from .user import User
 
 class Workout(Base):
     __tablename__ = "workout"

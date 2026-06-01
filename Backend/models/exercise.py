@@ -1,7 +1,10 @@
 from .base import Base
-from .dayexercise import DayExercise
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 from sqlalchemy import String, Text, JSON
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .dayexercise import DayExercise
 
 class Exercise(Base):
     __tablename__ = "exercise"
