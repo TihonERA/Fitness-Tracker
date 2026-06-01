@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..models.workout import Workout
 from sqlalchemy.orm import selectinload
+from sqlalchemy import select
 from ..models.trainingday import TrainingDay
 from ..models.dayexercise import Exercise
 
@@ -10,23 +11,25 @@ class WorkoutRepository:
         self.db = db
 
     async def create_workout_with_schedule(self, workout: Workout) -> Workout:
-        await self.db.add(workout)
+        self.add(workout)
         await self.db.commit()
 
-        await self.db.refresh(
-            workout,
-            options=[
+        stmt = (
+            select(Workout)
+            .where(Workout.workout_id == workout.workout_id)
+            .options(
                 selectinload(Workout.training_days)
                 .selectinload(TrainingDay.day_exercises)
-            ]
+            )
         )
-        return workout
+        result = await self.db.execute(stmt)
+        return result.scalar_one()
     
-    async def add(self, instance: object) -> None:
-        await self.db.add(instance=instance)
+    def add(self, instance: object) -> None:
+        self.db.add(instance)
 
     async def refresh(self, instance: object) -> None:
-        await self.db.refresh(instance=instance)
+        await self.db.refresh(instance)
 
     async def commit(self) -> None:
         await self.db.commit()
