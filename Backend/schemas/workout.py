@@ -2,14 +2,12 @@ from pydantic import BaseModel, Field, ConfigDict
 from uuid import UUID
 
 class DayExercisesScheme(BaseModel):
-    exercises_id: int
+    exercise_id: int
     exercise_order: int = Field(gt=0, le=50,)
     sets: int | None = Field(None, gt=0, le=30, description="Количество подходов")
     reps: int | None = Field(None, gt=0, le=150, description="Количество повторений")
 
 class TrainingDayScheme(BaseModel):
-    day_id: int
-    workout_id: int
     name: str = Field(max_length=100)
     day_order: int = Field(gt=0, le=7)
     day_exercises: list[DayExercisesScheme] | None = Field(None)
@@ -25,7 +23,7 @@ class BaseResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class DayExerciseResponse(BaseResponse):
-    exercises_id: int
+    exercise_id: int
     exercise_order: int
     sets: int | None
     reps: int | None
