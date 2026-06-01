@@ -13,7 +13,7 @@ class WorkoutService:
         self.workoutrepo = WorkoutRepository(db=db)
         self.redis = Redis(host='localhost', port=6379, decode_responses=True)
 
-    def create_workout_with_schedule(self, workout_schem: WorkoutScheme):
+    async def create_workout_with_schedule(self, workout_schem: WorkoutScheme):
         workout = Workout(
             user_id = workout_schem.user_id,
             name=workout_schem.name,
@@ -31,7 +31,7 @@ class WorkoutService:
                 if tr_day.day_exercises:
                     for day_ex in tr_day.day_exercises:
                         day_exercise = DayExercise(
-                            exercises_id=day_ex.exercises_id,
+                            exercises_id=day_ex.exercise_id,
                             exercise_order=day_ex.exercise_order,
                             sets=day_ex.sets,
                             reps=day_ex.reps
@@ -40,5 +40,5 @@ class WorkoutService:
 
                 workout.training_days.append(training_day)
                 
-        return self.workoutrepo.create_workout_with_schedule(workout=workout)
+        return await self.workoutrepo.create_workout_with_schedule(workout=workout)
         
