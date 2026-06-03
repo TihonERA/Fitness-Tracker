@@ -11,18 +11,21 @@ class WorkoutRepository:
 
     async def create_workout_with_schedule(self, workout: Workout) -> Workout:
         self.add(workout)
-        await self.db.commit()
+        await self.commit()
 
+        return await self.get_workout(workout.workout_id)
+
+    async def get_workout(self, workout_id: int):
         stmt = (
             select(Workout)
-            .where(Workout.workout_id == workout.workout_id)
+            .where(Workout.workout_id == workout_id)
             .options(
                 selectinload(Workout.training_days)
                 .selectinload(TrainingDay.day_exercises)
             )
         )
-        result = await self.db.execute(stmt)
-        return result.scalar_one()
+        result = await self.execute(stmt)
+        return result.scalar_one_or_none()
     
     def add(self, instance: object) -> None:
         self.db.add(instance)
@@ -32,5 +35,8 @@ class WorkoutRepository:
 
     async def commit(self) -> None:
         await self.db.commit()
+
+    async def execute(self, stmt):
+        return await self.db.execute(stmt)
 
     
