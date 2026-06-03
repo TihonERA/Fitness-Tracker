@@ -13,9 +13,10 @@ class Settings(BaseSettings):
     DB_NAME: str
     SECRET_KEY: str
     ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
     REDIS_HOST: str
     REDIS_PORT: int
-    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    ORIGINS: list[str]
 
     @property
     def DATABASE_URL_asyncpg(self):
@@ -26,15 +27,5 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
-
-    origins = [
-        "http://localhost.tiangolo.com",
-        "https://localhost.tiangolo.com",
-        "http://localhost",
-        "http://localhost:8080",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "https://127.0.0.1:8000"
-    ]
 
 settings = Settings()
