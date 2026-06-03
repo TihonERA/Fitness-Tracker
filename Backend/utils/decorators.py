@@ -1,27 +1,22 @@
 from functools import wraps
-from pydantic import TypeAdapter
+import hashlib
+import json
+from typing import Type, Union
+from pydantic import TypeAdapter, BaseModel
 from datetime import timedelta
 
-def cache(expire: int | timedelta, response_model: object):
+def cache(expire: Union[int, timedelta], response_model: Type[BaseModel]):
     def decorator(func):
         @wraps(func)
-        async def wrapper(self, data: object):
+        async def wrapper(self, *args, **kwargs):
             redis_client = self.redis
-
-            fields = data.model_dump()
-            pk = None
-            for field_name, field_value in fields.items():
-                if field_name.endswith("_id"):
-                    pk = field_value
-                    break
-            if pk is None:
-                pk = data
-            key = f"{func.__name__}:{pk}"
+            args_json = json.dumps({"args": args, "kwargs": kwargs}, sort_keys=True, default=str)
+            arguments_hash = hashlib.md5(args_json.encode()).hexdigest()
+            key = f"{func.__module__}:{func.__name__}:{arguments_hash}"
             cached_data = redis_client.get(key)
             if cached_data:
-                adapter = TypeAdapter(response_model)
-                return adapter.validate_json(cached_data)
-            result = await func(self, data)
+                return response_model.model_validate_json(cached_data)
+            result = await func(self, *args, **kwargs)
             if result:
                 adapter = TypeAdapter(response_model)
                 result_json = adapter.dump_json(result).decode("utf-8")
