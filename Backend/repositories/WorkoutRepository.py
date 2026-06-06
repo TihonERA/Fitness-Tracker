@@ -3,6 +3,7 @@ from ..models.workout import Workout
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 from ..models.trainingday import TrainingDay
+from uuid import UUID
 
 class WorkoutRepository:
 
@@ -26,6 +27,27 @@ class WorkoutRepository:
         )
         result = await self.execute(stmt)
         return result.scalar_one_or_none()
+    
+    async def get_all_workouts(self, 
+        skip: int, 
+        limit: int, 
+        user_id: UUID|None=None, 
+        public: bool = False
+    ):
+        stmt = (
+            select(Workout)
+            .where(Workout.public == public)
+        )
+        if user_id:
+            stmt = stmt.where(Workout.user_id == user_id)
+
+        stmt = stmt.offset(skip).limit(limit).options(
+            selectinload(Workout.training_days)
+            .selectinload(TrainingDay.day_exercises)
+        )
+
+        result = await self.execute(stmt)
+        return result.scalars().all()
     
     def add(self, instance: object) -> None:
         self.db.add(instance)
