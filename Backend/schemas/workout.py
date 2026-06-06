@@ -40,3 +40,8 @@ class WorkoutResponse(BaseResponse):
     description: str | None
     rate: float
     training_days: list[TrainingDayResponse]
+
+class WorkoutsFilter(BaseResponse):
+    skip: int = Field(0, ge=0)
+    limit: int = Field(50, gt=0, le=500)
+    public: bool = Field(default=False)
