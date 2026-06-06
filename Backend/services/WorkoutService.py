@@ -1,13 +1,14 @@
 from ..repositories.WorkoutRepository import WorkoutRepository
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..schemas.workout import WorkoutScheme, WorkoutResponse, DayExercisesScheme
+from ..schemas.workout import WorkoutScheme, WorkoutResponse, WorkoutsFilter
 from ..models.workout import Workout
 from ..models.trainingday import TrainingDay
 from ..models.dayexercise import DayExercise
 from ..utils.decorators import cache
 from ..utils.validators import NotFound
 from datetime import timedelta
+from uuid import UUID
 
 class WorkoutService:
 
@@ -47,6 +48,19 @@ class WorkoutService:
     async def get_workout(self, workout_id: int):
         workout = await self._get_workout_or_raise(workout_id=workout_id)
         return workout 
+    
+    @cache(expire=timedelta(hours=12), response_model=list[WorkoutResponse])
+    async def get_all_workouts(self, 
+        filter: WorkoutsFilter,
+        user_id: UUID|None = None
+    ) -> list[WorkoutResponse]:
+        return await self.workoutrepo.get_all_workouts(
+            skip=filter.skip,
+            limit=filter.limit,
+            user_id=user_id,
+            public=filter.public
+        )
+
     
     async def _get_workout_or_raise(self, workout_id: int):
         workout = await self.workoutrepo.get_workout(workout_id=workout_id)
