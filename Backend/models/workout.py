@@ -29,6 +29,10 @@ class Workout(Base):
         Text, 
         nullable=True
     )
+    public: Mapped[bool] = mapped_column(
+        default=False,
+        nullable=False
+    )
     rate: Mapped[float] = mapped_column(
         Float(precision=2),
         default=0.0,
