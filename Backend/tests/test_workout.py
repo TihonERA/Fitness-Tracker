@@ -18,14 +18,20 @@ async def test_create_workout_with_schedule(client):
         }]
     }
 
-    result = await client.post("/workout/workout_schedule", json=data)
+    result = await client.post("/workouts/workout_schedule", json=data)
     assert result.status_code == 201
         
 @pytest.mark.asyncio(scope="session")
 async def test_get_workout(client):
-    response1 = await client.get("/workout/1")
+    response1 = await client.get("/workouts/1")
     assert response1.status_code == 200
     
-    response_invalid = await client.get("/workout/123")
+    response_invalid = await client.get("/workouts/123")
     assert response_invalid.status_code == 404
     assert response_invalid.json()["detail"] == "Not Found"
+
+@pytest.mark.asyncio(scope="session")
+async def test_get_all_workouts(client):
+    response = await client.get("/workouts?skip=1&limit=100&user_id=00000000-0000-0000-0000-000000000000&public=False")
+    assert response.status_code == 200
+    assert len(response.json()) > 1
