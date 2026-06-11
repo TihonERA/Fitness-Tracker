@@ -1,11 +1,11 @@
 from functools import wraps
 import hashlib
 import json
-from typing import Type, Union
+from typing import Type, Union, Any
 from pydantic import TypeAdapter, BaseModel
 from datetime import timedelta
 
-def cache(expire: Union[int, timedelta], response_model: Type[BaseModel]):
+def cache(expire: Union[int, timedelta], response_model: Union[Type[BaseModel], Any]):
     def decorator(func):
         @wraps(func)
         async def wrapper(self, *args, **kwargs):

@@ -10,13 +10,13 @@ class WorkoutRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_workout_with_schedule(self, workout: Workout) -> Workout:
+    async def create_workout_with_schedule(self, workout: Workout) -> Workout | None:
         self.add(workout)
         await self.commit()
 
         return await self.get_workout(workout.workout_id)
 
-    async def get_workout(self, workout_id: int):
+    async def get_workout(self, workout_id: int) -> Workout | None:
         stmt = (
             select(Workout)
             .where(Workout.workout_id == workout_id)
