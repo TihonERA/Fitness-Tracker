@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, status, Path, HTTPException, Query, Body
+from fastapi import APIRouter, Depends, status, Path, HTTPException, Body
 from typing import Annotated
 from uuid import UUID
+from pydantic import ValidationError
 from ...schemas.workout import WorkoutResponse, WorkoutScheme, WorkoutsFilter
 from ...services.WorkoutService import WorkoutService
 from ...utils.validators import NotFound
@@ -19,7 +20,7 @@ async def get_all_workouts(
     user_id: UUID,
     filter: Annotated[WorkoutsFilter, Depends(get_workouts_filter)],
     workout_service: Annotated[WorkoutService, Depends(get_workout_service)]
-):
+) -> list[WorkoutResponse]:
     return await workout_service.get_all_workouts(
         filter=filter,
         user_id=user_id
@@ -33,7 +34,7 @@ async def get_all_workouts(
 async def get_workout(
     workout_id: Annotated[int, Path()],
     workout_service: Annotated[WorkoutService, Depends(get_workout_service)]
-    ) -> WorkoutResponse:
+) -> WorkoutResponse:
     try:
         return await workout_service.get_workout(workout_id)
     except NotFound as e:
@@ -47,5 +48,6 @@ async def get_workout(
 async def create_workout_with_schedule(
         data: Annotated[WorkoutScheme, Body()],
         workout_service: Annotated[WorkoutService, Depends(get_workout_service)]
-    ) -> WorkoutResponse:
+) -> WorkoutResponse:
     return await workout_service.create_workout_with_schedule(data)
+
