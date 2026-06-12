@@ -1,33 +1,40 @@
 from functools import wraps
-import hashlib
-import json
-from typing import Type, Union, Any
-from pydantic import TypeAdapter, BaseModel
+from typing import Type, Union, Any, Tuple, Dict
+from pydantic import BaseModel
 from datetime import timedelta
 
-def cache(expire: Union[int, timedelta], response_model: Union[Type[BaseModel], Any]):
+def cache(expire: Union[int, timedelta], response_model: Union[Type[BaseModel], Any], prefix: str):
     def decorator(func):
         @wraps(func)
         async def wrapper(self, *args, **kwargs):
             redis_client = self.redis
+            
+            pk = _extract_primary_key(args, kwargs)
 
-            args_json = json.dumps({"args": args, "kwargs": kwargs}, sort_keys=True, default=str)
-            arguments_hash = hashlib.md5(args_json.encode()).hexdigest()
-            key = f"{func.__module__}:{func.__name__}:{arguments_hash}"
+            cache_key = f"{prefix}:{pk}"
 
-            adapter = TypeAdapter(response_model)
-
-            cached_data = redis_client.get(key)
+            cached_data = await redis_client.get(cache_key)
             if cached_data:
-                return adapter.validate_json(cached_data)
+                return response_model.model_validate_json(cached_data) 
             
             result = await func(self, *args, **kwargs)
             if result:
-                result_json = adapter.dump_json(result).decode("utf-8")
-                redis_client.set(key, value=result_json, ex=expire)
+                result_json = result.model_dump_json() 
+                await redis_client.set(name=cache_key, value=result_json, ex=expire)
 
             return result
         return wrapper
     return decorator
+
+def _extract_primary_key(
+    args: Tuple[Any],
+    kwargs: Dict[str, Any]
+) -> int | str | None:
+    for key, value in kwargs.items():
+        if key.endswith("id"):
+            return value
+    
+    if args:
+        return args[0]
 
 
