@@ -1,5 +1,6 @@
+import asyncio
 from ..repositories.WorkoutRepository import WorkoutRepository
-from redis import Redis
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..schemas.workout import WorkoutScheme, WorkoutResponse, WorkoutsFilter
 from ..models.workout import Workout
@@ -16,7 +17,7 @@ class WorkoutService:
         self.workoutrepo = WorkoutRepository(db=db)
         self.redis = redis
 
-    async def create_workout_with_schedule(self, workout_schem: WorkoutScheme):
+    async def create_workout_with_schedule(self, workout_schem: WorkoutScheme) -> WorkoutResponse:
         workout = Workout(
             user_id = workout_schem.user_id,
             name=workout_schem.name,
@@ -42,27 +43,34 @@ class WorkoutService:
 
                 workout.training_days.append(training_day)
                 
-        return await self.workoutrepo.create_workout_with_schedule(workout=workout)
+        workout_saved = await self.workoutrepo.create_workout_with_schedule(workout=workout)
+        return await self.get_workout(workout_id=workout_saved.workout_id)
     
-    @cache(expire=timedelta(hours=12), response_model=WorkoutResponse)
-    async def get_workout(self, workout_id: int):
+    @cache(expire=timedelta(hours=12), response_model=WorkoutResponse, prefix="workout")
+    async def get_workout(self, workout_id: int) -> WorkoutResponse:
         workout = await self._get_workout_or_raise(workout_id=workout_id)
-        return workout 
+        return WorkoutResponse.model_validate(workout)
     
-    @cache(expire=timedelta(hours=12), response_model=list[WorkoutResponse])
     async def get_all_workouts(self, 
         filter: WorkoutsFilter,
         user_id: UUID|None = None
     ) -> list[WorkoutResponse]:
-        return await self.workoutrepo.get_all_workouts(
+        workouts_id = await self.workoutrepo.get_all_workouts(
             skip=filter.skip,
             limit=filter.limit,
             user_id=user_id,
             public=filter.public
         )
 
+        if not workouts_id:
+            return []
+        
+        tasks = [self.get_workout(workout_id) for workout_id in workouts_id]
+
+        workouts = await asyncio.gather(*tasks)
+        return list(workouts)
     
-    async def _get_workout_or_raise(self, workout_id: int):
+    async def _get_workout_or_raise(self, workout_id: int) -> Workout:
         workout = await self.workoutrepo.get_workout(workout_id=workout_id)
         if not workout:
             raise NotFound()
