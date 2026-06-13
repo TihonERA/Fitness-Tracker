@@ -23,7 +23,26 @@ async def test_create_workout_with_schedule(client):
         
 @pytest.mark.asyncio(scope="session")
 async def test_get_workout(client):
-    response1 = await client.get("/workouts/1")
+    data = {
+        "user_id": "00000000-0000-0000-0000-000000000000",
+        "name": "Split",
+        "description": "TestDescription TestDescription TestDescription TestDescription TestDescription ",
+        "training_days": [{
+            "name": "Day1",
+            "day_order": 1,
+            "day_exercises": [{
+                "exercise_id": 1,
+                "exercise_order": 1,
+                "sets": 4,
+                "reps": 15
+            }]
+        }]
+    }
+
+    created_workout = await client.post("/workouts/workout_schedule", json=data)
+    workout_json = created_workout.json()
+
+    response1 = await client.get(f"/workouts/{workout_json["workout_id"]}")
     assert response1.status_code == 200
     
     response_invalid = await client.get("/workouts/123")
