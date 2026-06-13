@@ -45,3 +45,16 @@ class WorkoutsFilter(BaseResponse):
     skip: int = Field(0, ge=0)
     limit: int = Field(50, gt=0, le=500)
     public: bool = Field(default=False)
+
+class UpdateDayExercise(DayExercisesScheme):
+    day_id: int
+
+class UpdateWorkout(WorkoutScheme):
+    user_id: UUID = Field(exclude=True)
+    training_days: list[TrainingDayScheme] | None = Field(exclude=True)
+
+class UpdateTrainingDays(TrainingDayScheme):
+    day_exercises: list[DayExercisesScheme] | None = Field(exclude=True)
+ 
+
+
