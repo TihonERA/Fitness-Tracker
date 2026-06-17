@@ -24,6 +24,7 @@ class TrainingDay(Base):
         nullable=False
     )
     day_order: Mapped[int] = mapped_column(
+        unique=True,
         nullable=False
     )
 
