@@ -162,6 +162,32 @@ class WorkoutService:
         updated_training_day_in_workout = await self.get_workout(workout_id=workout_id)
         return WorkoutResponse.model_validate(updated_training_day_in_workout)
 
+    async def delete_workout(self,
+        workout_id: int
+    ) -> None:
+        result = await self.workoutrepo.delete_workout(workout_id=workout_id)
+        if result == 0:
+            raise NotFound() 
+
+    async def delete_training_day(self,
+        training_day_id: int
+    ) -> None:
+        result = await self.workoutrepo.delete_training_day(training_day_id=training_day_id)
+        if result == 0:
+            raise NotFound()
+
+    async def delete_day_exercise(self,
+        day_id: int,
+        exercise_id: int
+    ) -> None: 
+        result = await self.workoutrepo.delete_day_exercise(
+            day_id=day_id,
+            exercise_id=exercise_id
+        )
+
+        if result == 0:
+            raise NotFound()
+
     async def _get_workout_or_raise(self, workout_id: int) -> Workout:
         workout = await self.workoutrepo.get_workout(workout_id=workout_id)
         if not workout:

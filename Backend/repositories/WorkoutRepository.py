@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession 
 from ..models.workout import Workout
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select, update, bindparam, and_, CursorResult
+from sqlalchemy import delete, select, update, bindparam, and_ 
 from ..models.trainingday import TrainingDay
 from ..models.dayexercise import  DayExercise
 from ..models.base import Base
@@ -109,6 +109,46 @@ class WorkoutRepository:
         result = await self.execute(stmt)
         return result.rowcount # type: ignore 
 
+    async def delete_workout(self,
+        workout_id: int
+    ) -> int:
+        stmt = (
+            delete(Workout)
+            .where(Workout.workout_id == workout_id)
+        ) 
+
+        result = await self.execute(stmt)
+        return result.rowcount # type: ignore
+
+    async def delete_training_day(self,
+        training_day_id: int
+    ) -> int:
+        stmt = (
+            delete(TrainingDay)
+            .where(TrainingDay.day_id == training_day_id)
+        ) 
+
+        result = await self.execute(stmt)
+        return result.rowcount # type: ignore
+
+    async def delete_day_exercise(self,
+        day_id: int,
+        exercise_id: int
+    ) -> int:
+        stmt = (
+            delete(DayExercise)
+            .where(
+                and_(
+                    DayExercise.day_id == day_id,
+                    DayExercise.exercise_id == exercise_id 
+                )
+            )
+        ) 
+
+        result = await self.execute(stmt)
+        return result.rowcount # type: ignore
+
+
 
     def add(self, instance: object) -> None:
         self.db.add(instance)
@@ -122,4 +162,4 @@ class WorkoutRepository:
     async def execute(self, stmt):
         return await self.db.execute(stmt)
 
-   
+     
