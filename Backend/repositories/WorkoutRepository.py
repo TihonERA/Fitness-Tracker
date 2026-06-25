@@ -89,46 +89,66 @@ class WorkoutRepository:
         workout_id: int,
         workout_update_data: dict[str, Any]     
     ) -> int: 
-        stmt = (
-            update(Workout)
-            .where(Workout.workout_id == workout_id)
-            .values(**workout_update_data)
+        return await self._update_data(
+            model=Workout,
+            attribute="workout_id",
+            id=workout_id,
+            data=workout_update_data
         )
-
-        result = await self.execute(stmt)
-        return result.rowcount # type: ignore
 
     async def update_training_day(self,
         training_day_id: int,
         training_day_update_data: dict[str, Any]
     ) -> int:
+        return await self._update_data(
+            model=TrainingDay,
+            attribute="day_id",
+            id=training_day_id,
+            data=training_day_update_data
+        )
+
+    async def _update_data(self,
+        model: type[Base],
+        attribute: str,
+        id: int,
+        data: dict[str, Any]
+    ):
         stmt = (
-            update(TrainingDay)
-            .where(TrainingDay.day_id == training_day_id)
-            .values(**training_day_update_data)
+            update(model)
+            .where(getattr(model, attribute) == id)
+            .values(**data)
         )
 
         result = await self.execute(stmt)
-        return result.rowcount # type: ignore 
+        return result.rowcount #type: ignore
 
     async def delete_workout(self,
         workout_id: int
     ) -> int:
-        stmt = (
-            delete(Workout)
-            .where(Workout.workout_id == workout_id)
-        ) 
-
-        result = await self.execute(stmt)
-        return result.rowcount # type: ignore
+        return await self._delete_data(
+            model=Workout,
+            attribute="workout_id",
+            id=workout_id
+        )
 
     async def delete_training_day(self,
         training_day_id: int
     ) -> int:
+        return await self._delete_data(
+            model=TrainingDay,
+            attribute="day_id",
+            id=training_day_id
+        )
+
+    async def _delete_data(self,
+        model: type[Base],
+        attribute: str,
+        id: int
+    ):
         stmt = (
-            delete(TrainingDay)
-            .where(TrainingDay.day_id == training_day_id)
-        ) 
+            delete(model)
+            .where(getattr(model, attribute) == id)
+        )
 
         result = await self.execute(stmt)
         return result.rowcount # type: ignore
