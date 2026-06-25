@@ -1,60 +1,70 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
+from .base import DescriptionStr, NameStr, BaseResponse
 from uuid import UUID
+from typing import Annotated
 
-class DayExercisesScheme(BaseModel):
+DayOrderInt = Annotated[int, Field(gt=0, le=7)]
+
+ExerciseOrderInt = Annotated[int, Field(gt=0, le=50)]
+SetsInt = Annotated[int, Field(gt=0, le=30)]
+RepsInt = Annotated[int, Field(gt=0, le=150)]
+
+SkipInt = Annotated[int, Field(0, ge=0)]
+LimitInt = Annotated[int, Field(20, gt=0, le=100)]
+
+class DayExerciseBase(BaseModel):
+    exercise_order: ExerciseOrderInt
+    sets: SetsInt | None = None 
+    reps: RepsInt | None = None
+
+class TrainingDayBase(BaseModel):
+    name: NameStr 
+    day_order: DayOrderInt
+
+class WorkoutBase(BaseModel):
+    name: NameStr
+    description: DescriptionStr | None = None
+
+class DayExerciseResponse(BaseResponse, DayExerciseBase):
     exercise_id: int
-    exercise_order: int = Field(gt=0, le=50,)
-    sets: int | None = Field(None, gt=0, le=30, description="Количество подходов")
-    reps: int | None = Field(None, gt=0, le=150, description="Количество повторений")
 
-class TrainingDayScheme(BaseModel):
-    name: str = Field(max_length=100)
-    day_order: int = Field(gt=0, le=7)
-    day_exercises: list[DayExercisesScheme] | None = Field(None)
-
-class WorkoutScheme(BaseModel):
-    user_id: UUID 
-    name: str  = Field(max_length=100)
-    description: str | None = Field(default=None, max_length=2000) 
-    training_days: list[TrainingDayScheme] | None = Field(None)
-
-class BaseResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-class DayExerciseResponse(BaseResponse):
-    exercise_id: int
-    exercise_order: int
-    sets: int | None
-    reps: int | None
-
-class TrainingDayResponse(BaseResponse):
-    day_id: int               
-    name: str
-    day_order: int
-    day_exercises: list[DayExerciseResponse]
-
-class WorkoutResponse(BaseResponse):
-    workout_id: int           
-    user_id: UUID
-    name: str
-    description: str | None
-    rate: float
-    training_days: list[TrainingDayResponse]
-
-class WorkoutsFilter(BaseResponse):
-    skip: int = Field(0, ge=0)
-    limit: int = Field(50, gt=0, le=500)
-    public: bool = Field(default=False)
-
-class UpdateDayExercise(DayExercisesScheme):
+class TrainingDayResponse(BaseResponse, TrainingDayBase):
     day_id: int
+    day_exercises: list[DayExerciseResponse] | None = None
 
-class UpdateWorkout(WorkoutScheme):
-    user_id: UUID = Field(exclude=True)
-    training_days: list[TrainingDayScheme] | None = Field(exclude=True)
+class WorkoutResponse(BaseResponse, WorkoutBase):
+    workout_id: int
+    user_id: UUID
+    public: bool
+    rate: float
+    training_days: list[TrainingDayResponse] | None = None
 
-class UpdateTrainingDays(TrainingDayScheme):
-    day_exercises: list[DayExercisesScheme] | None = Field(exclude=True)
- 
+class DayExerciseCreate(DayExerciseBase):
+    exercise_id: int
 
+class TrainingDayCreate(TrainingDayBase):
+    day_exercises: list[DayExerciseCreate] | None = None
 
+class WorkoutCreate(BaseResponse, WorkoutBase):
+    user_id: UUID
+    public: bool | None = None
+    training_days: list[TrainingDayCreate] | None = None
+
+class DayExerciseUpdate(BaseModel):
+    exercise_order: ExerciseOrderInt | None = None
+    sets: SetsInt | None = None
+    reps: RepsInt | None = None
+
+class TrainingDayUpdate(BaseModel):
+    name: NameStr | None = None
+    day_order: DayOrderInt | None = None
+
+class WorkoutUpdate(BaseModel):
+    name: NameStr | None = None
+    description: DescriptionStr | None = None
+    public: bool | None = None 
+
+class WorkoutGetAllFilter(BaseModel):
+    skip: SkipInt
+    limit: LimitInt
+    public: bool
