@@ -1,9 +1,9 @@
 from functools import wraps
-from typing import Type, Union, Any, Tuple, Dict
-from pydantic import BaseModel
+from typing import Union, Any, Tuple, Dict
+import json
 from datetime import timedelta
 
-def cache(expire: Union[int, timedelta], response_model: Union[Type[BaseModel], Any], prefix: str):
+def cache(ttl: Union[int, timedelta], prefix: str):
     def decorator(func):
         @wraps(func)
         async def wrapper(self, *args, **kwargs):
@@ -15,16 +15,33 @@ def cache(expire: Union[int, timedelta], response_model: Union[Type[BaseModel], 
 
             cached_data = await redis_client.get(cache_key)
             if cached_data:
-                return response_model.model_validate_json(cached_data) 
+                return json.loads(cached_data)
             
             result = await func(self, *args, **kwargs)
             if result:
                 result_json = result.model_dump_json() 
-                await redis_client.set(name=cache_key, value=result_json, ex=expire)
+                await redis_client.set(name=cache_key, value=result_json, ex=ttl)
 
             return result
         return wrapper
     return decorator
+
+def invalidate_cache(prefix: str):
+    def decorator(func):
+        async def wrapper(self, *args, **kwargs):
+            result = await func(self, *args, **kwargs)
+
+            redis_client = self.redis
+
+            pk = _extract_primary_key(args, kwargs)
+            cache_key = f"{prefix}:{pk}"
+
+            await redis_client.delete(cache_key)
+            
+            return result
+        return wrapper
+    return decorator
+        
 
 def _extract_primary_key(
     args: Tuple[Any],
