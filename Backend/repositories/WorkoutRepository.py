@@ -36,15 +36,17 @@ class WorkoutRepository:
     async def get_all_workouts(self, 
         skip: int, 
         limit: int, 
-        user_id: UUID | None= None, 
+        user_id: UUID | None = None, 
         public: bool = False
     ) -> Sequence[int]:
-        stmt = (
-            select(Workout.workout_id)
-            .where(Workout.public == public)
-        )
+        stmt = select(Workout.workout_id)
         if user_id:
-            stmt = stmt.where(Workout.user_id == user_id)
+            stmt = stmt.where(
+                Workout.user_id == user_id,
+                Workout.public == public
+            )
+        else:
+            stmt = stmt.where(Workout.public == True)
 
         stmt = stmt.offset(skip).limit(limit)
 
