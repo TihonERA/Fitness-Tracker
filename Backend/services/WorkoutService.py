@@ -1,5 +1,5 @@
 import asyncio
-from ..schemas.workout import WorkoutCreate, DayExerciseCreate, TrainingDayCreate, WorkoutGetAllFilter
+from ..schemas.workout import WorkoutCreate, DayExerciseCreate, TrainingDayCreate, WorkoutGetAllFilter, WorkoutUpdate, TrainingDayUpdate, DayExerciseUpdate
 from ..repositories.WorkoutRepository import WorkoutRepository
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,7 +7,7 @@ from ..models.workout import Workout
 from ..models.trainingday import TrainingDay
 from ..models.dayexercise import DayExercise
 from ..utils.decorators import cache, invalidate_cache
-from ..utils.validators import NotFound, DataNotModified
+from ..utils.validators import NotFound
 from datetime import timedelta
 from uuid import UUID
 
@@ -99,7 +99,7 @@ class WorkoutService:
     
     @cache(ttl=timedelta(hours=12), prefix="workout")
     async def get_workout(self, workout_id: int):
-        return await self.workoutrepo.get_workout(workout_id=workout_id)
+        return await self._get_workout_or_raise(workout_id=workout_id)
     
     async def get_all_workouts(self, 
         filter: WorkoutGetAllFilter,
@@ -120,55 +120,59 @@ class WorkoutService:
         workouts = await asyncio.gather(*tasks)
         return list(workouts)
 
+    @invalidate_cache(prefix="workout")
     async def update_day_exercise(self,
         workout_id: int,
-        data: list[UpdateDayExercise]
-    ) -> WorkoutResponse:
-        result = await self.workoutrepo.update_day_exercise([day.model_dump() for day in data])
+        data: list[DayExerciseUpdate]
+    ):
+        rowcount = await self.workoutrepo.update_day_exercise(
+            [day.model_dump() for day in data]
+        )
 
-        if result == 0:
-            raise DataNotModified() 
+        return await self._get_updated_workout(
+            workout_id=workout_id,
+            rowcount=rowcount
+        )
 
-        await self.redis.delete(f"workout:{workout_id}")
-
-        updated_day_exercises_in_workout = await self.get_workout(workout_id=workout_id)
-        return WorkoutResponse.model_validate(updated_day_exercises_in_workout)
-
+    @invalidate_cache(prefix="workout")
     async def update_workout(self,
         workout_id: int,
-        workout_update_data: UpdateWorkout
-    ) -> WorkoutResponse:
-        result = await self.workoutrepo.update_workout(
+        workout_update_data: WorkoutUpdate
+    ):
+        rowcount = await self.workoutrepo.update_workout(
             workout_id=workout_id,
             workout_update_data=workout_update_data.model_dump()
         )
+        return await self._get_updated_workout(
+            workout_id=workout_id,
+            rowcount=rowcount
+        )
 
-        if result == 0:
-            raise DataNotModified()
-
-        await self.redis.delete(f"workout:{workout_id}")
-
-        updated_workout = await self.get_workout(workout_id=workout_id)
-        return WorkoutResponse.model_validate(updated_workout)
-
+    @invalidate_cache(prefix="workout")
     async def update_training_days(self,
         workout_id: int,
         training_day_id: int,
-        training_day_update_data: UpdateTrainingDays
-    ) -> WorkoutResponse:
-        result = await self.workoutrepo.update_training_day(
+        training_day_update_data: TrainingDayUpdate
+    ):
+        rowcount = await self.workoutrepo.update_training_day(
             training_day_id=training_day_id,
             training_day_update_data=training_day_update_data.model_dump()
         )
+        return self._get_updated_workout(
+            workout_id=workout_id,
+            rowcount=rowcount
+        )
 
-        if result == 0:
-            raise DataNotModified()
+    async def _get_updated_workout(self,
+        workout_id: int,
+        rowcount: int
+    ):
+        if rowcount == 0:
+            raise NotFound()
 
-        await self.redis.delete(f"workout:{workout_id}")
-
-        updated_training_day_in_workout = await self.get_workout(workout_id=workout_id)
-        return WorkoutResponse.model_validate(updated_training_day_in_workout)
-
+        return await self.workoutrepo.get_workout(workout_id=workout_id)
+        
+    @invalidate_cache(prefix="workout")
     async def delete_workout(self,
         workout_id: int
     ) -> None:
