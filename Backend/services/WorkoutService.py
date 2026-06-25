@@ -1,12 +1,12 @@
 import asyncio
+from ..schemas.workout import WorkoutCreate, DayExerciseCreate, TrainingDayCreate, WorkoutGetAllFilter
 from ..repositories.WorkoutRepository import WorkoutRepository
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..schemas.workout import DayExerciseResponse, DayExercisesScheme, TrainingDayResponse, TrainingDayScheme, WorkoutScheme, WorkoutResponse, WorkoutsFilter, UpdateDayExercise, UpdateWorkout, UpdateTrainingDays 
 from ..models.workout import Workout
 from ..models.trainingday import TrainingDay
 from ..models.dayexercise import DayExercise
-from ..utils.decorators import cache
+from ..utils.decorators import cache, invalidate_cache
 from ..utils.validators import NotFound, DataNotModified
 from datetime import timedelta
 from uuid import UUID
@@ -17,47 +17,58 @@ class WorkoutService:
         self.workoutrepo = WorkoutRepository(db=db)
         self.redis = redis
 
-    async def create_workout_with_schedule(self, workout_schem: WorkoutScheme) -> WorkoutResponse:
+    async def create_workout_with_schedule(self,
+        data: WorkoutCreate
+    ):
         workout = Workout(
-            user_id = workout_schem.user_id,
-            name=workout_schem.name,
-            description=workout_schem.description,
+            user_id = data.user_id,
+            name=data.name,
+            description=data.description,
         )
 
-        if workout_schem.training_days:
-            for tr_day in workout_schem.training_days:
-                training_day = TrainingDay(
-                    name=tr_day.name,
-                    day_order=tr_day.day_order,
+        if data.training_days:
+            for tr_day in data.training_days:
+                tr_day_data = TrainingDayCreate(
+                   name=tr_day.name,
+                   day_order=tr_day.day_order
+                )
+                self._create_training_day(
+                    data=tr_day_data,
+                    workout=workout
                 )
 
-                if tr_day.day_exercises:
-                    for day_ex in tr_day.day_exercises:
-                        day_exercise = DayExercise(
-                            exercise_id=day_ex.exercise_id,
-                            exercise_order=day_ex.exercise_order,
-                            sets=day_ex.sets,
-                            reps=day_ex.reps
-                        )
-                        training_day.day_exercises.append(day_exercise)
+        return self.workoutrepo.create_instance(instance=workout)
 
-                workout.training_days.append(training_day)
-                
-        workout_saved = await self.workoutrepo.create_instance(instance=workout)
-        return await self.get_workout(workout_id=workout_saved.workout_id)
-
+    @invalidate_cache(prefix="workout")
     async def create_training_day(self,
         workout_id: int,
-        training_day_scheme: TrainingDayScheme
-    ) -> WorkoutResponse:
+        data: TrainingDayCreate
+    ):
+        training_day = self._create_training_day(
+            data=data,
+            workout_id=workout_id
+        )
+        await self.workoutrepo.create_instance(instance=training_day)
+
+        return await self.workoutrepo.get_workout(workout_id=workout_id)
+
+    def _create_training_day(self,
+        data: TrainingDayCreate,
+        workout: Workout | None = None,
+        workout_id: int | None = None
+    ):
         training_day = TrainingDay(
-            workout_id=workout_id,
-            name=training_day_scheme.name,
-            day_order=training_day_scheme.day_order
+            name=data.name,
+            day_order=data.day_order
         ) 
 
-        if training_day_scheme.day_exercises:
-            for day_ex in training_day_scheme.day_exercises:
+        if workout:
+            workout.training_days.append(training_day)
+        elif workout_id:
+            training_day.workout_id = workout_id
+
+        if data.day_exercises:
+            for day_ex in data.day_exercises:
                 day_exercise = DayExercise(
                     exercise_id=day_ex.exercise_id,
                     exercise_order=day_ex.exercise_order,
@@ -65,17 +76,15 @@ class WorkoutService:
                     reps=day_ex.reps
                 )
                 training_day.day_exercises.append(day_exercise)
-            
-        await self.workoutrepo.create_instance(training_day)
-        await self.redis.delete(f"workout:{workout_id}")
 
-        return await self.get_workout(workout_id=workout_id)
-
+        return training_day
+      
+    @invalidate_cache(prefix="workout")
     async def create_day_exercise(self,
         workout_id: int,
         training_day_id: int,
-        day_exercise_scheme: DayExercisesScheme
-    ) -> WorkoutResponse:
+        day_exercise_scheme: DayExerciseCreate
+    ):
         day_exercise = DayExercise(
             day_id=training_day_id,
             exercise_id=day_exercise_scheme.exercise_id,
@@ -85,19 +94,17 @@ class WorkoutService:
         )
 
         await self.workoutrepo.create_instance(day_exercise)
-        await self.redis.delete(f"workout:{workout_id}")
 
-        return await self.get_workout(workout_id=workout_id)
+        return await self.workoutrepo.get_workout(workout_id=workout_id)
     
-    @cache(expire=timedelta(hours=12), response_model=WorkoutResponse, prefix="workout")
-    async def get_workout(self, workout_id: int) -> WorkoutResponse:
-        workout = await self._get_workout_or_raise(workout_id=workout_id)
-        return WorkoutResponse.model_validate(workout)
+    @cache(ttl=timedelta(hours=12), prefix="workout")
+    async def get_workout(self, workout_id: int):
+        return await self.workoutrepo.get_workout(workout_id=workout_id)
     
     async def get_all_workouts(self, 
-        filter: WorkoutsFilter,
+        filter: WorkoutGetAllFilter,
         user_id: UUID|None = None
-    ) -> list[WorkoutResponse]:
+    ):
         workouts_id = await self.workoutrepo.get_all_workouts(
             skip=filter.skip,
             limit=filter.limit,
