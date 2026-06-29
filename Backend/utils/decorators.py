@@ -2,8 +2,9 @@ from functools import wraps
 from typing import Union, Any, Tuple, Dict
 import json
 from datetime import timedelta
+from pydantic import BaseModel
 
-def cache(ttl: Union[int, timedelta], prefix: str):
+def cache(ttl: Union[int, timedelta], prefix: str, schema: type[BaseModel]):
     def decorator(func):
         @wraps(func)
         async def wrapper(self, *args, **kwargs):
@@ -15,11 +16,11 @@ def cache(ttl: Union[int, timedelta], prefix: str):
 
             cached_data = await redis_client.get(cache_key)
             if cached_data:
-                return json.loads(cached_data)
+                return schema.model_validate_json(cached_data) 
             
             result = await func(self, *args, **kwargs)
             if result:
-                result_json = result.model_dump_json() 
+                result_json = schema.model_validate(result).model_dump_json()
                 await redis_client.set(name=cache_key, value=result_json, ex=ttl)
 
             return result
@@ -28,6 +29,7 @@ def cache(ttl: Union[int, timedelta], prefix: str):
 
 def invalidate_cache(prefix: str):
     def decorator(func):
+        @wraps(func)
         async def wrapper(self, *args, **kwargs):
             result = await func(self, *args, **kwargs)
 
