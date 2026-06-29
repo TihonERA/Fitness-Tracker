@@ -5,6 +5,8 @@ from sqlalchemy import delete, select, update, bindparam, and_
 from ..models.trainingday import TrainingDay
 from ..models.dayexercise import  DayExercise
 from ..models.base import Base
+from ..models.muscle import Muscle
+from ..models.exercise import Exercise
 from typing import TypeVar, Sequence, Any
 from uuid import UUID
 
@@ -14,14 +16,35 @@ class WorkoutRepository:
 
     def __init__(self, db: AsyncSession):
         self.db = db
-
+        
     async def create_instance(self, instance: ModelType) -> ModelType:
-        self.add(instance)
-        await self.commit()
-        await self.refresh(instance)
+        self.db.add(instance)
+        await self.db.commit()
+        await self.db.refresh(instance)
         return instance
+    
+    async def create_record_template(
+        self,
+        instance: Workout | TrainingDay 
+    ) -> Workout:
+        self.db.add(instance)
+
+        await self.db.flush()
+        
+        workout_id: int = getattr(instance, "workout_id")
+        stmt = self._get_loaded_workout_stmt(workout_id=workout_id)
+        loaded_workout = await self.execute(stmt)
+        
+        await self.commit()
+        return loaded_workout.scalar_one()
 
     async def get_workout(self, workout_id: int) -> Workout | None:
+        stmt = self._get_loaded_workout_stmt(workout_id=workout_id)         
+        result = await self.execute(stmt)
+        return result.scalars().one_or_none()
+
+    @staticmethod
+    def _get_loaded_workout_stmt(workout_id: int):
         stmt = (
             select(Workout)
             .where(Workout.workout_id == workout_id)
@@ -29,9 +52,9 @@ class WorkoutRepository:
                 selectinload(Workout.training_days)
                 .selectinload(TrainingDay.day_exercises)
             )
+            .execution_options(populate_existing=True)
         )
-        result = await self.execute(stmt)
-        return result.scalar_one_or_none()
+        return stmt
     
     async def get_all_workouts(self, 
         skip: int, 
@@ -58,13 +81,13 @@ class WorkoutRepository:
     ) -> int:
           data = [
             {
-                "p_day_id": ex["day_did"],
+                "p_training_day_id": ex["day_did"],
                 "p_exercise_id": ex["exercise_id"],
                 "p_order": ex["exercise_order"],
                 "p_sets": ex["sets"],
                 "p_reps": ex["reps"]
             }
-            for ex in day_exercises if ex.get("exercise_id") and ex.get("day_id") 
+            for ex in day_exercises if ex.get("exercise_id") and ex.get("training_day_id") 
           ]
 
           stmt = (
@@ -87,24 +110,24 @@ class WorkoutRepository:
 
     async def update_workout(self,
         workout_id: int,
-        workout_update_data: dict[str, Any]     
+        data: dict[str, Any]     
     ) -> int: 
         return await self._update_data(
             model=Workout,
             attribute="workout_id",
             id=workout_id,
-            data=workout_update_data
+            data=data
         )
 
     async def update_training_day(self,
         training_day_id: int,
-        training_day_update_data: dict[str, Any]
+        data: dict[str, Any]
     ) -> int:
         return await self._update_data(
             model=TrainingDay,
-            attribute="day_id",
+            attribute="training_day_id",
             id=training_day_id,
-            data=training_day_update_data
+            data=data
         )
 
     async def _update_data(self,
@@ -136,7 +159,7 @@ class WorkoutRepository:
     ) -> int:
         return await self._delete_data(
             model=TrainingDay,
-            attribute="day_id",
+            attribute="training_day_id",
             id=training_day_id
         )
 
@@ -154,14 +177,14 @@ class WorkoutRepository:
         return result.rowcount # type: ignore
 
     async def delete_day_exercise(self,
-        day_id: int,
+        training_day_id: int,
         exercise_id: int
     ) -> int:
         stmt = (
             delete(DayExercise)
             .where(
                 and_(
-                    DayExercise.day_id == day_id,
+                    DayExercise.day_id == training_day_id,
                     DayExercise.exercise_id == exercise_id 
                 )
             )
@@ -170,8 +193,27 @@ class WorkoutRepository:
         result = await self.execute(stmt)
         return result.rowcount # type: ignore
 
+    async def get_all_muscles(self):
+        stmt = (
+            select(Muscle.name)
+        )
 
-
+        result = await self.execute(stmt)
+        return result.scalars().all()
+        
+    async def get_all_trainted_muscles_in_workout(self,
+        workout_id: int
+    ):
+        stmt = (
+            select(Exercise.muscle_activation)
+            .join(DayExercise)
+            .join(TrainingDay)
+            .where(TrainingDay.workout_id == workout_id)
+        ) 
+        
+        result = await self.execute(stmt)
+        return result.scalars().all()
+    
     def add(self, instance: object) -> None:
         self.db.add(instance)
 
