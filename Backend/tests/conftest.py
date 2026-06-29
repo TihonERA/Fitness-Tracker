@@ -9,6 +9,7 @@ from ..models.user import User
 from ..models.exercise import Exercise
 from ..core.database import async_engine 
 from ..api.deps import get_db
+from ..core.database import get_redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 @pytest.fixture(scope="session", autouse=True)
@@ -77,6 +78,14 @@ async def clean_tables():
     async with async_engine.begin() as conn:
         await conn.execute(text("TRUNCATE TABLE workout, trainingday, dayexercise CASCADE;"))
 
+@pytest.fixture(scope="function", autouse=True)
+async def cleat_redis():
+    redis = get_redis()
+
+    await redis.flushall()
+
+    await redis.aclose()
+
 @pytest.fixture
 def make_workout_data():
     def _make_data(name="Split", description="TestDescription...", day_name="Day1", day_order=1):
@@ -104,3 +113,6 @@ async def db_session():
         await session.begin_nested()
         yield session
         await session.rollback()
+
+
+
