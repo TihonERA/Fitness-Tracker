@@ -1,5 +1,5 @@
 import asyncio
-from ..schemas.workout import WorkoutCreate, DayExerciseCreate, TrainingDayCreate, WorkoutGetAllFilter, WorkoutUpdate, TrainingDayUpdate, DayExerciseUpdate
+from ..schemas.workout import WorkoutCreate, DayExerciseCreate, TrainingDayCreate, WorkoutGetAllFilter, WorkoutMuscleRateResult, WorkoutResponse, WorkoutUpdate, TrainingDayUpdate, DayExerciseUpdate
 from ..repositories.WorkoutRepository import WorkoutRepository
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,16 +28,15 @@ class WorkoutService:
 
         if data.training_days:
             for tr_day in data.training_days:
-                tr_day_data = TrainingDayCreate(
-                   name=tr_day.name,
-                   day_order=tr_day.day_order
-                )
                 self._create_training_day(
-                    data=tr_day_data,
+                    data=tr_day,
                     workout=workout
                 )
-
-        return self.workoutrepo.create_instance(instance=workout)
+        
+        created_workout = await self.workoutrepo.create_record_template(
+            instance=workout
+        )
+        return created_workout
 
     @invalidate_cache(prefix="workout")
     async def create_training_day(self,
@@ -48,15 +47,17 @@ class WorkoutService:
             data=data,
             workout_id=workout_id
         )
-        await self.workoutrepo.create_instance(instance=training_day)
+        created_training_day = await self.workoutrepo.create_record_template(
+            instance=training_day
+        )
+        return created_training_day
 
-        return await self.workoutrepo.get_workout(workout_id=workout_id)
-
-    def _create_training_day(self,
+    @staticmethod
+    def _create_training_day(
         data: TrainingDayCreate,
         workout: Workout | None = None,
         workout_id: int | None = None
-    ):
+    ) -> TrainingDay:
         training_day = TrainingDay(
             name=data.name,
             day_order=data.day_order
@@ -83,21 +84,21 @@ class WorkoutService:
     async def create_day_exercise(self,
         workout_id: int,
         training_day_id: int,
-        day_exercise_scheme: DayExerciseCreate
+        data: DayExerciseCreate
     ):
         day_exercise = DayExercise(
             day_id=training_day_id,
-            exercise_id=day_exercise_scheme.exercise_id,
-            exercise_order=day_exercise_scheme.exercise_order,
-            sets=day_exercise_scheme.sets,
-            reps=day_exercise_scheme.reps
+            exercise_id=data.exercise_id,
+            exercise_order=data.exercise_order,
+            sets=data.sets,
+            reps=data.reps
         )
 
         await self.workoutrepo.create_instance(day_exercise)
 
         return await self.workoutrepo.get_workout(workout_id=workout_id)
     
-    @cache(ttl=timedelta(hours=12), prefix="workout")
+    @cache(ttl=timedelta(hours=12), prefix="workout", schema=WorkoutResponse)
     async def get_workout(self, workout_id: int):
         return await self._get_workout_or_raise(workout_id=workout_id)
     
@@ -137,11 +138,11 @@ class WorkoutService:
     @invalidate_cache(prefix="workout")
     async def update_workout(self,
         workout_id: int,
-        workout_update_data: WorkoutUpdate
+        data: WorkoutUpdate
     ):
         rowcount = await self.workoutrepo.update_workout(
             workout_id=workout_id,
-            workout_update_data=workout_update_data.model_dump()
+            data=data.model_dump()
         )
         return await self._get_updated_workout(
             workout_id=workout_id,
@@ -149,14 +150,14 @@ class WorkoutService:
         )
 
     @invalidate_cache(prefix="workout")
-    async def update_training_days(self,
+    async def update_training_day(self,
         workout_id: int,
         training_day_id: int,
-        training_day_update_data: TrainingDayUpdate
+        data: TrainingDayUpdate
     ):
         rowcount = await self.workoutrepo.update_training_day(
             training_day_id=training_day_id,
-            training_day_update_data=training_day_update_data.model_dump()
+            data=data.model_dump()
         )
         return self._get_updated_workout(
             workout_id=workout_id,
@@ -180,24 +181,58 @@ class WorkoutService:
         if result == 0:
             raise NotFound() 
 
+    @invalidate_cache(prefix="workout")
     async def delete_training_day(self,
+        workout_id: int,
         training_day_id: int
     ) -> None:
         result = await self.workoutrepo.delete_training_day(training_day_id=training_day_id)
         if result == 0:
             raise NotFound()
 
+    @invalidate_cache(prefix="workout")
     async def delete_day_exercise(self,
-        day_id: int,
+        workout_id: int,
+        training_day_id: int,
         exercise_id: int
     ) -> None: 
         result = await self.workoutrepo.delete_day_exercise(
-            day_id=day_id,
+            training_day_id=training_day_id,
             exercise_id=exercise_id
         )
 
         if result == 0:
             raise NotFound()
+
+    async def calculate_rate_balance(self,
+        workout_id: int
+    ):
+        muscles_name = await self.workoutrepo.get_all_muscles()
+        all_muscles = {muscle: 0.0 for muscle in muscles_name}
+
+        activated_muscles_json = await self.workoutrepo.get_all_trainted_muscles_in_workout(workout_id=workout_id)
+        for muscle_json in activated_muscles_json:
+            for name, coefficient in muscle_json.items():
+                all_muscles[name] += coefficient
+
+        result = [
+            WorkoutMuscleRateResult(
+                muscle=name,
+                score=coefficient,
+                status=self._calculate_status(coefficient)
+            )
+            for name, coefficient in all_muscles.items()
+        ]
+        return result
+
+    @staticmethod
+    def _calculate_status(coefficient: float) -> str:
+        if coefficient < 1.0:
+            return "under_trained"
+        elif coefficient > 2.0:
+            return "over_trained"
+        else:
+            return "normal"
 
     async def _get_workout_or_raise(self, workout_id: int) -> Workout:
         workout = await self.workoutrepo.get_workout(workout_id=workout_id)
