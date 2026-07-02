@@ -77,36 +77,18 @@ class WorkoutRepository:
         return result.scalars().all()
     
     async def update_day_exercise(self,
-        day_exercises: list[dict[str, Any]]
+        training_day_id: int,
+        exercise_id: int,
+        data: dict[str, Any]
     ) -> int:
-          data = [
-            {
-                "p_training_day_id": ex["day_did"],
-                "p_exercise_id": ex["exercise_id"],
-                "p_order": ex["exercise_order"],
-                "p_sets": ex["sets"],
-                "p_reps": ex["reps"]
-            }
-            for ex in day_exercises if ex.get("exercise_id") and ex.get("training_day_id") 
-          ]
-
-          stmt = (
+        stmt = (
             update(DayExercise)
-            .where(
-                and_(
-                    DayExercise.day_id == bindparam("p_day_id"),
-                    DayExercise.exercise_id == bindparam("p_exercise_id")
-                )
-            )
-            .values(
-                exercise_order = bindparam("p_order"),
-                sets = bindparam("p_sets"),
-                reps = bindparam("p_reps")
-            )
-          )
+            .where(DayExercise.day_id == training_day_id, DayExercise.exercise_id == exercise_id)
+            .values(**data)
+        )
 
-          result = await self.db.execute(stmt, data) # type: ignore
-          return result.rowcount # type: ignore
+        result = await self.db.execute(stmt)
+        return result.rowcount
 
     async def update_workout(self,
         workout_id: int,
@@ -125,7 +107,7 @@ class WorkoutRepository:
     ) -> int:
         return await self._update_data(
             model=TrainingDay,
-            attribute="training_day_id",
+            attribute="day_id",
             id=training_day_id,
             data=data
         )
@@ -159,7 +141,7 @@ class WorkoutRepository:
     ) -> int:
         return await self._delete_data(
             model=TrainingDay,
-            attribute="training_day_id",
+            attribute="day_id",
             id=training_day_id
         )
 
