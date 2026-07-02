@@ -1,8 +1,8 @@
 from functools import wraps
 from typing import Union, Any, Tuple, Dict
-import json
 from datetime import timedelta
 from pydantic import BaseModel
+from ..utils.validators import NotFound
 
 def cache(ttl: Union[int, timedelta], prefix: str, schema: type[BaseModel]):
     def decorator(func):
@@ -17,8 +17,10 @@ def cache(ttl: Union[int, timedelta], prefix: str, schema: type[BaseModel]):
             cached_data = await redis_client.get(cache_key)
             if cached_data:
                 return schema.model_validate_json(cached_data) 
-            
-            result = await func(self, *args, **kwargs)
+            try:
+                result = await func(self, *args, **kwargs)
+            except NotFound:
+                raise
             if result:
                 result_json = schema.model_validate(result).model_dump_json()
                 await redis_client.set(name=cache_key, value=result_json, ex=ttl)
@@ -31,14 +33,18 @@ def invalidate_cache(prefix: str):
     def decorator(func):
         @wraps(func)
         async def wrapper(self, *args, **kwargs):
-            result = await func(self, *args, **kwargs)
+            try: 
+                result = await func(self, *args, **kwargs)
+            except NotFound:
+                raise
 
-            redis_client = self.redis
+            if result:
+                redis_client = self.redis
 
-            pk = _extract_primary_key(args, kwargs)
-            cache_key = f"{prefix}:{pk}"
+                pk = _extract_primary_key(args, kwargs)
+                cache_key = f"{prefix}:{pk}"
 
-            await redis_client.delete(cache_key)
+                await redis_client.delete(cache_key)
             
             return result
         return wrapper
