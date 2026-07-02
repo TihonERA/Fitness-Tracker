@@ -10,7 +10,26 @@ from ..models.exercise import Exercise
 from ..core.database import async_engine 
 from ..api.deps import get_db
 from ..core.database import get_redis
-from sqlalchemy.ext.asyncio import AsyncSession
+
+@pytest.fixture(scope="function")
+async def client(db_session):
+    def _override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = _override_get_db
+
+    transport = ASGITransport(app=app) #type: ignore
+    async with AsyncClient(transport=transport, base_url="http://test") as c:
+        yield c
+
+    app.dependency_overrides.clear()
+
+@pytest.fixture(scope="function")
+async def db_session():
+    async with async_session_factory() as session:
+        yield session
+        
+        await session.rollback()
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_and_teardown_database():
@@ -60,17 +79,6 @@ async def setup_and_teardown_database():
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
-@pytest.fixture(scope="function")
-async def client(db_session: AsyncSession):
-    
-    app.dependency_overrides[get_db] = lambda: db_session
-    
-    transport = ASGITransport(app=app) # type: ignore
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
-        yield c
-        
-    app.dependency_overrides.clear()
-
 @pytest.fixture(scope="function", autouse=True)
 async def clean_tables():
     yield
@@ -79,7 +87,7 @@ async def clean_tables():
         await conn.execute(text("TRUNCATE TABLE workout, trainingday, dayexercise CASCADE;"))
 
 @pytest.fixture(scope="function", autouse=True)
-async def cleat_redis():
+async def clear_redis():
     redis = get_redis()
 
     await redis.flushall()
@@ -87,9 +95,9 @@ async def cleat_redis():
     await redis.aclose()
 
 @pytest.fixture
-def make_workout_data():
-    def _make_data(name="Split", description="TestDescription...", day_name="Day1", day_order=1):
-        return {
+async def make_workout_factory_returning_data(client):
+    async def _make_data(name="Split", description="TestDescription...", day_name="Day1", day_order=1):
+        data = {
             "user_id": "00000000-0000-0000-0000-000000000000",
             "name": name,
             "description": description,
@@ -104,15 +112,7 @@ def make_workout_data():
                 }]
             }]
         }
+
+        workout_data = await client.post(f"/workouts/workout_schedule", json=data)
+        return workout_data
     return _make_data
-
-@pytest.fixture(scope="function")
-async def db_session():
-    """Фикстура изолированной сессии базы данных для конкретного теста."""
-    async with async_session_factory() as session:
-        await session.begin_nested()
-        yield session
-        await session.rollback()
-
-
-
