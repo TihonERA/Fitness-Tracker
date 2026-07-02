@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Path, HTTPException, Body
+from fastapi import APIRouter, Depends, Response, status, Path, HTTPException, Body
 from typing import Annotated, List
 from uuid import UUID
 from pydantic import ValidationError
@@ -111,7 +111,7 @@ async def update_workout(
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 @router.patch(
-    "/woprkouts/{workout_id}/training_day/{training_day_id}",
+    "/workouts/{workout_id}/training_day/{training_day_id}",
     response_model=WorkoutResponse,
     status_code=HTTP_200_OK
 )
@@ -133,18 +133,22 @@ async def update_training_days_in_workout(
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 @router.patch(
-    "/workouts/{workout_id}/day_exercise",
+    "/workouts/{workout_id}/{training_day_id}/day_exercise/{exercise_id}",
     response_model=WorkoutResponse,
     status_code=HTTP_200_OK
 )
 async def update_day_exercise(
-    workout_id: Annotated[int, Path()],
-    data: Annotated[List[DayExerciseUpdate], Body()],
+    workout_id: IntPath,
+    training_day_id: IntPath,
+    exercise_id: IntPath,
+    data: Annotated[DayExerciseUpdate, Body()],
     workout_service: Annotated[WorkoutService, Depends(get_workout_service)]
 ):
     try:
         return await workout_service.update_day_exercise(
            workout_id=workout_id,
+           training_day_id=training_day_id,
+           exercise_id=exercise_id,
            data=data
         )
     except ValidationError as e:
@@ -162,6 +166,7 @@ async def delete_workout(
 ):
     try:
         await workout_service.delete_workout(workout_id=workout_id)
+        return Response(status_code=status.HTTP_200_OK)
     except NotFound as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
@@ -179,6 +184,7 @@ async def delete_training_day(
             workout_id=workout_id,
             training_day_id=training_day_id
         )
+        return Response(status_code=status.HTTP_200_OK)
     except NotFound as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
@@ -198,6 +204,7 @@ async def delete_day_exercise(
             training_day_id=training_day_id,
             exercise_id=exercise_id
         )
+        return Response(status_code=status.HTTP_200_OK)
     except NotFound as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
         
