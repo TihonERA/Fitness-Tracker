@@ -124,10 +124,14 @@ class WorkoutService:
     @invalidate_cache(prefix="workout")
     async def update_day_exercise(self,
         workout_id: int,
-        data: list[DayExerciseUpdate]
+        training_day_id: int,
+        exercise_id: int,
+        data: DayExerciseUpdate
     ):
         rowcount = await self.workoutrepo.update_day_exercise(
-            [day.model_dump() for day in data]
+            training_day_id=training_day_id,
+            exercise_id=exercise_id,
+            data=data.model_dump(exclude_unset=True)
         )
 
         return await self._get_updated_workout(
@@ -142,7 +146,7 @@ class WorkoutService:
     ):
         rowcount = await self.workoutrepo.update_workout(
             workout_id=workout_id,
-            data=data.model_dump()
+            data=data.model_dump(exclude_unset=True)
         )
         return await self._get_updated_workout(
             workout_id=workout_id,
@@ -157,9 +161,9 @@ class WorkoutService:
     ):
         rowcount = await self.workoutrepo.update_training_day(
             training_day_id=training_day_id,
-            data=data.model_dump()
+            data=data.model_dump(exclude_unset=True)
         )
-        return self._get_updated_workout(
+        return await self._get_updated_workout(
             workout_id=workout_id,
             rowcount=rowcount
         )
