@@ -1,6 +1,7 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
+import os
 
 CURRENT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = CURRENT_DIR.parent.parent
@@ -29,4 +30,8 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-settings = Settings()
+if os.environ.get("DB_HOST"):
+    Settings.model_config["env_file"] = None
+    settings = Settings()
+else:
+    settings = Settings()
