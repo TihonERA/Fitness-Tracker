@@ -67,7 +67,7 @@ class TrainingDayUpdate(BaseModel):
 class WorkoutUpdate(BaseModel):
     name: NameStr | None = None
     description: DescriptionStr | None = None
-    public: bool | None = None 
+    public: bool | None = None
 
 class WorkoutGetAllFilter(BaseModel):
     skip: SkipInt
