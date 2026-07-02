@@ -1,12 +1,13 @@
 services:
   db:
     image: postgres:16.0
+    container_name: fitness_db
     environment:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_NAME}
     ports:
-      - ${DB_PORT}:5432
+      - "${DB_PORT}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -14,11 +15,34 @@ services:
       retries: 5
     volumes:
       - db-data:/var/lib/postgresql/data
+    networks:
+      - main-net
+      - db-net
+
+  redis:
+    image: redis:8.8.0-alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT}:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli", "ping"]
+      interval: 5s 
+      timeout: 5s 
+      retries: 5
+    volumes:
+      - redis-data:/data
+    networks:
+      - main-net
+      - redis-net
 
   web:
     build: .
+    container_name: backend
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     command: >
       sh -c "alembic -c /code/alembic.ini upgrade head && uvicorn Backend.main:app --host 0.0.0.0 --port 8000"
@@ -30,8 +54,24 @@ services:
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
       DB_NAME: ${DB_NAME}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT}
       SECRET_KEY: ${SECRET_KEY}
       ALGORITHM: ${ALGORITHM}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES} 
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASS}@db:${DB_PORT}/${DB_NAME}
+      ORIGINS: ${ORIGINS}
+    volumes:
+      - .:/code
+    networks:
+      - main-net
+      - db-net
+      - redis-net
+      
+networks:
+  main-net:
+  db-net:
+  redis-net:
 volumes:
   db-data:
+  redis-data:
