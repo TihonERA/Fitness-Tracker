@@ -77,7 +77,7 @@ async def setup_and_teardown_database():
     yield
 
     async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        await conn.rollback()
 
 @pytest.fixture(scope="function", autouse=True)
 async def clean_tables():
