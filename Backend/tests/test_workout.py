@@ -23,7 +23,7 @@ class TestWorkoutApi:
 
         training_day_data = {
             "name": "Chest",
-            "day_order": 2 
+            "day_order": 4 
         }
 
         updated_workout = await client.post(f"/workouts/{old_workout_json["workout_id"]}/training_day", json=training_day_data)
@@ -145,7 +145,7 @@ class TestWorkoutApi:
         deleted_training_day_in_workout = await client.get(f"/workouts/{workout_id}")
         deleted_training_day_in_workout_json = deleted_training_day_in_workout.json()
 
-        assert deleted_training_day_in_workout_json["training_days"] == [] 
+        assert deleted_training_day_in_workout_json["training_days"][0]["day_id"] != training_day_id
 
     async def test_delete_day_exercise(self, client, make_workout_factory_returning_data):
         old_workout = await make_workout_factory_returning_data()
@@ -160,8 +160,19 @@ class TestWorkoutApi:
         deleted_day_exercise_in_workout = await client.get(f"/workouts/{workout_id}")
         deleted_day_exercise_in_workout_json = deleted_day_exercise_in_workout.json()
 
-        assert deleted_day_exercise_in_workout_json["training_days"][0]["day_exercises"] == []
+        assert deleted_day_exercise_in_workout_json["training_days"][0]["day_exercises"][0]["exercise_id"] != exercise_id
 
+    async def test_get_muscles_distribution_list(self, client, make_workout_factory_returning_data):
+        workout = await make_workout_factory_returning_data()
+        workout_json = workout.json()
+        workout_id = workout_json["workout_id"]
 
+        muscles_list = await client.get(f"/workouts/{workout_id}/trained_muscles")
+        muscles_list_json = muscles_list.json()
+
+        assert muscles_list.status_code == 200
+        assert len(muscles_list_json) == 15
+
+        print(muscles_list_json)
 
 

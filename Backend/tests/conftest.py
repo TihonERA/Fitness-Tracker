@@ -1,15 +1,20 @@
+import asyncio
 import pytest
 from httpx import AsyncClient, ASGITransport
 from Backend.main import app
 from sqlalchemy import text
+from sqlalchemy.dialects.postgresql import insert
 import uuid
 from ..core.database import async_session_factory
-from ..models.base import Base
 from ..models.user import User
-from ..models.exercise import Exercise
 from ..core.database import async_engine 
 from ..api.deps import get_db
 from ..core.database import get_redis
+from alembic.config import Config
+from alembic import command
+from pathlib import Path
+
+alembic_ini_path = Path(__file__).parent.parent.parent / "alembic.ini"
 
 @pytest.fixture(scope="function")
 async def client(db_session):
@@ -33,45 +38,17 @@ async def db_session():
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_and_teardown_database():
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
-
+    alembic_cfg = Config(str(alembic_ini_path))
+    await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
 
     async with async_session_factory() as session:
-        user = User(
+        stmt = insert(User).values(
             user_id=uuid.UUID("00000000-0000-0000-0000-000000000000"),
             login="test_user",
             email="test@example.com"
-        )
+        ).on_conflict_do_nothing(index_elements=["user_id"])
 
-        push_ups = Exercise(
-            name="push_ups",
-            muscle_activation={
-                "pectoralis_major": 0.45,
-                "triceps": 0.35,
-                "anterior_deltoid": 0.20
-            }
-        )
-
-        Dumbbell_Bicep_Curl = Exercise(
-            name="Dumbbell_Bicep_Curl",
-            muscle_activation={
-                "biceps_brachii": 0.80,
-                "brachialis": 0.20
-            }
-        )
-
-        Crunches = Exercise(
-            name="Crunches",
-            muscle_activation={
-                "rectus_abdominis": 0.80,
-                "obliques": 0.20
-            }
-        )
-        
-        session.add_all([user, push_ups, Dumbbell_Bicep_Curl, Crunches])
-        
+        await session.execute(stmt) 
         await session.commit()
 
     yield
@@ -101,18 +78,45 @@ async def make_workout_factory_returning_data(client):
             "user_id": "00000000-0000-0000-0000-000000000000",
             "name": name,
             "description": description,
-            "training_days": [{
-                "name": day_name,
-                "day_order": day_order,
-                "day_exercises": [{
-                    "exercise_id": 1,
-                    "exercise_order": 1,
-                    "sets": 4,
-                    "reps": 15
-                }]
-            }]
-        }
-
+            "training_days": [
+                {
+                    "name": "Тренировка спины и бицепса",
+                    "day_order": 1,
+                    "day_exercises": [
+                        {"exercise_id": 9, "exercise_order": 1, "sets": 4, "reps": 15},  
+                        {"exercise_id": 10, "exercise_order": 2, "sets": 4, "reps": 15},
+                        {"exercise_id": 11, "exercise_order": 3, "sets": 4, "reps": 15}, 
+                        {"exercise_id": 18, "exercise_order": 4, "sets": 4, "reps": 15}, 
+                        {"exercise_id": 29, "exercise_order": 5, "sets": 4, "reps": 15}, 
+                        {"exercise_id": 43, "exercise_order": 6, "sets": 4, "reps": 15}  
+                    ]
+                },
+                {
+                    "name": "Тренировка груди, плеч и трицепса",
+                    "day_order": 2,
+                    "day_exercises": [
+                        {"exercise_id": 3, "exercise_order": 1, "sets": 4, "reps": 15}, 
+                        {"exercise_id": 5, "exercise_order": 2, "sets": 4, "reps": 15}, 
+                        {"exercise_id": 21, "exercise_order": 3, "sets": 4, "reps": 15},
+                        {"exercise_id": 22, "exercise_order": 4, "sets": 4, "reps": 15},
+                        {"exercise_id": 37, "exercise_order": 5, "sets": 4, "reps": 15},  
+                        {"exercise_id": 45, "exercise_order": 6, "sets": 4, "reps": 15}  
+                    ]
+                },
+                {
+                    "name": "Тренировка ног и пресса",
+                    "day_order": 3,
+                    "day_exercises": [
+                        {"exercise_id": 47, "exercise_order": 1, "sets": 4, "reps": 15}, 
+                        {"exercise_id": 17, "exercise_order": 2, "sets": 4, "reps": 15}, 
+                        {"exercise_id": 52, "exercise_order": 3, "sets": 4, "reps": 15}, 
+                        {"exercise_id": 59, "exercise_order": 4, "sets": 4, "reps": 15}, 
+                        {"exercise_id": 42, "exercise_order": 5, "sets": 4, "reps": 15}, 
+                        {"exercise_id": 40, "exercise_order": 6, "sets": 4, "reps": 15}  
+                    ]
+                }
+            ]
+        } 
         workout_data = await client.post(f"/workouts/workout_schedule", json=data)
         return workout_data
     return _make_data
