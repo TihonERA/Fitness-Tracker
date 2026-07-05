@@ -25,9 +25,11 @@ def upgrade() -> None:
     op.create_table(
         'muscle',
         sa.Column('muscle_id', sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column('name', sa.String(), index=True, nullable=False),
+        sa.Column('name', sa.String(), nullable=False),
         if_not_exists=True
     )
+
+    op.create_index('ix_muscle_name', 'muscle', ['name'], if_not_exists=True)
     
     op.create_table(
         'exercise',
@@ -59,6 +61,7 @@ def upgrade() -> None:
             {"name": "biceps"},
             {"name": "triceps"},
             {"name": "forearms"},
+            {"name": "hips"},
             {"name": "abs"},
             {"name": "obliques"},
             {"name": "quads"},

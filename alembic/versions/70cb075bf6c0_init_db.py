@@ -72,6 +72,12 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_dayexercise_day_id'), 'dayexercise', ['day_id'], unique=False)
     op.create_index(op.f('ix_dayexercise_exercise_id'), 'dayexercise', ['exercise_id'], unique=False)
+    op.create_table('muscle',
+    sa.Column('muscle_id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.PrimaryKeyConstraint('muscle_id')
+    )
+    op.create_index(op.f('ix_muscle_name'), 'muscle', ['name'], unique=False, if_not_exists=True)
     # ### end Alembic commands ###
 
 
