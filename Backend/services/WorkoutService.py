@@ -1,5 +1,5 @@
 import asyncio
-from ..schemas.workout import WorkoutCreate, DayExerciseCreate, TrainingDayCreate, WorkoutGetAllFilter, WorkoutMuscleRateResult, WorkoutResponse, WorkoutUpdate, TrainingDayUpdate, DayExerciseUpdate
+from ..schemas.workout import WorkoutCreate, DayExerciseCreate, TrainingDayCreate, WorkoutGetAllFilter, WorkoutMuscleDistribution, WorkoutResponse, WorkoutUpdate, TrainingDayUpdate, DayExerciseUpdate
 from ..repositories.WorkoutRepository import WorkoutRepository
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -208,22 +208,25 @@ class WorkoutService:
         if result == 0:
             raise NotFound()
 
-    async def calculate_rate_balance(self,
+    async def get_muscles_distribution_list(self,
         workout_id: int
     ):
         muscles_name = await self.workoutrepo.get_all_muscles()
         all_muscles = {muscle: 0.0 for muscle in muscles_name}
 
         activated_muscles_json = await self.workoutrepo.get_all_trainted_muscles_in_workout(workout_id=workout_id)
+        if activated_muscles_json == []:
+            raise NotFound()
+
         for muscle_json in activated_muscles_json:
             for name, coefficient in muscle_json.items():
                 all_muscles[name] += coefficient
 
         result = [
-            WorkoutMuscleRateResult(
+            WorkoutMuscleDistribution(
                 muscle=name,
-                score=coefficient,
-                status=self._calculate_status(coefficient)
+                score=round(coefficient, 2),
+                status=self._calculate_status(round(coefficient,2))
             )
             for name, coefficient in all_muscles.items()
         ]

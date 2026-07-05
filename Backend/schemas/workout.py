@@ -12,7 +12,7 @@ RepsInt = Annotated[int, Field(gt=0, le=150)]
 SkipInt = Annotated[int, Field(0, ge=0)]
 LimitInt = Annotated[int, Field(20, gt=0, le=100)]
 
-class WorkoutMuscleRateResult(BaseModel):
+class WorkoutMuscleDistribution(BaseModel):
     muscle: str
     score: float
     status: str

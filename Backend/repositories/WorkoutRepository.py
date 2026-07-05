@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession 
 from ..models.workout import Workout
 from sqlalchemy.orm import selectinload
-from sqlalchemy import delete, select, update, bindparam, and_ 
+from sqlalchemy import delete, select, update, and_ 
 from ..models.trainingday import TrainingDay
 from ..models.dayexercise import  DayExercise
 from ..models.base import Base
