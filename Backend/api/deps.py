@@ -7,8 +7,6 @@ from ..schemas.workout import WorkoutGetAllFilter
 from ..services.WorkoutService import WorkoutService
 from ..core.database import get_db, get_redis
 
-IntPath = Annotated[int, Path()]
-
 def get_workout_service(db: AsyncSession = Depends(get_db), redis: Redis = Depends(get_redis)):
     return WorkoutService(db=db, redis=redis)
 
@@ -22,3 +20,6 @@ def get_workouts_filter(
         limit=limit,
         public=public
     )
+
+WorkoutServiceDepends = Annotated[WorkoutService, Depends(get_workout_service)]
+IntPath = Annotated[int, Path()]

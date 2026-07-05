@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, Response, status, Path, HTTPException, Body
-from typing import Annotated, List
+from typing import Annotated
 from uuid import UUID
 from pydantic import ValidationError
 from starlette.status import HTTP_200_OK
-from ...schemas.workout import DayExerciseCreate, DayExerciseUpdate, TrainingDayCreate, TrainingDayUpdate, WorkoutCreate, WorkoutResponse, WorkoutGetAllFilter, WorkoutUpdate
+from ...schemas.workout import DayExerciseCreate, DayExerciseUpdate, TrainingDayCreate, TrainingDayUpdate, WorkoutCreate, WorkoutMuscleDistribution, WorkoutResponse, WorkoutGetAllFilter, WorkoutUpdate
 from ...services.WorkoutService import WorkoutService
 from ...utils.validators import DataNotModified, NotFound
-from ..deps import get_workout_service, get_workouts_filter, IntPath
+from ..deps import WorkoutServiceDepends, get_workout_service, get_workouts_filter, IntPath
 
 router = APIRouter(
     tags=["Workout Tables Endpoints"]
@@ -40,6 +40,25 @@ async def get_workout(
         return await workout_service.get_workout(workout_id)
     except NotFound as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+@router.get(
+    "/workouts/{workout_id}/trained_muscles",
+    response_model=list[WorkoutMuscleDistribution],
+    status_code=status.HTTP_200_OK
+)
+async def get_muscles_distribution_list(
+    workout_id: IntPath,
+    workout_service: WorkoutServiceDepends
+): 
+    try:
+        return await workout_service.get_muscles_distribution_list(
+            workout_id=workout_id
+        )
+    except NotFound as e:
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=e.detail
+        )
 
 @router.post(
     "/workouts/workout_schedule", 
