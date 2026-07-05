@@ -1,6 +1,6 @@
 from .base import Base
 from sqlalchemy.orm import Mapped, relationship, mapped_column
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import String, ForeignKey, UniqueConstraint
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -24,7 +24,6 @@ class TrainingDay(Base):
         nullable=False
     )
     day_order: Mapped[int] = mapped_column(
-        unique=True,
         nullable=False
     )
 
@@ -34,4 +33,12 @@ class TrainingDay(Base):
     day_exercises: Mapped[list["DayExercise"]] = relationship(
         back_populates="training_day",
         cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "workout_id",
+            "day_order",
+            name="uq_workout_day_order"
+        ),
     )
