@@ -17,6 +17,11 @@ class WorkoutMuscleDistribution(BaseModel):
     score: float
     status: str
 
+class WorkoutMuscleBalance(BaseModel):
+    muscle: str
+    antagonist: str
+    detail: str
+
 class DayExerciseBase(BaseModel):
     exercise_order: ExerciseOrderInt
     sets: SetsInt | None = None 
