@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 from dotenv import load_dotenv
 from Backend.models.base import Base
-from Backend.models import user, dayexercise, exercise, trainingday, workout, muscle
+from Backend.models import user, dayexercise, exercise, trainingday, workout, muscle, muscle_antagonists
 
 load_dotenv()
 
