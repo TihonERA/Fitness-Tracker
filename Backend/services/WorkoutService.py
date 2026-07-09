@@ -1,5 +1,5 @@
 import asyncio
-from ..schemas.workout import WorkoutCreate, DayExerciseCreate, TrainingDayCreate, WorkoutGetAllFilter, WorkoutMuscleDistribution, WorkoutResponse, WorkoutUpdate, TrainingDayUpdate, DayExerciseUpdate
+from ..schemas.workout import WorkoutCreate, DayExerciseCreate, TrainingDayCreate, WorkoutGetAllFilter, WorkoutMuscleBalance, WorkoutMuscleDistribution, WorkoutResponse, WorkoutUpdate, TrainingDayUpdate, DayExerciseUpdate
 from ..repositories.WorkoutRepository import WorkoutRepository
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -211,8 +211,26 @@ class WorkoutService:
     async def get_muscles_distribution_list(self,
         workout_id: int
     ):
+        all_muscle_with_coef = await self._get_all_muscles_coef(
+            workout_id=workout_id
+        )
+        
+        result = [
+            WorkoutMuscleDistribution(
+                muscle=name,
+                score=round(coefficient, 2),
+                status=self._calculate_status(round(coefficient,2))
+            )
+            for name, coefficient in all_muscle_with_coef.items()
+        ]
+        return result
+
+    async def _get_all_muscles_coef(
+        self,
+        workout_id: int
+    ) -> dict[str, float]:
         muscles_name = await self.workoutrepo.get_all_muscles()
-        all_muscles = {muscle: 0.0 for muscle in muscles_name}
+        all_muscle_with_coef = {muscle: 0.0 for muscle in muscles_name}
 
         activated_muscles_json = await self.workoutrepo.get_all_trainted_muscles_in_workout(workout_id=workout_id)
         if activated_muscles_json == []:
@@ -220,17 +238,9 @@ class WorkoutService:
 
         for muscle_json in activated_muscles_json:
             for name, coefficient in muscle_json.items():
-                all_muscles[name] += coefficient
+                all_muscle_with_coef[name] += coefficient
 
-        result = [
-            WorkoutMuscleDistribution(
-                muscle=name,
-                score=round(coefficient, 2),
-                status=self._calculate_status(round(coefficient,2))
-            )
-            for name, coefficient in all_muscles.items()
-        ]
-        return result
+        return all_muscle_with_coef
 
     @staticmethod
     def _calculate_status(coefficient: float) -> str:
@@ -240,6 +250,53 @@ class WorkoutService:
             return "over_trained"
         else:
             return "normal"
+
+    async def get_muscles_balance(self,
+        workout_id: int
+    ):
+        all_muscle_with_coef = await self._get_all_muscles_coef(
+            workout_id=workout_id
+        )
+
+        all_muscles_with_antagonists = await self.workoutrepo.get_all_muscles_antagonists()
+
+        disbalance_muscles = []
+        for muscle, antagonist in all_muscles_with_antagonists:
+            difference = self._calculate_difference(
+                all_muscle_with_coef[muscle],
+                all_muscle_with_coef[antagonist]
+            )
+            if not (0.7 <= difference <= 1.3):
+                muscle_status = self._calculate_muscles_antagonist_ratio(
+                    difference=difference
+                )
+                disbalance_muscles.append(
+                    WorkoutMuscleBalance(
+                        muscle=muscle,
+                        antagonist=antagonist,
+                        detail=f"{muscle} is {muscle_status} compared to {antagonist}"
+                    )
+                )
+
+        return disbalance_muscles
+
+    @staticmethod
+    def _calculate_difference(muscle_one: float, muscle_two: float):
+        try:
+            difference = round(muscle_one / muscle_two, 1)
+        except ZeroDivisionError:
+            difference = 99.0
+
+        return difference
+
+    @staticmethod
+    def _calculate_muscles_antagonist_ratio(
+        difference: float
+    ):
+        if difference < 0.7:
+            return "under_trained" 
+        elif difference > 1.3:
+            return "over_trained"
 
     async def _get_workout_or_raise(self, workout_id: int) -> Workout:
         workout = await self.workoutrepo.get_workout(workout_id=workout_id)
