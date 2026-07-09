@@ -63,7 +63,7 @@ class TestWorkoutApi:
     async def test_get_all_workouts(self, client, make_workout_factory_returning_data):
         for i in range(1, 7):
             await make_workout_factory_returning_data(day_order=i)
-        response = await client.get("/workouts?skip=1&limit=100&user_id=00000000-0000-0000-0000-000000000000&public=False")
+        response = await client.get("/workouts/get_all?skip=1&limit=100&user_id=00000000-0000-0000-0000-000000000000&public=False")
         assert response.status_code == 200
         assert len(response.json()) > 1
 
@@ -175,4 +175,15 @@ class TestWorkoutApi:
 
         print(muscles_list_json)
 
+    async def test_get_muscles_balance(self, client, make_workout_factory_returning_data):
+        workout = await make_workout_factory_returning_data()
+        workout_json = workout.json()
+        workout_id = workout_json["workout_id"]
 
+        balance_list = await client.get(f"/workouts/{workout_id}/muscle_balance")
+        balance_list_json = balance_list.json()
+
+        assert balance_list.status_code == 200
+        assert len(balance_list_json) > 0
+
+        print(balance_list_json)
