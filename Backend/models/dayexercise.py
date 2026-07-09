@@ -32,5 +32,5 @@ class DayExercise(Base):
         default=None
     )
 
-    training_day    : Mapped["TrainingDay"] = relationship(back_populates="day_exercises")
+    training_day: Mapped["TrainingDay"] = relationship(back_populates="day_exercises")
     exercises: Mapped["Exercise"] = relationship(back_populates="day_exercises")
