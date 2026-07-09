@@ -1,12 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession 
 from ..models.workout import Workout
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy import delete, select, update, and_ 
 from ..models.trainingday import TrainingDay
 from ..models.dayexercise import  DayExercise
 from ..models.base import Base
 from ..models.muscle import Muscle
 from ..models.exercise import Exercise
+from ..models.muscle_antagonists import MuscleAntagonists
 from typing import TypeVar, Sequence, Any
 from uuid import UUID
 
@@ -195,7 +196,26 @@ class WorkoutRepository:
         
         result = await self.execute(stmt)
         return result.scalars().all()
+
+    async def get_all_muscles_antagonists(
+        self,
+    ):
+        muscles = aliased(Muscle, name="muscle")
+        muscles_antagonists = aliased(Muscle, name="muscle_antagonist")
     
+        stmt = (
+            select(
+                muscles.name.label("muscle"),
+                muscles_antagonists.name.label("muscle_antagonist")
+            )
+            .select_from(MuscleAntagonists) 
+            .join(muscles, muscles.muscle_id == MuscleAntagonists.muscle_id)
+            .join(muscles_antagonists, muscles_antagonists.muscle_id == MuscleAntagonists.muscle_antagonist_id)
+        )
+
+        result = await self.execute(stmt)
+        return result.tuples().all()
+
     def add(self, instance: object) -> None:
         self.db.add(instance)
 
