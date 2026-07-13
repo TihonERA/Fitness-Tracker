@@ -1,5 +1,5 @@
 import asyncio
-from ..schemas.workout import WorkoutCreate, DayExerciseCreate, TrainingDayCreate, WorkoutGetAllFilter, WorkoutMuscleBalance, WorkoutMuscleDistribution, WorkoutResponse, WorkoutUpdate, TrainingDayUpdate, DayExerciseUpdate
+from ..schemas.workout import WorkoutCreate, DayExerciseCreate, TrainingDayCreate, WorkoutGetAllFilter, WorkoutResponse, WorkoutUpdate, TrainingDayUpdate, DayExerciseUpdate 
 from ..repositories.WorkoutRepository import WorkoutRepository
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -216,11 +216,11 @@ class WorkoutService:
         )
         
         result = [
-            WorkoutMuscleDistribution(
-                muscle=name,
-                score=round(coefficient, 2),
-                status=self._calculate_status(round(coefficient,2))
-            )
+            {
+                "muscle": name,
+                "score": round(coefficient, 2),
+                "status": self._calculate_status(round(coefficient, 2))
+            }
             for name, coefficient in all_muscle_with_coef.items()
         ]
         return result
@@ -271,11 +271,11 @@ class WorkoutService:
                     difference=difference
                 )
                 disbalance_muscles.append(
-                    WorkoutMuscleBalance(
-                        muscle=muscle,
-                        antagonist=antagonist,
-                        detail=f"{muscle} is {muscle_status} compared to {antagonist}"
-                    )
+                    {
+                        "muscle": muscle,
+                        "antagonist": antagonist,
+                        "detail": f"{muscle} is {muscle_status} compared to {antagonist}"
+                    }
                 )
 
         return disbalance_muscles
