@@ -1,7 +1,6 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
-import os
 
 CURRENT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = CURRENT_DIR.parent.parent
@@ -23,6 +22,14 @@ class Settings(BaseSettings):
     @property
     def DATABASE_URL_asyncpg(self):
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
+    @property
+    def REDIS_URL(self):
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/0"
+
+    @property
+    def CELERY_URL(self):
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/1"
     
     model_config = SettingsConfigDict(
         env_file=ENV_FILE_PATH,
@@ -30,8 +37,4 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-if os.environ.get("DB_HOST"):
-    Settings.model_config["env_file"] = None
-    settings = Settings()
-else:
-    settings = Settings()
+settings = Settings()
