@@ -56,11 +56,35 @@ services:
       - main-net
       - db-net
       - redis-net
+      - worker-net
+
+  celery:
+    build: .
+    container_name: celery
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+    command: celery -A Backend.tasks.muscle_rates worker --loglevel=INFO
+    volumes:
+      - .:/code
+    env_file:
+      - .env
+    networks:
+      - worker-net
+      - redis-net
+      - db-net
+      - main-net
       
 networks:
   main-net:
   db-net:
   redis-net:
+  worker-net:
 volumes:
   db-data:
   redis-data:
+
