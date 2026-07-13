@@ -5,9 +5,9 @@ from Backend.main import app
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 import uuid
-from ..core.database import async_session_factory
+from Backend.tasks.muscle_rates import cel_app
 from ..models.user import User
-from ..core.database import async_engine 
+from ..core.database import async_session_factory , async_engine
 from ..api.deps import get_db
 from ..core.database import get_redis
 from alembic.config import Config
@@ -15,6 +15,10 @@ from alembic import command
 from pathlib import Path
 
 alembic_ini_path = Path(__file__).parent.parent.parent / "alembic.ini"
+
+@pytest.fixture(scope="session")
+def celery_app():
+    return cel_app
 
 @pytest.fixture(scope="function")
 async def client(db_session):
@@ -72,7 +76,7 @@ async def clear_redis():
     await redis.aclose()
 
 @pytest.fixture
-async def make_workout_factory_returning_data(client):
+async def make_workout_factory_returning_data(client, db_session):
     async def _make_data(name="Split", description="TestDescription...", day_name="Day1", day_order=1):
         data = {
             "user_id": "00000000-0000-0000-0000-000000000000",
@@ -118,5 +122,6 @@ async def make_workout_factory_returning_data(client):
             ]
         } 
         workout_data = await client.post(f"/workouts/workout_schedule", json=data)
+        await db_session.commit() 
         return workout_data
     return _make_data

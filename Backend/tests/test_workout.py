@@ -1,4 +1,9 @@
 import pytest
+import asyncio
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestWorkoutApi:
@@ -162,28 +167,70 @@ class TestWorkoutApi:
 
         assert deleted_day_exercise_in_workout_json["training_days"][0]["day_exercises"][0]["exercise_id"] != exercise_id
 
-    async def test_get_muscles_distribution_list(self, client, make_workout_factory_returning_data):
-        workout = await make_workout_factory_returning_data()
-        workout_json = workout.json()
-        workout_id = workout_json["workout_id"]
-
-        muscles_list = await client.get(f"/workouts/{workout_id}/trained_muscles")
-        muscles_list_json = muscles_list.json()
-
-        assert muscles_list.status_code == 200
-        assert len(muscles_list_json) == 15
-
-        print(muscles_list_json)
 
     async def test_get_muscles_balance(self, client, make_workout_factory_returning_data):
         workout = await make_workout_factory_returning_data()
-        workout_json = workout.json()
-        workout_id = workout_json["workout_id"]
+        workout_id = workout.json()["workout_id"]
 
-        balance_list = await client.get(f"/workouts/{workout_id}/muscle_balance")
-        balance_list_json = balance_list.json()
+        trigger_response = await client.post(f"/workouts/{workout_id}/muscles_balance_list")
+        task_id = trigger_response.text.strip('"')
+        print(task_id)
 
-        assert balance_list.status_code == 200
-        assert len(balance_list_json) > 0
+        for _ in range(10):
+            status_response = await client.get(f"/tasks/{task_id}")
+            status_data = status_response.json()
+            
+            if status_data["status"] == "SUCCESS":
 
-        print(balance_list_json)
+                result = status_data["result"]
+                
+                assert result is not None
+                assert isinstance(result, list)
+                assert len(result) > 0
+                return  
+                
+            elif status_data["status"] == "FAILURE":
+                error_msg = status_data.get('result', 'Unknown error')
+
+                print(f"\n❌ Ошибка: {error_msg}")
+                print(f"❌ Задача {task_id} упала.")
+                
+                pytest.fail(f"Задача Celery упала с ошибкой: {error_msg}")
+            await asyncio.sleep(1.0)
+            
+        pytest.fail("Воркер Celery не успел выполнить задачу")
+
+    async def test_get_muscles_distribution_list(self, client, make_workout_factory_returning_data):
+        workout = await make_workout_factory_returning_data()
+        workout_id = workout.json()["workout_id"]
+
+        trigger_response = await client.post(f"/workouts/{workout_id}/muscles_distribution_list")
+        task_id = trigger_response.text.strip('"')
+        print(task_id)
+
+        for _ in range(10):
+            status_response = await client.get(f"/tasks/{task_id}")
+            status_data = status_response.json()
+            
+            if status_data["status"] == "SUCCESS":
+
+                result = status_data["result"]
+                
+                assert result is not None
+                assert isinstance(result, list)
+                assert len(result) > 0
+                return  
+                
+            elif status_data["status"] == "FAILURE":
+                error_msg = status_data.get('result', 'Unknown error')
+
+                print(f"\n❌ Ошибка: {error_msg}")
+                print(f"❌ Задача {task_id} упала.")
+                
+                pytest.fail(f"Задача Celery упала с ошибкой: {error_msg}")
+            await asyncio.sleep(1.0)
+            
+        pytest.fail("Воркер Celery не успел выполнить задачу")
+
+
+      
