@@ -1,13 +1,12 @@
-from fastapi import APIRouter, Depends, Response, status, Path, HTTPException, Body
+from fastapi import APIRouter, Depends, Response, status, HTTPException, Body
 from typing import Annotated
 from uuid import UUID
-from fastapi.openapi.models import HTTPBase
 from pydantic import ValidationError
 from starlette.status import HTTP_200_OK
-from ...schemas.workout import DayExerciseCreate, DayExerciseUpdate, TrainingDayCreate, TrainingDayUpdate, WorkoutCreate, WorkoutMuscleBalance, WorkoutMuscleDistribution, WorkoutResponse, WorkoutGetAllFilter, WorkoutUpdate
-from ...services.WorkoutService import WorkoutService
+from Backend.tasks.muscle_rates import get_muscle_contribution_list, get_muscles_balance
+from ...schemas.workout import DayExerciseCreate, DayExerciseUpdate, TrainingDayCreate, TrainingDayUpdate, WorkoutCreate, WorkoutResponse, WorkoutGetAllFilter, WorkoutUpdate
 from ...utils.validators import DataNotModified, NotFound
-from ..deps import WorkoutServiceDepends, get_workout_service, get_workouts_filter, IntPath
+from ..deps import WorkoutServiceDepends, get_workouts_filter, IntPath
 
 router = APIRouter(
     tags=["Workout Tables Endpoints"],
@@ -43,43 +42,27 @@ async def get_workout(
     except NotFound as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
-@router.get(
-    "/{workout_id}/trained_muscles",
-    response_model=list[WorkoutMuscleDistribution],
-    status_code=status.HTTP_200_OK
+@router.post(
+    "/{workout_id}/muscles_distribution_list",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=str
 )
-async def get_muscles_distribution_list(
+def calculate_muscles_distribution_list(
     workout_id: IntPath,
-    workout_service: WorkoutServiceDepends
 ): 
-    try:
-        return await workout_service.get_muscles_distribution_list(
-            workout_id=workout_id
-        )
-    except NotFound as e:
-        raise HTTPException(
-            status_code=e.status_code,
-            detail=e.detail
-        )
+    task = get_muscle_contribution_list.delay(workout_id)
+    return task.id
 
-@router.get(
-    "/{workout_id}/muscle_balance",
-    response_model=list[WorkoutMuscleBalance],
-    status_code=status.HTTP_200_OK
+@router.post(
+    "/{workout_id}/muscles_balance_list",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=str
 )
-async def get_muscles_balance(
-    workout_id: IntPath,
-    workout_service: WorkoutServiceDepends
-):
-    try:
-        return await workout_service.get_muscles_balance(
-            workout_id=workout_id
-        )
-    except NotFound as e:
-        raise HTTPException(
-            status_code=e.status_code,
-            detail=e.detail
-        )
+def calculate_muscles_balance(
+    workout_id: IntPath
+) -> str:
+    task = get_muscles_balance.delay(workout_id)
+    return task.id
 
 @router.post(
     "/workout_schedule", 
