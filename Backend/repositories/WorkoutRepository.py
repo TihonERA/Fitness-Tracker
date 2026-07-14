@@ -1,42 +1,34 @@
 from sqlalchemy.ext.asyncio import AsyncSession 
+from .SqlAlchemyAbstractRepository import SQLAlchemyAbstractRepository
 from ..models.workout import Workout
 from sqlalchemy.orm import aliased, selectinload
-from sqlalchemy import delete, select, update, and_ 
+from sqlalchemy import select 
 from ..models.trainingday import TrainingDay
 from ..models.dayexercise import  DayExercise
-from ..models.base import Base
 from ..models.muscle import Muscle
 from ..models.exercise import Exercise
 from ..models.muscle_antagonists import MuscleAntagonists
-from typing import TypeVar, Sequence, Any
+from typing import Sequence, Any
 from uuid import UUID
 
-ModelType = TypeVar("ModelType", bound=Base)
-
-class WorkoutRepository:
+class WorkoutRepository(SQLAlchemyAbstractRepository[Workout]):
 
     def __init__(self, db: AsyncSession):
         self.db = db
-        
-    async def create_instance(self, instance: ModelType) -> ModelType:
-        self.db.add(instance)
-        await self.db.commit()
-        await self.db.refresh(instance)
-        return instance
-    
+        super().__init__(db, Workout)
+
     async def create_record_template(
         self,
         instance: Workout | TrainingDay 
     ) -> Workout:
-        self.db.add(instance)
+        self.add(instance)
 
-        await self.db.flush()
+        await self.flush()
         
         workout_id: int = getattr(instance, "workout_id")
         stmt = self._get_loaded_workout_stmt(workout_id=workout_id)
         loaded_workout = await self.execute(stmt)
         
-        await self.commit()
         return loaded_workout.scalar_one()
 
     async def get_workout(self, workout_id: int) -> Workout | None:
@@ -77,104 +69,24 @@ class WorkoutRepository:
         result = await self.execute(stmt)
         return result.scalars().all()
     
-    async def update_day_exercise(self,
-        training_day_id: int,
-        exercise_id: int,
-        data: dict[str, Any]
-    ) -> int:
-        stmt = (
-            update(DayExercise)
-            .where(DayExercise.day_id == training_day_id, DayExercise.exercise_id == exercise_id)
-            .values(**data)
-        )
-
-        result = await self.db.execute(stmt)
-        return result.rowcount
-
-    async def update_workout(self,
+    async def update_workout(
+        self,
         workout_id: int,
         data: dict[str, Any]     
     ) -> int: 
-        return await self._update_data(
-            model=Workout,
-            attribute="workout_id",
-            id=workout_id,
+        return await self.update_by_column(
+            column=Workout.workout_id,
+            identificator=workout_id,
             data=data
         )
-
-    async def update_training_day(self,
-        training_day_id: int,
-        data: dict[str, Any]
-    ) -> int:
-        return await self._update_data(
-            model=TrainingDay,
-            attribute="day_id",
-            id=training_day_id,
-            data=data
-        )
-
-    async def _update_data(self,
-        model: type[Base],
-        attribute: str,
-        id: int,
-        data: dict[str, Any]
-    ):
-        stmt = (
-            update(model)
-            .where(getattr(model, attribute) == id)
-            .values(**data)
-        )
-
-        result = await self.execute(stmt)
-        return result.rowcount #type: ignore
 
     async def delete_workout(self,
         workout_id: int
     ) -> int:
-        return await self._delete_data(
-            model=Workout,
-            attribute="workout_id",
-            id=workout_id
+        return await self.delete_by_column(
+            column=Workout.workout_id,
+            identificator=workout_id
         )
-
-    async def delete_training_day(self,
-        training_day_id: int
-    ) -> int:
-        return await self._delete_data(
-            model=TrainingDay,
-            attribute="day_id",
-            id=training_day_id
-        )
-
-    async def _delete_data(self,
-        model: type[Base],
-        attribute: str,
-        id: int
-    ):
-        stmt = (
-            delete(model)
-            .where(getattr(model, attribute) == id)
-        )
-
-        result = await self.execute(stmt)
-        return result.rowcount # type: ignore
-
-    async def delete_day_exercise(self,
-        training_day_id: int,
-        exercise_id: int
-    ) -> int:
-        stmt = (
-            delete(DayExercise)
-            .where(
-                and_(
-                    DayExercise.day_id == training_day_id,
-                    DayExercise.exercise_id == exercise_id 
-                )
-            )
-        ) 
-
-        result = await self.execute(stmt)
-        return result.rowcount # type: ignore
 
     async def get_all_muscles(self):
         stmt = (
@@ -215,17 +127,3 @@ class WorkoutRepository:
 
         result = await self.execute(stmt)
         return result.tuples().all()
-
-    def add(self, instance: object) -> None:
-        self.db.add(instance)
-
-    async def refresh(self, instance: object) -> None:
-        await self.db.refresh(instance)
-
-    async def commit(self) -> None:
-        await self.db.commit()
-
-    async def execute(self, stmt):
-        return await self.db.execute(stmt)
-
-     
