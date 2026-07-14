@@ -6,3 +6,5 @@ from .user import User
 from .workout import Workout
 
 __all__ = ["Base", "DayExercise", "Exercise", "TrainingDay", "User", "Workout"]
+
+
