@@ -13,8 +13,14 @@ async_session_factory = async_sessionmaker(
 )
 
 async def get_db():
-    async with async_session_factory() as session:
-        yield session
+    try:
+        async with async_session_factory() as session:
+            yield session
+
+            await session.commit()
+    except Exception as e:
+        await session.rollback()
+        raise e
 
 def get_redis():
     return Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, decode_responses=True)
