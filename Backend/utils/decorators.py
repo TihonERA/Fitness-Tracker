@@ -2,9 +2,10 @@ from functools import wraps
 from typing import Union, Any, Tuple, Dict
 from datetime import timedelta
 from pydantic import BaseModel
-from ..utils.validators import NotFound
+from sqlalchemy.orm import InstrumentedAttribute
+from ..utils.validators import NotFound, InternalServerError
 
-def cache(ttl: Union[int, timedelta], prefix: str, schema: type[BaseModel]):
+def cache(ttl: Union[int, timedelta], column: InstrumentedAttribute, schema: type[BaseModel]):
     def decorator(func):
         @wraps(func)
         async def wrapper(self, *args, **kwargs):
@@ -12,7 +13,7 @@ def cache(ttl: Union[int, timedelta], prefix: str, schema: type[BaseModel]):
             
             pk = _extract_primary_key(args, kwargs)
 
-            cache_key = f"{prefix}:{pk}"
+            cache_key = f"{column.key}:{pk}"
 
             cached_data = await redis_client.get(cache_key)
             if cached_data:
@@ -29,7 +30,7 @@ def cache(ttl: Union[int, timedelta], prefix: str, schema: type[BaseModel]):
         return wrapper
     return decorator
 
-def invalidate_cache(prefix: str):
+def invalidate_cache(column: InstrumentedAttribute):
     def decorator(func):
         @wraps(func)
         async def wrapper(self, *args, **kwargs):
@@ -38,15 +39,19 @@ def invalidate_cache(prefix: str):
             except NotFound:
                 raise
 
-            if result:
-                redis_client = self.redis
+            redis = self.redis
+            attr_name = column.key
 
-                pk = _extract_primary_key(args, kwargs)
-                cache_key = f"{prefix}:{pk}"
+            if hasattr(result, attr_name):
+                pk = getattr(result, attr_name)
+                
+                cache_key = f"{attr_name}:{pk}"
 
-                await redis_client.delete(cache_key)
+                await redis.delete(cache_key)
+
+                return result
             
-            return result
+            raise InternalServerError()
         return wrapper
     return decorator
         
