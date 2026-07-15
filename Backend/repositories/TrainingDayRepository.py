@@ -15,7 +15,7 @@ class TrainingDayRepository(SQLAlchemyAbstractRepository[TrainingDay]):
         self,
         day_id: int,
         data: dict[str, Any]
-    ) -> int:
+    ):
         return await self.update_by_column(
             column=self.model.day_id,
             identificator=day_id,

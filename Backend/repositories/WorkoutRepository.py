@@ -13,23 +13,9 @@ from uuid import UUID
 
 class WorkoutRepository(SQLAlchemyAbstractRepository[Workout]):
 
-    def __init__(self, db: AsyncSession):
-        self.db = db
-        super().__init__(db, Workout)
-
-    async def create_record_template(
-        self,
-        instance: Workout | TrainingDay 
-    ) -> Workout:
-        self.add(instance)
-
-        await self.flush()
-        
-        workout_id: int = getattr(instance, "workout_id")
-        stmt = self._get_loaded_workout_stmt(workout_id=workout_id)
-        loaded_workout = await self.execute(stmt)
-        
-        return loaded_workout.scalar_one()
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        super().__init__(session, Workout)
 
     async def get_workout(self, workout_id: int) -> Workout | None:
         stmt = self._get_loaded_workout_stmt(workout_id=workout_id)         
@@ -73,7 +59,7 @@ class WorkoutRepository(SQLAlchemyAbstractRepository[Workout]):
         self,
         workout_id: int,
         data: dict[str, Any]     
-    ) -> int: 
+    ): 
         return await self.update_by_column(
             column=Workout.workout_id,
             identificator=workout_id,
