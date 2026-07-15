@@ -18,7 +18,7 @@ class DayExerciseRepository(SQLAlchemyAbstractRepository[DayExercise]):
         day_id,
         exercise_id,
         data: dict[str, Any]
-    ) -> int:
+    ):
         stmt = (
             update(self.model)
             .where(
@@ -26,10 +26,11 @@ class DayExerciseRepository(SQLAlchemyAbstractRepository[DayExercise]):
                 self.model.exercise_id == exercise_id
             )
             .values(**data)
+            .returning(self.model)
         )
 
         result = await self.execute(stmt)
-        return result.rowcount #type: ignore
+        return result.scalar_one_or_none()
 
     async def delete_day_exercise(
         self,
