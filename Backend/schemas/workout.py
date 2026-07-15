@@ -37,18 +37,18 @@ class WorkoutResponse(BaseResponse, WorkoutBase):
     user_id: UUID
     public: bool
     rate: float
-    training_days: list[TrainingDayResponse] | None = None
+    training_days: list[TrainingDayResponse] = []
 
 class DayExerciseCreate(DayExerciseBase):
     exercise_id: int
 
 class TrainingDayCreate(TrainingDayBase):
-    day_exercises: list[DayExerciseCreate] | None = None
+    day_exercises: list[DayExerciseCreate] = []
 
 class WorkoutCreate(BaseResponse, WorkoutBase):
     user_id: UUID
     public: bool | None = None
-    training_days: list[TrainingDayCreate] | None = None
+    training_days: list[TrainingDayCreate] = []
 
 class DayExerciseUpdate(BaseModel):
     exercise_order: ExerciseOrderInt | None = None
