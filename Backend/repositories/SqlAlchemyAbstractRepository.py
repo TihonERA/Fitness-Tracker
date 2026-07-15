@@ -23,14 +23,15 @@ class SQLAlchemyAbstractRepository(Generic[ModelT]):
         column: InstrumentedAttribute,
         identificator: int | UUID,
         data: dict[str, Any]
-    ) -> int:
+    ):
         stmt = (
             update(self.model)
             .where(column == identificator)
             .values(**data)
+            .returning(self.model)
         )
         result = await self.execute(stmt)
-        return result.rowcount #type: ignore
+        return result.scalar_one_or_none
 
     async def delete_by_column(
         self,
