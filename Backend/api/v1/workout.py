@@ -4,9 +4,9 @@ from uuid import UUID
 from pydantic import ValidationError
 from starlette.status import HTTP_200_OK
 from Backend.tasks.muscle_rates import get_muscle_contribution_list, get_muscles_balance
-from ...schemas.workout import DayExerciseCreate, DayExerciseUpdate, TrainingDayCreate, TrainingDayUpdate, WorkoutCreate, WorkoutResponse, WorkoutGetAllFilter, WorkoutUpdate
+from ...schemas.workout import DayExerciseCreate, DayExerciseResponse, DayExerciseUpdate, TrainingDayCreate, TrainingDayResponse, TrainingDayUpdate, WorkoutCreate, WorkoutRelationsResponse, WorkoutResponse, WorkoutGetAllFilter, WorkoutUpdate
 from ...utils.validators import DataNotModified, NotFound
-from ..deps import WorkoutServiceDepends, get_workouts_filter, IntPath
+from ..deps import DayExerciseServiceDepends, TrainingDayServiceDepends, WorkoutServiceDepends, get_workouts_filter, IntPath
 
 router = APIRouter(
     tags=["Workout Tables Endpoints"],
@@ -15,7 +15,7 @@ router = APIRouter(
 
 @router.get(
     "/get_all",
-    response_model=list[WorkoutResponse],
+    response_model=list[WorkoutRelationsResponse],
     status_code=status.HTTP_200_OK
 )
 async def get_all_workouts(
@@ -30,7 +30,7 @@ async def get_all_workouts(
 
 @router.get(
     "/{workout_id}",
-    response_model=WorkoutResponse,
+    response_model=WorkoutRelationsResponse,
     status_code=status.HTTP_200_OK      
 )
 async def get_workout(
@@ -66,7 +66,7 @@ def calculate_muscles_balance(
 
 @router.post(
     "/workout_schedule", 
-    response_model=WorkoutResponse, 
+    response_model=WorkoutRelationsResponse, 
     status_code=status.HTTP_201_CREATED
 )
 async def create_workout_with_schedule(
@@ -77,16 +77,16 @@ async def create_workout_with_schedule(
 
 @router.post(
     "/{workout_id}/training_day",
-    response_model=WorkoutResponse,
+    response_model=TrainingDayResponse,
     status_code=status.HTTP_200_OK
 )
 async def create_training_day_in_workout(
     workout_id: IntPath,
     data: Annotated[TrainingDayCreate, Body()],
-    workout_service: WorkoutServiceDepends
+    training_day_service: TrainingDayServiceDepends
 ):
     try:
-        return await workout_service.create_training_day(
+        return await training_day_service.create_training_day(
             workout_id=workout_id,
             data=data 
         )
@@ -94,20 +94,20 @@ async def create_training_day_in_workout(
         raise HTTPException(status_code=400, detail=e.errors(include_url=False))
 
 @router.post(
-    "/{workout_id}/{training_day_id}/day_exercise",
-    response_model=WorkoutResponse,
+    "/{workout_id}/{day_id}/day_exercise",
+    response_model=DayExerciseResponse,
     status_code=status.HTTP_200_OK
 )
 async def create_day_exercise_in_training_day(
     workout_id: IntPath,
-    training_day_id: IntPath,
+    day_id: IntPath,
     data: Annotated[DayExerciseCreate, Body()],
-    workout_service: WorkoutServiceDepends
+    day_exercise_service: DayExerciseServiceDepends
 ):
     try:
-        return await workout_service.create_day_exercise(
+        return await day_exercise_service.create_day_exercise(
             workout_id=workout_id,
-            training_day_id=training_day_id,
+            day_id=day_id,
             data=data
         )
     except ValidationError as e:
@@ -134,43 +134,39 @@ async def update_workout(
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 @router.patch(
-    "/{workout_id}/training_day/{training_day_id}",
-    response_model=WorkoutResponse,
+    "/training_day/{day_id}",
+    response_model=TrainingDayResponse,
     status_code=HTTP_200_OK
 )
 async def update_training_days_in_workout(
-    workout_id: IntPath,
-    training_day_id: IntPath,
+    day_id: IntPath,
     data: Annotated[TrainingDayUpdate, Body()],
-    workout_service: WorkoutServiceDepends
+    training_day_service: TrainingDayServiceDepends
 ):
     try:
-        return await workout_service.update_training_day(
-            workout_id=workout_id,
-            training_day_id=training_day_id,
+        return await training_day_service.update_training_day(
+            day_id=day_id,
             data=data
         )
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=e.errors(include_url=False))
-    except DataNotModified as e:
+    except NotFound as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 @router.patch(
-    "/{workout_id}/{training_day_id}/day_exercise/{exercise_id}",
-    response_model=WorkoutResponse,
+    "/{day_id}/day_exercise/{exercise_id}",
+    response_model=DayExerciseResponse,
     status_code=HTTP_200_OK
 )
 async def update_day_exercise(
-    workout_id: IntPath,
-    training_day_id: IntPath,
+    day_id: IntPath,
     exercise_id: IntPath,
     data: Annotated[DayExerciseUpdate, Body()],
-    workout_service: WorkoutServiceDepends
+    day_exercise_service: DayExerciseServiceDepends
 ):
     try:
-        return await workout_service.update_day_exercise(
-           workout_id=workout_id,
-           training_day_id=training_day_id,
+        return await day_exercise_service.update_day_exercise(
+           day_id=day_id,
            exercise_id=exercise_id,
            data=data
         )
@@ -181,50 +177,51 @@ async def update_day_exercise(
 
 @router.delete(
     "/{workout_id}",
-    status_code=HTTP_200_OK
+    status_code=HTTP_200_OK,
+    response_model=WorkoutResponse
 )
 async def delete_workout(
     workout_id: IntPath,
     workout_service: WorkoutServiceDepends
 ):
     try:
-        await workout_service.delete_workout(workout_id=workout_id)
-        return Response(status_code=status.HTTP_200_OK)
+        return await workout_service.delete_workout(workout_id=workout_id)
     except NotFound as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 @router.delete(
-    "/{workout_id}/{training_day_id}",
+    "/{workout_id}/{day_id}",
     status_code=HTTP_200_OK
 )
 async def delete_training_day(
     workout_id: IntPath,
-    training_day_id: IntPath,
-    workout_service: WorkoutServiceDepends
+    day_id: IntPath,
+    training_day_service: TrainingDayServiceDepends
 ):
     try:
-        await workout_service.delete_training_day(
+        await training_day_service.delete_training_day(
             workout_id=workout_id,
-            training_day_id=training_day_id
+            day_id=day_id
         )
         return Response(status_code=status.HTTP_200_OK)
     except NotFound as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 @router.delete(
-    "/{workout_id}/{training_day_id}/{exercise_id}",
+    "/{workout_id}/{day_id}/{exercise_id}",
+    response_model=DayExerciseResponse,
     status_code=HTTP_200_OK
 )
 async def delete_day_exercise(
     workout_id: IntPath,
-    training_day_id: IntPath,
+    day_id: IntPath,
     exercise_id: IntPath,
-    workout_service: WorkoutServiceDepends
+    day_exercise_service: DayExerciseServiceDepends
 ):
     try:
-        await workout_service.delete_day_exercise(
+        await day_exercise_service.delete_day_exercise(
             workout_id=workout_id,
-            training_day_id=training_day_id,
+            day_id=day_id,
             exercise_id=exercise_id
         )
         return Response(status_code=status.HTTP_200_OK)
