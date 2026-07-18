@@ -29,7 +29,7 @@ def get_muscles_balance(workout_id: int):
             sessionmaker = get_isolated_sessionmaker()
             async with sessionmaker() as session:
                 redis = get_redis()
-                service = WorkoutService(db=session, redis=redis)
+                service = WorkoutService(session=session, redis=redis)
                 
                 result = await service.get_muscles_balance(workout_id=workout_id)
                 return result
@@ -49,7 +49,7 @@ def get_muscle_contribution_list(workout_id: int):
             sessionmaker = get_isolated_sessionmaker()
             async with sessionmaker() as session:
                 redis = get_redis()
-                service = WorkoutService(db=session, redis=redis)
+                service = WorkoutService(session=session, redis=redis)
                 return await service.get_muscles_distribution_list(workout_id=workout_id)
         
         return asyncio.run(_run())
