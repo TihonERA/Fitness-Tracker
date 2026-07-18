@@ -1,7 +1,4 @@
 import asyncio
-
-from sqlalchemy.orm import session
-
 from Backend.services.TrainingDayService import TrainingDayService
 from ..schemas.workout import WorkoutCreate, WorkoutGetAllFilter, WorkoutResponse, WorkoutUpdate
 from ..repositories.WorkoutRepository import WorkoutRepository
@@ -17,7 +14,7 @@ class WorkoutService:
 
     def __init__(self, session: AsyncSession, redis: Redis):
         self.workoutrepo = WorkoutRepository(session=session)
-        self.trdayservice = TrainingDayService(session=session)
+        self.trdayservice = TrainingDayService(session=session, redis=redis)
         self.redis = redis
 
     async def create_workout_with_schedule(self,

@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from redis.asyncio import Redis
 
 from Backend.models.workout import Workout
 from Backend.repositories.WorkoutRepository import WorkoutRepository
@@ -10,10 +11,11 @@ from ..repositories.TrainingDayRepository import TrainingDayRepository
 from ..models.trainingday import TrainingDay
 
 class TrainingDayService:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, redis: Redis):
         self.session = session
+        self.redis = redis
         self.trdayrepo = TrainingDayRepository(session=session)
-        self.dayexeservice = DayExerciseService(session=session)
+        self.dayexeservice = DayExerciseService(session=session, redis=redis)
         self.workoutrepo = WorkoutRepository(session=session)
 
     @invalidate_cache(column=Workout.workout_id)
@@ -33,11 +35,12 @@ class TrainingDayService:
         for day_exer in data.day_exercises:
             await self.dayexeservice.create_day_exercise(
                 day_id=training_day.day_id,
+                workout_id=workout_id,
                 data=day_exer
             )
 
             
-        return training_day
+        return await self.trdayrepo.get_training_day(day_id=training_day.day_id)
 
     @invalidate_cache(column=Workout.workout_id)
     async def update_training_day(

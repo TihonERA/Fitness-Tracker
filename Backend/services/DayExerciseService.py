@@ -1,3 +1,4 @@
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from Backend.models.dayexercise import DayExercise
@@ -11,20 +12,23 @@ from ..utils.validators import NotFound
 
 class DayExerciseService:
     
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, redis: Redis):
         self.session = session
+        self.redis = redis
         self.dayexerepo = DayExerciseRepository(session=session)
         self.workoutrepo = WorkoutRepository(session=session)
 
     @invalidate_cache(column=Workout.workout_id)
     async def create_day_exercise(
         self,
+        workout_id: int,
         day_id: int,
         data: DayExerciseCreate
     ):
         day_exercise = DayExercise(
             day_id=day_id,
             exercise_id=data.exercise_id,
+            workout_id=workout_id,
             exercise_order=data.exercise_order,
             sets=data.sets,
             reps=data.reps
