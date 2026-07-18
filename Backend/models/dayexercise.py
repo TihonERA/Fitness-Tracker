@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .trainingday import TrainingDay
     from .exercise import Exercise
+    from .workout import Workout
 
 class DayExercise(Base):
     __tablename__ = "dayexercise"
@@ -22,6 +23,11 @@ class DayExercise(Base):
         index=True,
         nullable=False
     )
+    workout_id: Mapped[int] = mapped_column(
+        ForeignKey("workout.workout_id", ondelete="CASCADE"),
+        index=True,
+        nullable=False
+    )
     exercise_order: Mapped[int] = mapped_column(
         nullable=False
     )
@@ -34,3 +40,4 @@ class DayExercise(Base):
 
     training_day: Mapped["TrainingDay"] = relationship(back_populates="day_exercises")
     exercises: Mapped["Exercise"] = relationship(back_populates="day_exercises")
+    workout: Mapped["Workout"] = relationship(back_populates="day_exercises")

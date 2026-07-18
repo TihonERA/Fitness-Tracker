@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .trainingday import TrainingDay
+    from .dayexercise import DayExercise
     from .user import User
 
 class Workout(Base):
@@ -42,6 +43,10 @@ class Workout(Base):
 
     user: Mapped["User"] = relationship(back_populates="workouts")
     training_days: Mapped[list["TrainingDay"]] = relationship(
+        back_populates="workout",
+        cascade="all, delete-orphan"
+    )
+    day_exercises: Mapped[list["DayExercise"]] = relationship(
         back_populates="workout",
         cascade="all, delete-orphan"
     )
