@@ -30,14 +30,18 @@ class DayExerciseResponse(BaseResponse, DayExerciseBase):
 
 class TrainingDayResponse(BaseResponse, TrainingDayBase):
     day_id: int
-    day_exercises: list[DayExerciseResponse] | None = None
+
+class TrainingDayRelataionsResponse(TrainingDayResponse):
+    day_exercises: list[DayExerciseResponse] = []
 
 class WorkoutResponse(BaseResponse, WorkoutBase):
     workout_id: int
     user_id: UUID
     public: bool
     rate: float
-    training_days: list[TrainingDayResponse] = []
+
+class WorkoutRelationsResponse(WorkoutResponse):
+    training_days: list[TrainingDayRelataionsResponse] = []
 
 class DayExerciseCreate(DayExerciseBase):
     exercise_id: int
