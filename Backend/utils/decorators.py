@@ -4,6 +4,9 @@ from datetime import timedelta
 from pydantic import BaseModel
 from sqlalchemy.orm import InstrumentedAttribute
 from ..utils.validators import NotFound, InternalServerError
+import logging
+
+logger = logging.getLogger(__name__)
 
 def cache(ttl: Union[int, timedelta], column: InstrumentedAttribute, schema: type[BaseModel]):
     def decorator(func):
@@ -42,16 +45,15 @@ def invalidate_cache(column: InstrumentedAttribute):
             redis = self.redis
             attr_name = column.key
 
-            if hasattr(result, attr_name):
-                pk = getattr(result, attr_name)
-                
-                cache_key = f"{attr_name}:{pk}"
+            if not hasattr(result, attr_name):
+                print(f"{result}\t{attr_name}")
+                raise InternalServerError()
+ 
+            pk = getattr(result, attr_name)
+            cache_key = f"{attr_name}:{pk}"
 
-                await redis.delete(cache_key)
-
-                return result
-            
-            raise InternalServerError()
+            await redis.delete(cache_key)
+            return result
         return wrapper
     return decorator
         
