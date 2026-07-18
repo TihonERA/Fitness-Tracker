@@ -22,7 +22,7 @@ class SQLAlchemyAbstractRepository(Generic[ModelT]):
         self,
         column: InstrumentedAttribute,
         identificator: int | UUID,
-        data: dict[str, Any]
+        data: dict[str, Any],
     ):
         stmt = (
             update(self.model)
@@ -31,7 +31,7 @@ class SQLAlchemyAbstractRepository(Generic[ModelT]):
             .returning(self.model)
         )
         result = await self.execute(stmt)
-        return result.scalar_one_or_none
+        return result.scalar_one_or_none()
 
     async def delete_by_column(
         self,
