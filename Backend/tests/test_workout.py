@@ -23,18 +23,20 @@ class TestWorkoutApi:
         assert len(workout_data_json["training_days"][0]["day_exercises"]) > 0 
 
     async def test_create_training_day(self, client, make_workout_factory_returning_data):
-        old_workout = await make_workout_factory_returning_data()
-        old_workout_json = old_workout.json()
+        workout = await make_workout_factory_returning_data()
+        workout_id = workout.json()["workout_id"]
 
         training_day_data = {
             "name": "Chest",
             "day_order": 4 
         }
 
-        updated_workout = await client.post(f"/workouts/{old_workout_json["workout_id"]}/training_day", json=training_day_data)
+        created_tr_day = await client.post(f"/workouts/{workout_id}/training_day", json=training_day_data)
 
-        assert updated_workout.status_code == 200
-        assert old_workout != updated_workout.json() 
+        updated_workout = await client.get(f"/workouts/{workout_id}")
+
+        assert created_tr_day.status_code == 200
+        assert workout != updated_workout
 
     async def test_create_day_exercise(self, client, make_workout_factory_returning_data):
         old_workout = await make_workout_factory_returning_data()
@@ -48,11 +50,11 @@ class TestWorkoutApi:
         }
 
         workout_id = old_workout_json["workout_id"]
-        training_day_id = old_workout_json["training_days"][0]["day_id"]
-        updated_workout = await client.post(f"/workouts/{workout_id}/{training_day_id}/day_exercise", json=day_exercise_data)
+        day_id = old_workout_json["training_days"][0]["day_id"]
+        new_day_exercise = await client.post(f"/workouts/{workout_id}/{day_id}/day_exercise", json=day_exercise_data)
 
-        assert updated_workout.status_code == 200
-        assert old_workout != updated_workout
+        assert new_day_exercise.status_code == 200
+        assert new_day_exercise not in old_workout_json["training_days"][0]["day_exercises"]
         
     async def test_get_workout(self, client, make_workout_factory_returning_data):
         workout_data = await make_workout_factory_returning_data()
@@ -98,14 +100,12 @@ class TestWorkoutApi:
             "name": "NewName"
         }
 
-        workout_id = old_workout_json["workout_id"]
-        training_day_id = old_workout_json["training_days"][0]["day_id"]
-        updated_workout = await client.patch(f"/workouts/{workout_id}/training_day/{training_day_id}", json=training_day_update_data)
-        updated_workout_json = updated_workout.json()
+        day_id = old_workout_json["training_days"][0]["day_id"]
+        updated_tr_day = await client.patch(f"/workouts/training_day/{day_id}", json=training_day_update_data)
+        updated_tr_day_json = updated_tr_day.json()
 
-        assert updated_workout.status_code == 200
-        assert updated_workout != old_workout
-        assert updated_workout_json["training_days"][0]["name"] == training_day_update_data["name"]
+        assert updated_tr_day.status_code == 200
+        assert updated_tr_day_json["name"] == training_day_update_data["name"]
 
     async def test_updated_day_exercise(self, client, make_workout_factory_returning_data):
         old_workout = await make_workout_factory_returning_data()
@@ -116,16 +116,14 @@ class TestWorkoutApi:
             "reps": 20
         } 
 
-        workout_id = old_workout_json["workout_id"]
-        training_day_id = old_workout_json["training_days"][0]["day_id"]
+        day_id = old_workout_json["training_days"][0]["day_id"]
         exercise_id = old_workout_json["training_days"][0]["day_exercises"][0]["exercise_id"]
-        updated_workout = await client.patch(f"/workouts/{workout_id}/{training_day_id}/day_exercise/{exercise_id}", json=day_exercise_update_data)
-        updated_workout_json = updated_workout.json()
+        updated_exerday = await client.patch(f"/workouts/{day_id}/day_exercise/{exercise_id}", json=day_exercise_update_data)
+        updated_exerday_json = updated_exerday.json()
 
-        assert updated_workout.status_code == 200
-        assert old_workout != updated_workout_json
-        assert updated_workout_json["training_days"][0]["day_exercises"][0]["sets"] == day_exercise_update_data["sets"]
-        assert updated_workout_json["training_days"][0]["day_exercises"][0]["reps"] == day_exercise_update_data["reps"]
+        assert updated_exerday.status_code == 200
+        assert updated_exerday_json["sets"] == day_exercise_update_data["sets"]
+        assert updated_exerday_json["reps"] == day_exercise_update_data["reps"]
         
     async def test_delete_workout(self, client, make_workout_factory_returning_data):
         old_workout = await make_workout_factory_returning_data()
@@ -143,14 +141,15 @@ class TestWorkoutApi:
         old_workout_json = old_workout.json()
 
         workout_id = old_workout_json["workout_id"]
-        training_day_id = old_workout_json["training_days"][0]["day_id"]
+        day_id = old_workout_json["training_days"][0]["day_id"]
         
-        await client.delete(f"/workouts/{workout_id}/{training_day_id}")
+        response_del = await client.delete(f"/workouts/{workout_id}/{day_id}")
+        assert response_del.status_code == 200
 
-        deleted_training_day_in_workout = await client.get(f"/workouts/{workout_id}")
-        deleted_training_day_in_workout_json = deleted_training_day_in_workout.json()
+        upd_workout = await client.get(f"/workouts/{workout_id}")
+        upd_workout_json = upd_workout.json()
 
-        assert deleted_training_day_in_workout_json["training_days"][0]["day_id"] != training_day_id
+        assert len(old_workout_json["training_days"]) > len(upd_workout_json["training_days"])
 
     async def test_delete_day_exercise(self, client, make_workout_factory_returning_data):
         old_workout = await make_workout_factory_returning_data()
@@ -206,7 +205,6 @@ class TestWorkoutApi:
 
         trigger_response = await client.post(f"/workouts/{workout_id}/muscles_distribution_list")
         task_id = trigger_response.text.strip('"')
-        print(task_id)
 
         for _ in range(10):
             status_response = await client.get(f"/tasks/{task_id}")

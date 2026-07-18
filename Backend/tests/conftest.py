@@ -8,7 +8,7 @@ import uuid
 from Backend.tasks.muscle_rates import cel_app
 from ..models.user import User
 from ..core.database import async_session_factory , async_engine
-from ..api.deps import get_db
+from ..api.deps import get_session
 from ..core.database import get_redis
 from alembic.config import Config
 from alembic import command
@@ -25,7 +25,7 @@ async def client(db_session):
     def _override_get_db():
         yield db_session
 
-    app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_session] = _override_get_db
 
     transport = ASGITransport(app=app) #type: ignore
     async with AsyncClient(transport=transport, base_url="http://test") as c:
