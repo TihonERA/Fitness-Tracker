@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import delete, update
+from sqlalchemy import delete, update, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Generic, Sequence, Any
 
@@ -12,18 +12,31 @@ class SQLAlchemyAbstractRepository(Generic[ModelT]):
         self.session = session
         self.model = model
 
-    async def create_instance(self, instance):
+    async def create_instance(self, instance) -> ModelT:
         self.add(instance)
         await self.flush()
         await self.refresh(instance)
         return instance
+
+    async def get_instance_by_column(
+        self,
+        column: InstrumentedAttribute,
+        identificator: int | UUID | str,
+    ) -> ModelT | None:
+        stmt = (
+            select(self.model)
+            .where(column == identificator)
+        )
+        result = await self.execute(stmt)
+        return result.scalar_one_or_none()
+
     
     async def update_by_column(
         self,
         column: InstrumentedAttribute,
         identificator: int | UUID,
         data: dict[str, Any],
-    ):
+    ) -> ModelT | None:
         stmt = (
             update(self.model)
             .where(column == identificator)
