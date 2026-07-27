@@ -125,3 +125,17 @@ async def make_workout_factory_returning_data(client, db_session):
         await db_session.commit() 
         return workout_data
     return _make_data
+
+@pytest.fixture
+async def make_user_data(client, db_session):
+    async def _make_data():
+        registration_data = {
+            "email": "testmail@mail.com",
+            "login": "registration_data_login",
+            "password": "registration_data_password"
+        }
+
+        user_data = await client.post(f"/auth/users", json=registration_data)
+        await db_session.commit()
+        return user_data
+    return _make_data
