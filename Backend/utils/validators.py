@@ -15,3 +15,14 @@ class InternalServerError(Exception):
         self.status_code = 500
         self.detail = detail
         super().__init__(detail)
+
+class InvalidCredentials(Exception):
+    def __init__(self, detail: str = "Could not validate credentials") -> None:
+        self.status_code = 401
+        self.detail = detail
+        super().__init__(detail)
+
+class BadRequest(Exception):
+    def __init__(self, detail: str = "Bad request") -> None:
+        self.detail = detail
+        super().__init__(detail)
