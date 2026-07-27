@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(default=...)
     ALGORITHM: str = Field(default=...)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=...)
+    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=...)
     REDIS_HOST: str = Field(default=...)
     REDIS_PORT: int = Field(default=...)
     ORIGINS: list[str] = Field(default=...) 
