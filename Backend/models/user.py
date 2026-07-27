@@ -1,6 +1,6 @@
 from Backend.models.base import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, text
+from sqlalchemy import String, Text, text
 from uuid import UUID, uuid4
 from typing import TYPE_CHECKING
 
@@ -24,6 +24,10 @@ class User(Base):
     email: Mapped[str] = mapped_column(
         String(254),
         unique=True,
+        nullable=False
+    )
+    hash_password: Mapped[str] = mapped_column(
+        Text,
         nullable=False
     )
 
