@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from .base import DescriptionStr, NameStr, BaseResponse
+from .base import StrText, Str100, BaseResponse
 from uuid import UUID
 from typing import Annotated
 
@@ -18,12 +18,12 @@ class DayExerciseBase(BaseModel):
     reps: RepsInt | None = None
 
 class TrainingDayBase(BaseModel):
-    name: NameStr 
+    name: Str100 
     day_order: DayOrderInt
 
 class WorkoutBase(BaseModel):
-    name: NameStr
-    description: DescriptionStr | None = None
+    name: Str100
+    description: StrText | None = None
 
 class DayExerciseResponse(BaseResponse, DayExerciseBase):
     exercise_id: int
@@ -60,12 +60,12 @@ class DayExerciseUpdate(BaseModel):
     reps: RepsInt | None = None
 
 class TrainingDayUpdate(BaseModel):
-    name: NameStr | None = None
+    name: Str100 | None = None
     day_order: DayOrderInt | None = None
 
 class WorkoutUpdate(BaseModel):
-    name: NameStr | None = None
-    description: DescriptionStr | None = None
+    name: Str100 | None = None
+    description: StrText | None = None
     public: bool | None = None
 
 class WorkoutGetAllFilter(BaseModel):
