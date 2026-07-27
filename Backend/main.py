@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from .tasks.muscle_rates import cel_app
 from Backend.schemas.base import TaskResponse
-from .api.v1 import workout
+from .api.v1 import workout, auth
 from .core.config import settings
 from celery.result import AsyncResult
 from celery import states
@@ -20,6 +20,7 @@ app.add_middleware(
 )
 
 app.include_router(workout.router)
+app.include_router(auth.router)
 
 @app.get(
     "/tasks/{task_id}",
