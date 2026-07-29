@@ -28,7 +28,7 @@ async def client(db_session):
     app.dependency_overrides[get_session] = _override_get_db
 
     transport = ASGITransport(app=app) #type: ignore
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
+    async with AsyncClient(transport=transport, base_url="https://test") as c:
         yield c
 
     app.dependency_overrides.clear()
@@ -49,7 +49,8 @@ async def setup_and_teardown_database():
         stmt = insert(User).values(
             user_id=uuid.UUID("00000000-0000-0000-0000-000000000000"),
             login="test_user",
-            email="test@example.com"
+            email="test@example.com",
+            hash_password="hashpasswordhashpassword"
         ).on_conflict_do_nothing(index_elements=["user_id"])
 
         await session.execute(stmt) 
@@ -65,7 +66,7 @@ async def clean_tables():
     yield
 
     async with async_engine.begin() as conn:
-        await conn.execute(text("TRUNCATE TABLE workout, trainingday, dayexercise CASCADE;"))
+        await conn.execute(text('TRUNCATE TABLE workout, trainingday, dayexercise, "user" CASCADE;'))
 
 @pytest.fixture(scope="function", autouse=True)
 async def clear_redis():
@@ -133,9 +134,8 @@ async def make_user_data(client, db_session):
             "email": "testmail@mail.com",
             "login": "registration_data_login",
             "password": "registration_data_password"
-        }
-
+        } 
         user_data = await client.post(f"/auth/users", json=registration_data)
-        await db_session.commit()
+        await db_session.commit() 
         return user_data
     return _make_data
