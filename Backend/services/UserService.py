@@ -59,7 +59,7 @@ class UserService:
         self,
         user_id: UUID,
         data: UserUpdate
-    ) -> User | None:
+    ) -> User:
         result = await self.userrepo.update_user(
             user_id=user_id,
             data=data.model_dump(exclude_unset=True)
@@ -72,8 +72,8 @@ class UserService:
     @invalidate_cache(column=User.user_id)
     async def delete_user(
         self,
-        user_id
-    ) -> User | None:
+        user_id: UUID
+    ) -> User:
         user =  await self.get_user_by_id(user_id=user_id)
         await self.userrepo.delete_user(
             user_id=user_id
