@@ -9,6 +9,7 @@ from fastapi import Query
 from Backend.services.AuthService import AuthService
 from Backend.services.DayExerciseService import DayExerciseService
 from Backend.services.TrainingDayService import TrainingDayService
+from Backend.services.UserService import UserService
 from Backend.utils.validators import InvalidCredentials
 from ..schemas.workout import WorkoutGetAllFilter
 from ..services.WorkoutService import WorkoutService
@@ -28,6 +29,12 @@ def get_auth_service(
     redis=Depends(get_redis)
 ) -> AuthService:
     return AuthService(session=session, redis=redis)
+
+def get_user_service(
+    session=Depends(get_session),
+    redis=Depends(get_redis)
+) -> UserService:
+    return UserService(session=session, redis=redis)
 
 def get_current_user(
     access_token: str | bytes | None = Cookie(None),
@@ -56,5 +63,8 @@ WorkoutServiceDepends = Annotated[WorkoutService, Depends(get_workout_service)]
 TrainingDayServiceDepends = Annotated[TrainingDayService, Depends(get_training_day_service)]
 DayExerciseServiceDepends = Annotated[DayExerciseService, Depends(get_day_exercise_service)]
 AuthServiceDepends = Annotated[AuthService, Depends(get_auth_service)]
+UserServiceDepends = Annotated[UserService, Depends(get_user_service)]
+GetCurrentUserDepends = Annotated[UUID, Depends(get_current_user)]
 
+UUIDPath = Annotated[UUID, Path()]
 IntPath = Annotated[int, Path()]
