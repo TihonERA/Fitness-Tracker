@@ -21,15 +21,15 @@ def set_access_and_refresh_cookie(
         key="access_token",
         value=access_token,
         secure=True,
+        samesite='lax',
         httponly=True,
-        samesite='lax'
     )
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         secure=True,
+        samesite='lax',
         httponly=True,
-        samesite='lax'
     )
 
 @router.post(
@@ -43,13 +43,13 @@ async def register(
 ):
     try:
         tokens = await auth_service.register(data=data)
-        
+
         set_access_and_refresh_cookie(
             response=response,
             access_token=tokens.access_token,
             refresh_token=tokens.refresh_token
         )
-        return status.HTTP_200_OK
+        return {"status": "success"}
     except InvalidCredentials as e:
         raise HTTPException(
             status_code=e.status_code,
@@ -73,7 +73,7 @@ async def login(
             access_token=tokens.access_token,
             refresh_token=tokens.refresh_token
         )
-        return status.HTTP_200_OK
+        return {"status": "success"}
     except InvalidCredentials as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
