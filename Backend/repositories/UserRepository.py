@@ -15,12 +15,7 @@ class UserRepository(SQLAlchemyAbstractRepository):
         super().__init__(session, User)
 
     async def create_user(self, data: dict[str, Any]) -> User:
-        user = User(
-            login=data.get("login", None),
-            email=data.get("email", None),
-            hash_password=data.get("hash_password", None)
-        )
-        return await self.create_instance(user)
+        return await self.create_instance(data=data)
 
     async def get_user_by_id(self, user_id: UUID) -> User | None:
         return await self.get_instance_by_column(

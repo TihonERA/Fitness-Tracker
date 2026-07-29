@@ -12,11 +12,16 @@ class SQLAlchemyAbstractRepository(Generic[ModelT]):
         self.session = session
         self.model = model
 
-    async def create_instance(self, instance) -> ModelT:
+    async def add_and_refresh_instance(self, instance) -> ModelT:
         self.add(instance)
         await self.flush()
         await self.refresh(instance)
         return instance
+
+    async def create_instance(self, data: dict[str, Any]) -> ModelT:
+        filtered_data = {k: v for k, v in data.items() if k in self.model.__table__.columns.keys()}
+        instance = self.model(**filtered_data)
+        return await self.add_and_refresh_instance(instance)
 
     async def get_instance_by_column(
         self,
