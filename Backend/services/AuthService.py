@@ -81,7 +81,7 @@ class AuthService:
             )
             raise InvalidCredentials(detail="Invalid login or email")
 
-    def get_current_user(self, token: str | bytes):
+    def get_current_user(self, token: str | bytes) -> UUID:
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=settings.ALGORITHM)
             return self._get_user_id_from_payload(payload=payload)
@@ -92,7 +92,7 @@ class AuthService:
         user_id = payload.get("sub")
         if user_id is None:
             raise InvalidCredentials(detail="Invalid token")
-        return user_id
+        return UUID(user_id)
 
     async def refresh(self, token: str | bytes | None) -> TokenPair:
         if token is None:

@@ -8,7 +8,7 @@ from Backend.models.user import User
 from Backend.repositories.UserRepository import UserRepository
 from Backend.schemas.user import UserCreateDB, UserResponse, UserUpdate
 from Backend.utils.decorators import cache, invalidate_cache
-from Backend.utils.validators import NotFound
+from Backend.utils.validators import InternalServerError, InvalidCredentials, NotFound
 
 
 class UserService:
@@ -60,12 +60,20 @@ class UserService:
         user_id: UUID,
         data: UserUpdate
     ) -> User:
-        result = await self.userrepo.update_user(
+        user = await self.userrepo.get_user_for_update(
             user_id=user_id,
-            data=data.model_dump(exclude_unset=True)
         )
-        if result is None:
+        if user is None:
             raise NotFound()
+        try:
+            result = await self.userrepo.update_instance(
+                instance=user,
+                data=data.model_dump(exclude_unset=True)
+            )
+        except AttributeError as e:
+            raise InternalServerError(
+                detail=f"Table: {user.__tablename__} dont have attribute {e.name}, that was declared at a pydantic model"
+            )
 
         return result
 

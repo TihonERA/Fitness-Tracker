@@ -6,7 +6,7 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..models.workout import Workout
 from ..utils.decorators import cache, invalidate_cache
-from ..utils.validators import NotFound
+from ..utils.validators import Forbidden, InternalServerError, NotFound
 from datetime import timedelta
 from uuid import UUID
 
@@ -17,44 +17,41 @@ class WorkoutService:
         self.trdayservice = TrainingDayService(session=session, redis=redis)
         self.redis = redis
 
-    async def create_workout_with_schedule(self,
+    async def create_workout(
+        self,
+        user_id: UUID,
         data: WorkoutCreate
     ):
-        workout = Workout(
-            user_id = data.user_id,
-            name=data.name,
-            description=data.description,
+        return await self.workoutrepo.create_instance(
+            data={**data.model_dump(), "user_id": user_id}
         )
-
-        workout = await self.workoutrepo.create_instance(instance = workout)
-
-        for tr_day in data.training_days:
-            await self.trdayservice.create_training_day(
-                workout_id=workout.workout_id,
-                data=tr_day
-            )
-
-        return await self.workoutrepo.get_workout(workout_id=workout.workout_id)
-
+            
     @cache(ttl=timedelta(hours=12), column=Workout.workout_id, schema=WorkoutResponse)
-    async def get_workout(self, workout_id: int):
-        return await self._get_workout_or_raise(workout_id=workout_id)
-    
+    async def get_workout(
+        self,
+        workout_id: int,
+        user_id: UUID  
+    ) -> Workout:
+        workout = await self._get_workout_or_raise(workout_id=workout_id)
+        if workout.user_id != user_id:
+            raise NotFound()
+
+        return workout
+
     async def get_all_workouts(self, 
         filter: WorkoutGetAllFilter,
-        user_id: UUID|None = None
     ):
         workouts_id = await self.workoutrepo.get_all_workouts(
             skip=filter.skip,
             limit=filter.limit,
-            user_id=user_id,
+            user_id=filter.user_id,
             public=filter.public
         )
 
         if not workouts_id:
             return []
         
-        tasks = [self.get_workout(workout_id) for workout_id in workouts_id]
+        tasks = [self._get_workout_or_raise(workout_id) for workout_id in workouts_id]
 
         workouts = await asyncio.gather(*tasks)
         return list(workouts)
@@ -62,25 +59,43 @@ class WorkoutService:
     @invalidate_cache(column=Workout.workout_id)
     async def update_workout(
         self,
+        user_id: UUID,
         workout_id: int,
         data: WorkoutUpdate
-    ):
-        rowcount = await self.workoutrepo.update_workout(
+    ) -> Workout:
+        workout = await self.workoutrepo.get_workout_for_update(
             workout_id=workout_id,
-            data=data.model_dump(exclude_unset=True)
         )
-        if rowcount == 0:
+        if workout is None:
+            raise NotFound()
+
+        if workout.user_id != user_id:
             raise NotFound()
         
-        return await self.workoutrepo.get_workout(workout_id=workout_id) 
+        try:
+            updated_workout = await self.workoutrepo.update_instance(
+                instance=workout,
+                data=data.model_dump(exclude_unset=True)
+            )
+        except AttributeError as e:
+            raise InternalServerError(
+                detail=f"Table: {workout.__tablename__} dont have attribute {e.name}, that was declared at a pydantic model"
+            )
+        return updated_workout
        
     @invalidate_cache(column=Workout.workout_id)
     async def delete_workout(
         self,
+        user_id: UUID,
         workout_id: int
     ) -> Workout:
-        workout = await self.workoutrepo.get_workout(workout_id=workout_id)
+        workout = await self.workoutrepo.get_workout_for_update(
+            workout_id=workout_id
+        )
         if workout is None:
+            raise NotFound()
+
+        if workout.user_id != user_id:
             raise NotFound()
 
         await self.workoutrepo.delete_workout(workout_id=workout_id)
