@@ -3,9 +3,7 @@ import pytest
 @pytest.mark.asyncio(loop_scope="session")
 class TestAuthAPI:
     
-    async def test_login(self, client, make_user_data):
-        user_res = await make_user_data()
-
+    async def test_login(self, client):
         login_data = {
             "login_or_email": "testmail@mail.com",
             "password": "registration_data_password"
