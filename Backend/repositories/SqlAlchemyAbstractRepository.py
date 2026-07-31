@@ -36,20 +36,29 @@ class SQLAlchemyAbstractRepository(Generic[ModelT]):
         return result.scalar_one_or_none()
 
     
-    async def update_by_column(
+    async def get_instance_for_update(
         self,
         column: InstrumentedAttribute,
         identificator: int | UUID,
-        data: dict[str, Any],
     ) -> ModelT | None:
         stmt = (
-            update(self.model)
+            select(self.model)
             .where(column == identificator)
-            .values(**data)
-            .returning(self.model)
+            .with_for_update()
         )
         result = await self.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def update_instance(
+        self,
+        instance: ModelT,
+        data: dict[str, Any]
+    ) -> ModelT:
+        for key, value in data.items():
+            setattr(instance, key, value)   
+        
+        await self.flush()
+        return instance
 
     async def delete_by_column(
         self,
