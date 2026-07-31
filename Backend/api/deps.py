@@ -48,14 +48,25 @@ def get_current_user(
     except InvalidCredentials as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
+GetCurrentUserDepends = Annotated[UUID, Depends(get_current_user)]
+
 def get_workouts_filter(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, gt=0, le=500),
-    public: bool = Query(False)
+    user_id_from_token: GetCurrentUserDepends,
+    skip: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(gt=0, le=500)] = 50,
+    my: Annotated[bool, Query()] = False,
+    user_id: Annotated[UUID | None, Query()] = None,
+    public: Annotated[bool | None, Query()] = None
 ) -> WorkoutGetAllFilter:
+    if my:
+        user_id = user_id_from_token
+    elif user_id != user_id_from_token:
+        public=True
+
     return WorkoutGetAllFilter(
         skip=skip,
         limit=limit,
+        user_id=user_id,
         public=public
     )
 
@@ -64,7 +75,6 @@ TrainingDayServiceDepends = Annotated[TrainingDayService, Depends(get_training_d
 DayExerciseServiceDepends = Annotated[DayExerciseService, Depends(get_day_exercise_service)]
 AuthServiceDepends = Annotated[AuthService, Depends(get_auth_service)]
 UserServiceDepends = Annotated[UserService, Depends(get_user_service)]
-GetCurrentUserDepends = Annotated[UUID, Depends(get_current_user)]
 
 UUIDPath = Annotated[UUID, Path()]
 IntPath = Annotated[int, Path()]
