@@ -35,6 +35,12 @@ class UserRepository(SQLAlchemyAbstractRepository):
             identificator=email
         )
 
+    async def get_user_for_update(self, user_id: UUID) -> User | None:
+        return await self.get_instance_for_update(
+            column=User.user_id,
+            identificator=user_id
+        )
+
     async def check_user_exists(
         self,
         login: str,
@@ -51,17 +57,6 @@ class UserRepository(SQLAlchemyAbstractRepository):
         )
         result = await self.execute(stmt)
         return result.scalar_one_or_none()
-
-    async def update_user(
-        self,
-        user_id: UUID,
-        data: dict[str, Any]
-    ) -> User | None:
-        return await self.update_by_column(
-            column=User.user_id,
-            identificator=user_id,
-            data=data
-        )
 
     async def delete_user(
         self,
