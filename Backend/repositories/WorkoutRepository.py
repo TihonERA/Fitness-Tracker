@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .SqlAlchemyAbstractRepository import SQLAlchemyAbstractRepository
 from ..models.workout import Workout
 from sqlalchemy.orm import aliased, selectinload
-from sqlalchemy import select 
+from sqlalchemy import and_, select 
 from ..models.trainingday import TrainingDay
 from ..models.dayexercise import  DayExercise
 from ..models.muscle import Muscle
@@ -22,6 +22,32 @@ class WorkoutRepository(SQLAlchemyAbstractRepository[Workout]):
         result = await self.execute(stmt)
         return result.scalars().one_or_none()
 
+    async def get_workout_for_update(
+        self,
+        workout_id: int,
+    ) -> Workout | None:
+        return await self.get_instance_for_update(
+            column=Workout.workout_id,
+            identificator=workout_id,
+        )
+
+    async def get_workout_and_check_access(
+        self,
+        user_id: UUID,
+        workout_id: int
+    ) -> Workout | None:
+        stmt = (
+            select(Workout)
+            .where(
+                and_(
+                    Workout.workout_id == workout_id,
+                    Workout.user_id == user_id
+                )
+            )
+        )
+        result = await self.execute(stmt)
+        return result.scalar_one_or_none()
+
     @staticmethod
     def _get_loaded_workout_stmt(workout_id: int):
         stmt = (
@@ -39,33 +65,22 @@ class WorkoutRepository(SQLAlchemyAbstractRepository[Workout]):
         skip: int, 
         limit: int, 
         user_id: UUID | None = None, 
-        public: bool = False
+        public: bool | None = None
     ) -> Sequence[int]:
         stmt = select(Workout.workout_id)
         if user_id:
             stmt = stmt.where(
                 Workout.user_id == user_id,
+            )
+        if public:
+            stmt = stmt.where(
                 Workout.public == public
             )
-        else:
-            stmt = stmt.where(Workout.public == True)
-
         stmt = stmt.offset(skip).limit(limit)
 
         result = await self.execute(stmt)
         return result.scalars().all()
     
-    async def update_workout(
-        self,
-        workout_id: int,
-        data: dict[str, Any]     
-    ): 
-        return await self.update_by_column(
-            column=Workout.workout_id,
-            identificator=workout_id,
-            data=data
-        )
-
     async def delete_workout(self,
         workout_id: int
     ) -> int:
