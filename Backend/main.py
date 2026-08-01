@@ -1,12 +1,14 @@
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+
+from Backend.api.handlers import internal_server_error_handler, invalid_credentials_handler, not_found_handler
 from .tasks.muscle_rates import cel_app
 from Backend.schemas.base import TaskResponse
 from .api.v1 import workout, auth, user, training_day, day_exercise
 from .core.config import settings
 from celery.result import AsyncResult
 from celery import states
-from .utils.validators import NotFound
+from .utils.exceptions import InternalServerError, InvalidCredentials, NotFound
 import asyncio
 
 app = FastAPI()
@@ -24,6 +26,10 @@ app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(training_day.router)
 app.include_router(day_exercise.router)
+
+app.add_exception_handler(NotFound, not_found_handler)
+app.add_exception_handler(InvalidCredentials, invalid_credentials_handler)
+app.add_exception_handler(InternalServerError, internal_server_error_handler)
 
 @app.get(
     "/tasks/{task_id}",
@@ -51,7 +57,5 @@ async def get_task_result(task_id: str):
             status=states.SUCCESS,
             result=result
         )
-    except NotFound as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise InternalServerError(detail=str(e))
