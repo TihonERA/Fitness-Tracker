@@ -26,7 +26,6 @@ class TestWorkoutApi:
         await authorize_user()
         response = await client.get(f"/workouts/{make_workout.workout_id}")
     
-        print(make_workout.workout_id, make_workout.user_id, response.json())
         assert response.status_code == 200
         assert len(response.json()) > 0
 
@@ -47,7 +46,6 @@ class TestWorkoutApi:
         
         response = await client.patch(f"/workouts/{make_workout.workout_id}", json=request_body)
         response_json = response.json()
-
         assert response.status_code == 200
         assert request_body.items() <= response_json.items()
 

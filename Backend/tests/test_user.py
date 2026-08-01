@@ -1,6 +1,8 @@
 from httpx import AsyncClient
 import pytest
 
+from Backend.models.user import User
+
 @pytest.mark.asyncio(loop_scope="session")
 class TestUser:
 
@@ -8,7 +10,6 @@ class TestUser:
         await authorize_user()
         response = await client.get("/users/me")
 
-        print(response.json())
         assert response.status_code == 200
         assert len(response.json()) > 0
 
@@ -21,9 +22,7 @@ class TestUser:
         assert response.status_code == 200
         assert len(response.json()) > 0
 
-    async def test_update_user(self, client: AsyncClient, authorize_user):
-        await authorize_user()
-        
+    async def test_update_user(self, client: AsyncClient, user):
         update_data = {
             "login": "newupdatedlogin"
         }
@@ -32,9 +31,8 @@ class TestUser:
         assert response.status_code == 200
         assert response.json().get("login") == update_data.get("login")
 
-    async def test_delete_user(self, client: AsyncClient, authorize_user):
-        await authorize_user()
-
+    async def test_delete_user(self, client: AsyncClient, user: User):
+        print(f"\n{[getattr(user, attr) for attr in user.__table__.columns.keys()]}")
         response = await client.delete("/users/me")
 
         deleted_user = await client.get("/users/me")

@@ -1,5 +1,4 @@
 import pytest
-from ..utils.validators import NotFound
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestDayExerciseAPI:
@@ -60,9 +59,8 @@ class TestDayExerciseAPI:
 
         assert response_delete.status_code == 200
 
-        try:
-            response_get = await client.get(f"/day_exercises/{make_workout.workout_id}/{day_id}/{exercise_id}")
-        except NotFound: 
-            assert True
+        response_get = await client.get(f"/day_exercises/{make_workout.workout_id}/{day_id}/{exercise_id}")
+
+        assert response_get.status_code == 404
 
 

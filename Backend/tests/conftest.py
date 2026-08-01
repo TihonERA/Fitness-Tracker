@@ -12,8 +12,7 @@ from ..models.user import User
 from ..models.workout import Workout
 from ..models.trainingday import TrainingDay
 from ..models.dayexercise import DayExercise
-from ..core.database import async_session_factory , async_engine
-from ..api.deps import get_session
+from ..core.database import async_session_factory , async_engine, get_session
 from ..core.database import get_redis
 from alembic.config import Config
 from alembic import command
@@ -127,6 +126,36 @@ async def make_workout(db_session: AsyncSession):
     return workout.scalar()
 
 @pytest.fixture
+async def user(client, db_session):
+    user = User(
+        user_id=uuid.UUID("10000000-0000-0000-0000-000000000000"),
+        email="createusermail@mail.com",
+        login="create_user_login",
+        hash_password="$argon2id$v=19$m=65536,t=3,p=4$b04HUqHrntSERdQIO+Nz0A$hmNV+lnF9Y6t46tCnXfBJEIxH4MEZZuE69h8RCjBmhA"
+    )
+    db_session.add(user)
+    await db_session.commit()
+    
+    login_data = {
+        "login_or_email": "create_user_login",
+        "password": "registration_data_password"
+    }
+
+    await client.post(f"/auth/login", json=login_data)
+
+    yield user
+
+    stmt = (
+        select(User.user_id)
+        .where(User.user_id == user.user_id)
+    )
+    result = await db_session.execute(stmt)
+    result = result.scalar_one_or_none()
+    if result:
+        await db_session.delete(user)
+        await db_session.commit()
+
+@pytest.fixture
 async def authorize_user(client, db_session):
     async def _make_data():
         login_data = {
@@ -134,7 +163,6 @@ async def authorize_user(client, db_session):
             "password": "registration_data_password"
         } 
         user_data = await client.post(f"/auth/login", json=login_data)
-        print(user_data.json())
         await db_session.commit() 
         return user_data
     return _make_data
