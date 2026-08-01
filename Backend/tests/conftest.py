@@ -156,13 +156,9 @@ async def user(client, db_session):
         await db_session.commit()
 
 @pytest.fixture
-async def authorize_user(client, db_session):
-    async def _make_data():
-        login_data = {
-            "login_or_email": "registration_data_login",
-            "password": "registration_data_password"
-        } 
-        user_data = await client.post(f"/auth/login", json=login_data)
-        await db_session.commit() 
-        return user_data
-    return _make_data
+async def authorize(client):
+    login_data = {
+        "login_or_email": "registration_data_login",
+        "password": "registration_data_password"
+    } 
+    await client.post(f"/auth/login", json=login_data)

@@ -3,9 +3,7 @@ import pytest
 @pytest.mark.asyncio(loop_scope="session")
 class TestDayExerciseAPI:
 
-    async def test_get_day_exercise(self, client, make_workout, authorize_user):
-        await authorize_user()
-
+    async def test_get_day_exercise(self, client, make_workout, authorize):
         day_id = make_workout.training_days[0].day_id
         exercise_id = make_workout.training_days[0].day_exercises[0].exercise_id
 
@@ -14,9 +12,7 @@ class TestDayExerciseAPI:
         assert response.status_code == 200
         assert len(response.json()) > 0
 
-    async def test_create_day_exercise(self, client, make_workout, authorize_user):
-        await authorize_user()
-
+    async def test_create_day_exercise(self, client, make_workout, authorize):
         day_id = make_workout.training_days[0].day_id
 
         request_body = {
@@ -32,9 +28,7 @@ class TestDayExerciseAPI:
         assert response.status_code == 201
         assert request_body.items() <= response.json().items()
 
-    async def test_update_day_exercise(self, client, make_workout, authorize_user):
-        await authorize_user()
-
+    async def test_update_day_exercise(self, client, make_workout, authorize):
         day_id = make_workout.training_days[0].day_id
         exercise_id = make_workout.training_days[0].day_exercises[0].exercise_id
 
@@ -48,9 +42,7 @@ class TestDayExerciseAPI:
         assert response.status_code == 200
         assert request_body.items() <= response.json().items()
 
-    async def test_delete_day_exercise(self, client, make_workout, authorize_user):
-        await authorize_user()
-
+    async def test_delete_day_exercise(self, client, make_workout, authorize):
         day_id = make_workout.training_days[0].day_id
         exercise_id = make_workout.training_days[0].day_exercises[0].exercise_id
 

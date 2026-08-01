@@ -8,8 +8,7 @@ logger = logging.getLogger(__name__)
 @pytest.mark.asyncio(loop_scope="session")
 class TestWorkoutApi:
 
-    async def test_create_workout(self, client, authorize_user):
-        await authorize_user()
+    async def test_create_workout(self, client, authorize):
         request_body = {
             "name": "TestWorkout",
             "description": "TestDescriptionHalo",
@@ -22,23 +21,19 @@ class TestWorkoutApi:
         assert request_body.items() <= response.json().items()
 
        
-    async def test_get_workout(self, client, make_workout, authorize_user):
-        await authorize_user()
+    async def test_get_workout(self, client, make_workout, authorize):
         response = await client.get(f"/workouts/{make_workout.workout_id}")
     
         assert response.status_code == 200
         assert len(response.json()) > 0
 
-    async def test_get_all_workouts(self, client, make_workout, authorize_user):
-        await authorize_user() 
-
+    async def test_get_all_workouts(self, client, make_workout, authorize):
         response = await client.get("/workouts/get_all?my=True")
+
         assert response.status_code == 200
         assert len(response.json()) > 0
 
-    async def test_update_workout(self, client, make_workout, authorize_user):
-        await authorize_user()
-
+    async def test_update_workout(self, client, make_workout, authorize):
         request_body = {
             "name": "NewName",
             "description": "NewDescription"
@@ -50,9 +45,7 @@ class TestWorkoutApi:
         assert request_body.items() <= response_json.items()
 
        
-    async def test_delete_workout(self, client, authorize_user, make_workout):
-        await authorize_user()
-
+    async def test_delete_workout(self, client, authorize, make_workout):
         response_delete = await client.delete(f"/workouts/{make_workout.workout_id}")
 
         assert response_delete.status_code == 200
