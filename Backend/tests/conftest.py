@@ -72,7 +72,7 @@ async def clear_redis():
     await redis.aclose()
 
 @pytest.fixture
-async def make_workout(db_session: AsyncSession):
+async def workout(db_session: AsyncSession):
     day_1 = TrainingDay(name="Тренировка спины и бицепса", day_order=1)
     day_2 = TrainingDay(name="Тренировка груди, плеч и трицепса", day_order=2)
     day_3 = TrainingDay(name="Тренировка ног и пресса", day_order=3)
