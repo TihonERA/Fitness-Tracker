@@ -3,7 +3,7 @@ from typing import Union, Any, Tuple, Dict
 from datetime import timedelta
 from pydantic import BaseModel
 from sqlalchemy.orm import InstrumentedAttribute
-from ..utils.validators import NotFound, InternalServerError
+from ..utils.exceptions import NotFound, InternalServerError
 import logging
 
 logger = logging.getLogger(__name__)
