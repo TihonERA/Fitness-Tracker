@@ -10,31 +10,48 @@ from Backend.services.AuthService import AuthService
 from Backend.services.DayExerciseService import DayExerciseService
 from Backend.services.TrainingDayService import TrainingDayService
 from Backend.services.UserService import UserService
-from Backend.utils.validators import InvalidCredentials
+from Backend.utils.exceptions import InvalidCredentials
+from Backend.utils.uow import UnitOfWork
 from ..schemas.workout import WorkoutGetAllFilter
 from ..services.WorkoutService import WorkoutService
-from ..core.database import get_session, get_redis
+from ..core.database import async_session_factory, get_redis
 
-def get_workout_service(session: AsyncSession = Depends(get_session), redis: Redis = Depends(get_redis)):
-    return WorkoutService(session=session, redis=redis)
+async def get_uow():
+    uow = UnitOfWork(
+        session_maker=async_session_factory
+    )
+    async with uow:
+        yield uow
 
-def get_training_day_service(session = Depends(get_session), redis = Depends(get_redis)):
-    return TrainingDayService(session=session, redis=redis)
+def get_workout_service(
+    uow = Depends(get_uow), 
+    redis: Redis = Depends(get_redis)
+) -> WorkoutService:
+    return WorkoutService(uow=uow, redis=redis)
 
-def get_day_exercise_service(session = Depends(get_session), redis = Depends(get_redis)):
-    return DayExerciseService(session=session, redis=redis)
+def get_training_day_service(
+    uow = Depends(get_uow), 
+    redis = Depends(get_redis)
+) -> TrainingDayService:
+    return TrainingDayService(uow=uow, redis=redis)
+
+def get_day_exercise_service(
+    uow = Depends(get_uow), 
+    redis = Depends(get_redis)
+) -> DayExerciseService:
+    return DayExerciseService(uow=uow, redis=redis)
 
 def get_auth_service(
-    session=Depends(get_session),
+    uow=Depends(get_uow),
     redis=Depends(get_redis)
 ) -> AuthService:
-    return AuthService(session=session, redis=redis)
+    return AuthService(uow=uow, redis=redis)
 
 def get_user_service(
-    session=Depends(get_session),
+    uow=Depends(get_uow),
     redis=Depends(get_redis)
 ) -> UserService:
-    return UserService(session=session, redis=redis)
+    return UserService(uow=uow, redis=redis)
 
 def get_current_user(
     access_token: str | bytes | None = Cookie(None),

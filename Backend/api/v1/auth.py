@@ -5,7 +5,6 @@ from fastapi import Body, Cookie, APIRouter, HTTPException, Response, status
 from Backend.api.deps import AuthServiceDepends
 from Backend.schemas.auth import UserAuthorize
 from Backend.schemas.user import UserCreate
-from Backend.utils.validators import InvalidCredentials
 
 router = APIRouter(
    tags=["Authorization Endpoints"],
@@ -41,20 +40,14 @@ async def register(
     auth_service: AuthServiceDepends,
     response: Response
 ):
-    try:
-        tokens = await auth_service.register(data=data)
+    tokens = await auth_service.register(data=data)
 
-        set_access_and_refresh_cookie(
-            response=response,
-            access_token=tokens.access_token,
-            refresh_token=tokens.refresh_token
-        )
-        return {"status": "success"}
-    except InvalidCredentials as e:
-        raise HTTPException(
-            status_code=e.status_code,
-            detail=e.detail
-        )
+    set_access_and_refresh_cookie(
+        response=response,
+        access_token=tokens.access_token,
+        refresh_token=tokens.refresh_token
+    )
+    return {"status": "success"}
 
 @router.post(
     "/login",
@@ -65,17 +58,14 @@ async def login(
     auth_service: AuthServiceDepends,
     response: Response
 ):
-    try:
-        tokens = await auth_service.login(data=data)
-        
-        set_access_and_refresh_cookie(
-            response=response,
-            access_token=tokens.access_token,
-            refresh_token=tokens.refresh_token
-        )
-        return {"status": "success"}
-    except InvalidCredentials as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    tokens = await auth_service.login(data=data)
+    
+    set_access_and_refresh_cookie(
+        response=response,
+        access_token=tokens.access_token,
+        refresh_token=tokens.refresh_token
+    )
+    return {"status": "success"}
 
 @router.post(
     "/refresh",
@@ -86,17 +76,11 @@ async def refresh(
     response: Response,
     refresh_token: Annotated[str | None, Cookie()] = None,
 ):
-    try:
-        tokens = await auth_service.refresh(token=refresh_token)
+    tokens = await auth_service.refresh(token=refresh_token)
 
-        set_access_and_refresh_cookie(
-            response=response,
-            access_token=tokens.access_token,
-            refresh_token=tokens.refresh_token
-        )
-        return status.HTTP_200_OK
-    except InvalidCredentials as e:
-        raise HTTPException(
-            status_code=e.status_code,
-            detail=e.detail
-        )
+    set_access_and_refresh_cookie(
+        response=response,
+        access_token=tokens.access_token,
+        refresh_token=tokens.refresh_token
+    )
+    return status.HTTP_200_OK

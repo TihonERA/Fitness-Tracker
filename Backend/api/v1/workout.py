@@ -5,7 +5,6 @@ from pydantic import ValidationError
 from starlette.status import HTTP_200_OK
 from Backend.tasks.muscle_rates import get_muscle_contribution_list, get_muscles_balance
 from ...schemas.workout import WorkoutCreate, WorkoutRelationsResponse, WorkoutResponse, WorkoutGetAllFilter, WorkoutUpdate
-from ...utils.validators import DataNotModified, NotFound
 from ..deps import DayExerciseServiceDepends, GetCurrentUserDepends, TrainingDayServiceDepends, WorkoutServiceDepends, get_workouts_filter, IntPath
 
 router = APIRouter(
