@@ -4,7 +4,8 @@ from uuid import UUID
 
 from Backend.schemas.auth import TokenPair, UserAuthorize
 from Backend.schemas.user import UserCreate, UserCreateDB
-from Backend.utils.validators import InvalidCredentials, NotFound
+from Backend.utils.exceptions import InvalidCredentials, NotFound
+from Backend.utils.uow import UnitOfWork
 
 from ..core.config import settings
 
@@ -19,10 +20,10 @@ from Backend.services.UserService import UserService
 
 class AuthService:
 
-    def __init__(self, session: AsyncSession, redis: Redis):
-        self.session = session
+    def __init__(self, uow: UnitOfWork, redis: Redis):
+        self.uow = uow
         self.redis = redis
-        self.userservice = UserService(session=session, redis=redis)
+        self.userservice = UserService(uow=uow, redis=redis)
         self.password_hash = PasswordHash.recommended()
         self.DUMMYHASH = "dummy_hash_for_safety_YYYYYYYYYYYYYYYYYYYYYYY"
         
@@ -61,7 +62,7 @@ class AuthService:
             else:
                 user = await self.userservice.get_user_by_login(
                     login=data.login_or_email
-                 )
+                )
             if not self.password_hash.verify(
                  data.password,
                  user.hash_password

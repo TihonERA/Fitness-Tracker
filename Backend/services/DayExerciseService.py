@@ -12,18 +12,19 @@ from Backend.repositories.TrainingDayRepository import TrainingDayRepository
 from Backend.repositories.WorkoutRepository import WorkoutRepository
 from Backend.schemas.day_exercise import DayExerciseCreate, DayExerciseUpdate
 from Backend.utils.decorators import invalidate_cache
+from Backend.utils.uow import UnitOfWork
 from ..repositories.DayExerciseRepository import DayExerciseRepository
-from ..utils.validators import InternalServerError, NotFound
+from ..utils.exceptions import InternalServerError, NotFound
 
 
 class DayExerciseService:
     
-    def __init__(self, session: AsyncSession, redis: Redis):
-        self.session = session
+    def __init__(self, uow: UnitOfWork, redis: Redis):
+        self.uow = uow
         self.redis = redis
-        self.dayexerepo = DayExerciseRepository(session=session)
-        self.trdayrepo = TrainingDayRepository(session=session)
-        self.workoutrepo = WorkoutRepository(session=session)
+        self.dayexerepo = uow.dayexercise
+        self.trdayrepo = uow.trainingday
+        self.workoutrepo = uow.workout
 
     async def get_day_exercise(
         self,

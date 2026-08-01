@@ -8,13 +8,15 @@ from Backend.models.user import User
 from Backend.repositories.UserRepository import UserRepository
 from Backend.schemas.user import UserCreateDB, UserResponse, UserUpdate
 from Backend.utils.decorators import cache, invalidate_cache
-from Backend.utils.validators import InternalServerError, InvalidCredentials, NotFound
+from Backend.utils.exceptions import InternalServerError, InvalidCredentials, NotFound
+from Backend.utils.uow import UnitOfWork
 
 
 class UserService:
 
-    def __init__(self, session: AsyncSession, redis: Redis):
-        self.userrepo = UserRepository(session=session)
+    def __init__(self, uow: UnitOfWork, redis: Redis):
+        self.uow = uow
+        self.userrepo = uow.user
         self.redis = redis
 
     async def create_user(

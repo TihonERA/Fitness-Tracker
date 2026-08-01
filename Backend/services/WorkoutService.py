@@ -1,20 +1,21 @@
 import asyncio
 from Backend.services.TrainingDayService import TrainingDayService
+from Backend.utils.uow import UnitOfWork
 from ..schemas.workout import WorkoutCreate, WorkoutGetAllFilter, WorkoutResponse, WorkoutUpdate
 from ..repositories.WorkoutRepository import WorkoutRepository
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..models.workout import Workout
 from ..utils.decorators import cache, invalidate_cache
-from ..utils.validators import Forbidden, InternalServerError, NotFound
+from ..utils.exceptions import InternalServerError, NotFound
 from datetime import timedelta
 from uuid import UUID
 
 class WorkoutService:
 
-    def __init__(self, session: AsyncSession, redis: Redis):
-        self.workoutrepo = WorkoutRepository(session=session)
-        self.trdayservice = TrainingDayService(session=session, redis=redis)
+    def __init__(self, uow: UnitOfWork, redis: Redis):
+        self.uow = uow
+        self.workoutrepo = uow.workout
         self.redis = redis
 
     async def create_workout(
