@@ -12,7 +12,6 @@ from .SqlAlchemyAbstractRepository import SQLAlchemyAbstractRepository
 
 class TrainingDayRepository(SQLAlchemyAbstractRepository[TrainingDay]):
     def __init__(self, session: AsyncSession):
-        self.session = session
         super().__init__(session, TrainingDay)
 
     async def get_training_day(

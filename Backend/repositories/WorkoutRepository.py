@@ -14,7 +14,6 @@ from uuid import UUID
 class WorkoutRepository(SQLAlchemyAbstractRepository[Workout]):
 
     def __init__(self, session: AsyncSession):
-        self.session = session
         super().__init__(session, Workout)
 
     async def get_workout(self, workout_id: int) -> Workout | None:

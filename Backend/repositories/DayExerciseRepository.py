@@ -13,7 +13,6 @@ from .SqlAlchemyAbstractRepository import SQLAlchemyAbstractRepository
 class DayExerciseRepository(SQLAlchemyAbstractRepository[DayExercise]):
 
     def __init__(self, session: AsyncSession):
-        self.session = session
         super().__init__(session, DayExercise)
 
     async def get_day_exercise_for_update( 

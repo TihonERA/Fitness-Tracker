@@ -11,7 +11,6 @@ from .SqlAlchemyAbstractRepository import SQLAlchemyAbstractRepository
 
 class UserRepository(SQLAlchemyAbstractRepository):
     def __init__(self, session: AsyncSession):
-        self.session = session
         super().__init__(session, User)
 
     async def create_user(self, data: dict[str, Any]) -> User:
