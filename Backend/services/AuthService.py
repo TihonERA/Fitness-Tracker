@@ -4,6 +4,7 @@ from uuid import UUID
 
 from Backend.schemas.auth import TokenPair, UserAuthorize
 from Backend.schemas.user import UserCreate, UserCreateDB
+from Backend.services.BaseService import BaseService
 from Backend.utils.exceptions import InvalidCredentials, NotFound
 from Backend.utils.uow import UnitOfWork
 
@@ -18,14 +19,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from Backend.services.UserService import UserService
 
 
-class AuthService:
+class AuthService(BaseService):
 
     def __init__(self, uow: UnitOfWork, redis: Redis):
-        self.uow = uow
-        self.redis = redis
         self.userservice = UserService(uow=uow, redis=redis)
         self.password_hash = PasswordHash.recommended()
         self.DUMMYHASH = "dummy_hash_for_safety_YYYYYYYYYYYYYYYYYYYYYYY"
+        super().__init__(uow, redis)
         
     async def register(self, data: UserCreate) -> TokenPair:
         user = await self.userservice.check_if_user_exists(

@@ -11,20 +11,20 @@ from Backend.models.workout import Workout
 from Backend.repositories.TrainingDayRepository import TrainingDayRepository
 from Backend.repositories.WorkoutRepository import WorkoutRepository
 from Backend.schemas.day_exercise import DayExerciseCreate, DayExerciseUpdate
+from Backend.services.BaseService import BaseService
 from Backend.utils.decorators import invalidate_cache
 from Backend.utils.uow import UnitOfWork
 from ..repositories.DayExerciseRepository import DayExerciseRepository
 from ..utils.exceptions import InternalServerError, NotFound
 
 
-class DayExerciseService:
+class DayExerciseService(BaseService):
     
     def __init__(self, uow: UnitOfWork, redis: Redis):
-        self.uow = uow
-        self.redis = redis
         self.dayexerepo = uow.dayexercise
         self.trdayrepo = uow.trainingday
         self.workoutrepo = uow.workout
+        super().__init__(uow, redis)
 
     async def get_day_exercise(
         self,
@@ -39,7 +39,7 @@ class DayExerciseService:
             day_id=day_id,
             exercise_id=exercise_id
         )
-        day_exercise, = self.check_if_instaces_is_none(day_exercise)
+        day_exercise, = self.check_if_instaces_is_none_returning_tuple(day_exercise)
 
         return day_exercise
 
@@ -56,7 +56,7 @@ class DayExerciseService:
             workout_id=workout_id,
             day_id=day_id
         )
-        tr_day, = self.check_if_instaces_is_none(tr_day)
+        tr_day, = self.check_if_instaces_is_none_returning_tuple(tr_day)
 
         return await self.dayexerepo.create_instance(
             data={**data.model_dump(), "day_id": day_id, "workout_id": workout_id}
@@ -83,7 +83,7 @@ class DayExerciseService:
             )
         )
 
-        tr_day, day_exercise = self.check_if_instaces_is_none(tr_day, day_exercise)
+        tr_day, day_exercise = self.check_if_instaces_is_none_returning_tuple(tr_day, day_exercise)
 
         try:
             result = await self.dayexerepo.update_instance(
@@ -116,7 +116,7 @@ class DayExerciseService:
             )
         )
 
-        tr_day, ex_day = self.check_if_instaces_is_none(tr_day, ex_day)
+        tr_day, ex_day = self.check_if_instaces_is_none_returning_tuple(tr_day, ex_day)
 
         await self.dayexerepo.delete_day_exercise(
             day_id=day_id,
@@ -124,10 +124,3 @@ class DayExerciseService:
         )
 
         return ex_day
-    
-    @staticmethod
-    def check_if_instaces_is_none(*args: Any) -> tuple[Any, ...]:
-        for instance in args:
-            if instance is None:
-                raise NotFound()
-        return args

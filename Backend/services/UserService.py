@@ -7,17 +7,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from Backend.models.user import User
 from Backend.repositories.UserRepository import UserRepository
 from Backend.schemas.user import UserCreateDB, UserResponse, UserUpdate
+from Backend.services.BaseService import BaseService
 from Backend.utils.decorators import cache, invalidate_cache
 from Backend.utils.exceptions import InternalServerError, InvalidCredentials, NotFound
 from Backend.utils.uow import UnitOfWork
 
 
-class UserService:
+class UserService(BaseService):
 
     def __init__(self, uow: UnitOfWork, redis: Redis):
-        self.uow = uow
         self.userrepo = uow.user
-        self.redis = redis
+        super().__init__(uow, redis)
 
     async def create_user(
         self,
@@ -30,20 +30,20 @@ class UserService:
     @cache(ttl=timedelta(hours=12), column=User.user_id, schema=UserResponse)
     async def get_user_by_id(self, user_id: UUID) -> User:
         user = await self.userrepo.get_user_by_id(user_id=user_id)
-        if not user:
-            raise NotFound()
+
+        user, = self.check_if_instaces_is_none_returning_tuple(user)
         return user
 
     async def get_user_by_login(self, login: str) -> User:
         user = await self.userrepo.get_user_by_login(login=login)
-        if not user:
-            raise NotFound()
+
+        user, = self.check_if_instaces_is_none_returning_tuple(user)
         return user
 
     async def get_user_by_email(self, email: str) -> User:
         user = await self.userrepo.get_user_by_email(email=email)
-        if not user:
-            raise NotFound()
+
+        user, = self.check_if_instaces_is_none_returning_tuple(user)
         return user
     
     async def check_if_user_exists(

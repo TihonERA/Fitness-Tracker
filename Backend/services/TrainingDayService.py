@@ -7,6 +7,7 @@ from redis.asyncio import Redis
 from Backend.models.workout import Workout
 from Backend.repositories.WorkoutRepository import WorkoutRepository
 from Backend.schemas.training_day import TrainingDayCreate, TrainingDayUpdate
+from Backend.services.BaseService import BaseService
 from Backend.services.DayExerciseService import DayExerciseService
 from Backend.utils.decorators import invalidate_cache
 from Backend.utils.uow import UnitOfWork
@@ -14,12 +15,12 @@ from ..utils.exceptions import InternalServerError, NotFound
 from ..repositories.TrainingDayRepository import TrainingDayRepository
 from ..models.trainingday import TrainingDay
 
-class TrainingDayService:
+class TrainingDayService(BaseService):
+
     def __init__(self, uow: UnitOfWork, redis: Redis):
-        self.uow = uow
-        self.redis = redis
         self.trdayrepo = uow.trainingday
         self.workoutrepo = uow.workout
+        super().__init__(uow, redis)
 
     async def get_training_day(
         self,
@@ -32,9 +33,7 @@ class TrainingDayService:
             workout_id=workout_id,
             day_id=day_id
         )
-        if training_day is None:
-            raise NotFound()
-
+        training_day, = self.check_if_instaces_is_none_returning_tuple(training_day)        
         return training_day
 
     @invalidate_cache(column=Workout.workout_id)
@@ -48,8 +47,7 @@ class TrainingDayService:
             user_id=user_id,
             workout_id=workout_id
         )
-        if workout is None:
-            raise NotFound()
+        workout, = self.check_if_instaces_is_none_returning_tuple(workout)
 
         return await self.trdayrepo.create_instance(
             data={**data.model_dump(), "workout_id": workout_id}
@@ -72,11 +70,9 @@ class TrainingDayService:
                 day_id=day_id
             )
         )
-        if (
-            training_day is None
-            or workout is None
-            or training_day.workout_id != workout.workout_id
-        ):
+        workout, training_day = self.check_if_instaces_is_none_returning_tuple(workout, training_day)
+
+        if training_day.workout_id != workout.workout_id:
             raise NotFound()
 
         try:
@@ -108,11 +104,9 @@ class TrainingDayService:
                 day_id=day_id
             )
         )
-        if (
-            workout is None
-            or training_day is None
-            or workout.workout_id != training_day.workout_id
-        ):
+        workout, training_day = self.check_if_instaces_is_none_returning_tuple(workout, training_day)
+
+        if workout.workout_id != training_day.workout_id:
             raise NotFound()
 
         await self.trdayrepo.delete_training_day(

@@ -1,4 +1,5 @@
 import asyncio
+from Backend.services.BaseService import BaseService
 from Backend.services.TrainingDayService import TrainingDayService
 from Backend.utils.uow import UnitOfWork
 from ..schemas.workout import WorkoutCreate, WorkoutGetAllFilter, WorkoutResponse, WorkoutUpdate
@@ -11,13 +12,12 @@ from ..utils.exceptions import InternalServerError, NotFound
 from datetime import timedelta
 from uuid import UUID
 
-class WorkoutService:
+class WorkoutService(BaseService):
 
     def __init__(self, uow: UnitOfWork, redis: Redis):
-        self.uow = uow
         self.workoutrepo = uow.workout
-        self.redis = redis
-
+        super().__init__(uow, redis)
+        
     async def create_workout(
         self,
         user_id: UUID,
@@ -67,8 +67,7 @@ class WorkoutService:
         workout = await self.workoutrepo.get_workout_for_update(
             workout_id=workout_id,
         )
-        if workout is None:
-            raise NotFound()
+        workout, = self.check_if_instaces_is_none_returning_tuple(workout)
 
         if workout.user_id != user_id:
             raise NotFound()
@@ -93,8 +92,7 @@ class WorkoutService:
         workout = await self.workoutrepo.get_workout_for_update(
             workout_id=workout_id
         )
-        if workout is None:
-            raise NotFound()
+        workout, = self.check_if_instaces_is_none_returning_tuple(workout)
 
         if workout.user_id != user_id:
             raise NotFound()
