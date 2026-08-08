@@ -29,10 +29,14 @@ async def db_session():
         
         await session.rollback()
 
-@pytest.fixture(scope="session", autouse=True)
-async def setup_and_teardown_database():
+@pytest.fixture(scope="session")
+async def setup_migrations():
     alembic_cfg = Config(str(alembic_ini_path))
     await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
+
+
+@pytest.fixture(scope="function", autouse=True)
+async def setup_and_teardown_database():
 
     target_tables = cast(
         list[Table],
@@ -46,10 +50,12 @@ async def setup_and_teardown_database():
         ]
     )
     async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all, tables=target_tables)
         await conn.run_sync(Base.metadata.create_all, tables=target_tables)
 
     yield
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all, tables=target_tables)
 
 @pytest.fixture(scope="function", autouse=True)
 async def clear_redis():
