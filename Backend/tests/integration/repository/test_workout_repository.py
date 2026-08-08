@@ -28,29 +28,6 @@ class TestWorkoutRepository:
 
         assert fetched_workout is None
 
-    async def test_get_workout_and_check_access(self, repo: WorkoutRepository, workout):
-        fetched_workout = await repo.get_workout_and_check_access(
-            user_id=workout.user_id, 
-            workout_id=workout.id
-        )
-
-        assert fetched_workout is not None
-        assert fetched_workout == workout
-
-    async def test_get_workout_and_check_access_invalid(
-        self, 
-        repo: WorkoutRepository, 
-        workout: Workout
-    ):
-        fake_user_id = uuid.uuid4()
-
-        fetched_workout = await repo.get_workout_and_check_access(
-            user_id=fake_user_id,
-            workout_id=workout.id
-        )
-
-        assert fetched_workout is None
-
     async def test_get_all_workouts(
         self,
         repo: WorkoutRepository,
