@@ -15,6 +15,22 @@ class DayExerciseRepository(SQLAlchemyAbstractRepository[DayExercise]):
     def __init__(self, session: AsyncSession):
         super().__init__(session, DayExercise)
 
+    async def get_day_exercise(
+        self,
+        day_id: int,
+        exercise_id: int
+    ) -> DayExercise | None:
+        stmt = (
+            select(DayExercise)
+            .where(
+                DayExercise.day_id == day_id,
+                DayExercise.exercise_id == exercise_id
+            )
+        )
+
+        result = await self.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_day_exercise_for_update( 
         self,
         day_id: int,
@@ -36,7 +52,7 @@ class DayExerciseRepository(SQLAlchemyAbstractRepository[DayExercise]):
         self,
         day_id: int,
         exercise_id: int
-    ) -> int:
+    ) -> None:
         stmt = (
             delete(self.model)
             .where(
@@ -46,4 +62,3 @@ class DayExerciseRepository(SQLAlchemyAbstractRepository[DayExercise]):
         )
 
         result = await self.execute(stmt)
-        return result.rowcount #type: ignore
