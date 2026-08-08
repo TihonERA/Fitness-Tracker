@@ -43,6 +43,19 @@ class SQLAlchemyAbstractRepository(Generic[ModelT]):
         result = await self.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_instance_by_column(
+        self,
+        column: InstrumentedAttribute,
+        search_value: int | str
+    ) -> ModelT | None:
+        stmt = (
+            select(self.model)
+            .where(column == search_value)
+        )
+
+        result = await self.execute(stmt)
+        return result.scalar_one_or_none()
+
     
     async def get_instance_for_update(
         self,
