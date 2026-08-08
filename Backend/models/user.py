@@ -6,11 +6,12 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .workout import Workout
+    from .exercise_history import ExerciseHistory
 
 class User(Base):
     __tablename__ = "user"
 
-    user_id: Mapped[UUID] = mapped_column(
+    id: Mapped[UUID] = mapped_column(
         primary_key=True,
         default=uuid4,
         server_default=text("gen_random_uuid()")
@@ -32,3 +33,4 @@ class User(Base):
     )
 
     workouts: Mapped[list["Workout"]] = relationship(back_populates="user")
+    exercises_history: Mapped[list["ExerciseHistory"]] = relationship(back_populates="user")

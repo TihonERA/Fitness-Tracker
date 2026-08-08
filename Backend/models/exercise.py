@@ -5,11 +5,12 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .dayexercise import DayExercise
+    from .exercise_history import ExerciseHistory
 
 class Exercise(Base):
     __tablename__ = "exercise"
 
-    exercise_id: Mapped[int] = mapped_column(
+    id: Mapped[int] = mapped_column(
         primary_key=True, 
         autoincrement=True
     )
@@ -33,3 +34,4 @@ class Exercise(Base):
     )
 
     day_exercises: Mapped[list["DayExercise"]] = relationship(back_populates="exercises")
+    exercises_history: Mapped[list["ExerciseHistory"]] = relationship(back_populates="exercise")

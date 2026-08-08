@@ -12,12 +12,12 @@ if TYPE_CHECKING:
 class Workout(Base):
     __tablename__ = "workout"
 
-    workout_id: Mapped[int] = mapped_column(
+    id: Mapped[int] = mapped_column(
         primary_key=True, 
         autoincrement=True
     )
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("user.user_id", ondelete="CASCADE"),
+        ForeignKey("user.id", ondelete="CASCADE"),
         index=True,
         nullable=False
     )
@@ -33,12 +33,6 @@ class Workout(Base):
     public: Mapped[bool] = mapped_column(
         default=False,
         nullable=False
-    )
-    rate: Mapped[float] = mapped_column(
-        Float(precision=2),
-        default=0.0,
-        nullable=False,
-        comment="Оценка от 0 до 10"
     )
 
     user: Mapped["User"] = relationship(back_populates="workouts")

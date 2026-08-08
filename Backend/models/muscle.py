@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 class Muscle(Base):
     __tablename__ = "muscle"
 
-    muscle_id: Mapped[int] = mapped_column(
+    id: Mapped[int] = mapped_column(
         primary_key=True,
         autoincrement=True
     )
