@@ -4,7 +4,7 @@ from Backend.services.TrainingDayService import TrainingDayService
 
 from Backend.utils.uow import UnitOfWork
 from Backend.utils.decorators import cache, invalidate_cache
-from Backend.utils.exceptions import InternalServerError, NotFound, DBErrorHandler
+from Backend.utils.exceptions import Forbidden, InternalServerError, NotFound, DBErrorHandler
 
 
 from ..schemas.workout import WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter, WorkoutResponse, WorkoutUpdate
@@ -49,11 +49,17 @@ class WorkoutService(BaseService):
         workout_id: int,
         user_id: UUID  
     ) -> Workout:
-        workout = await self._get_workout_or_raise(workout_id=workout_id)
-        if workout.user_id != user_id:
-            raise NotFound()
+        async with self.uow as uow:
+            workout = await uow.workout.get_workout(workout_id=workout_id)
 
-        return workout
+            print(workout)
+            if not self.check_if_instaces_is_not_none(workout):
+                raise NotFound()
+
+            if not self.check_if_user_have_access(workout, user_id):
+                raise Forbidden()
+
+            return workout
 
     async def get_all_workouts(self, 
         filter: WorkoutGetAllFilter,
@@ -204,11 +210,3 @@ class WorkoutService(BaseService):
             return "under_trained" 
         elif difference > 1.3:
             return "over_trained"
-
-    async def _get_workout_or_raise(self, workout_id: int) -> Workout:
-        workout = await self.workoutrepo.get_workout(workout_id=workout_id)
-        if not workout:
-            raise NotFound()
-        return workout
-    
-    
