@@ -2,7 +2,7 @@ import asyncio
 from Backend.services.BaseService import BaseService
 from Backend.services.TrainingDayService import TrainingDayService
 from Backend.utils.uow import UnitOfWork
-from ..schemas.workout import WorkoutCreate, WorkoutGetAllFilter, WorkoutResponse, WorkoutUpdate
+from ..schemas.workout import WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter, WorkoutResponse, WorkoutUpdate
 from ..repositories.WorkoutRepository import WorkoutRepository
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,19 +15,22 @@ from uuid import UUID
 class WorkoutService(BaseService):
 
     def __init__(self, uow: UnitOfWork, redis: Redis):
-        self.workoutrepo = uow.workout
-        super().__init__(uow, redis)
+        super().__init__(uow=uow, redis=redis)
         
     async def create_workout(
         self,
         user_id: UUID,
         data: WorkoutCreate
     ):
-        return await self.workoutrepo.create_instance(
-            data={**data.model_dump(), "user_id": user_id}
-        )
+        async with self.uow as uow:
+            data_dto = WorkoutCreateDTO(
+                **data.model_dump(),
+                user_id=user_id
+            )
+            return await uow.workout.create_instance(
+                data=data_dto
+            )
             
-    @cache(ttl=timedelta(hours=12), column=Workout.workout_id, schema=WorkoutResponse)
     async def get_workout(
         self,
         workout_id: int,
@@ -57,15 +60,14 @@ class WorkoutService(BaseService):
         workouts = await asyncio.gather(*tasks)
         return list(workouts)
 
-    @invalidate_cache(column=Workout.workout_id)
     async def update_workout(
         self,
         user_id: UUID,
         workout_id: int,
         data: WorkoutUpdate
     ) -> Workout:
-        workout = await self.workoutrepo.get_workout_for_update(
-            workout_id=workout_id,
+        workout = await self.workoutrepo.get_instance_for_update(
+            id=workout_id,
         )
         workout, = self.check_if_instaces_is_none_returning_tuple(workout)
 
@@ -75,7 +77,7 @@ class WorkoutService(BaseService):
         try:
             updated_workout = await self.workoutrepo.update_instance(
                 instance=workout,
-                data=data.model_dump(exclude_unset=True)
+                data=data
             )
         except AttributeError as e:
             raise InternalServerError(
@@ -83,21 +85,20 @@ class WorkoutService(BaseService):
             )
         return updated_workout
        
-    @invalidate_cache(column=Workout.workout_id)
     async def delete_workout(
         self,
         user_id: UUID,
         workout_id: int
     ) -> Workout:
-        workout = await self.workoutrepo.get_workout_for_update(
-            workout_id=workout_id
+        workout = await self.workoutrepo.get_instance_for_update(
+            id=workout_id
         )
         workout, = self.check_if_instaces_is_none_returning_tuple(workout)
 
         if workout.user_id != user_id:
             raise NotFound()
 
-        await self.workoutrepo.delete_workout(workout_id=workout_id)
+        await self.workoutrepo.delete_by_id(id=workout_id)
 
         return workout
 

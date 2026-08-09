@@ -25,6 +25,9 @@ class WorkoutRelationsResponse(WorkoutResponse):
 class WorkoutCreate(WorkoutBase):
     public: bool = False
 
+class WorkoutCreateDTO(WorkoutCreate):
+    user_id: UUID
+
 class WorkoutUpdate(BaseModel):
     name: Str100 | None = None
     description: StrText | None = None
