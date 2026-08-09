@@ -1,15 +1,25 @@
 import asyncio
 from Backend.services.BaseService import BaseService
 from Backend.services.TrainingDayService import TrainingDayService
+
 from Backend.utils.uow import UnitOfWork
+from Backend.utils.decorators import cache, invalidate_cache
+from Backend.utils.exceptions import InternalServerError, NotFound, DBErrorHandler
+
+
 from ..schemas.workout import WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter, WorkoutResponse, WorkoutUpdate
+
 from ..repositories.WorkoutRepository import WorkoutRepository
+
 from redis.asyncio import Redis
+
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
+
 from ..models.workout import Workout
-from ..utils.decorators import cache, invalidate_cache
-from ..utils.exceptions import InternalServerError, NotFound
+
 from datetime import timedelta
+
 from uuid import UUID
 
 class WorkoutService(BaseService):
@@ -21,15 +31,18 @@ class WorkoutService(BaseService):
         self,
         user_id: UUID,
         data: WorkoutCreate
-    ):
-        async with self.uow as uow:
-            data_dto = WorkoutCreateDTO(
-                **data.model_dump(),
-                user_id=user_id
-            )
-            return await uow.workout.create_instance(
-                data=data_dto
-            )
+    ) -> Workout:
+        try:
+            async with self.uow as uow:
+                data_dto = WorkoutCreateDTO(
+                    **data.model_dump(),
+                    user_id=user_id
+                )
+                return await uow.workout.create_instance(
+                    data=data_dto
+                )
+        except IntegrityError as e:
+            DBErrorHandler.handle_integrity_error(e=e)
             
     async def get_workout(
         self,
