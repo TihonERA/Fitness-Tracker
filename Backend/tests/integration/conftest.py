@@ -128,6 +128,6 @@ async def user(db_session):
         hash_password="$argon2id$v=19$m=65536,t=3,p=4$b04HUqHrntSERdQIO+Nz0A$hmNV+lnF9Y6t46tCnXfBJEIxH4MEZZuE69h8RCjBmhA"
     )
     db_session.add(user)
-    await db_session.flush()
+    await db_session.commit()
 
     yield user

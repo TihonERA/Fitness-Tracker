@@ -34,8 +34,8 @@ class WorkoutRepository(SQLAlchemyAbstractRepository[Workout]):
         limit: int, 
         user_id: UUID | None = None, 
         public: bool | None = None
-    ) -> Sequence[int]:
-        stmt = select(Workout.id)
+    ) -> Sequence[Workout]:
+        stmt = select(Workout)
         if user_id:
             stmt = stmt.where(
                 Workout.user_id == user_id,

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, RootModel
 from .base import StrText, Str100, BaseResponse
 
 from .training_day import TrainingDayRelataionsResponse
@@ -14,10 +14,9 @@ class WorkoutBase(BaseModel):
     description: StrText | None = None
 
 class WorkoutResponse(BaseResponse, WorkoutBase):
-    workout_id: int
+    id: int
     user_id: UUID
     public: bool
-    rate: float
 
 class WorkoutRelationsResponse(WorkoutResponse):
     training_days: list[TrainingDayRelataionsResponse] = []
@@ -38,3 +37,5 @@ class WorkoutGetAllFilter(BaseModel):
     limit: LimitInt
     user_id: UUID | None = None
     public: bool | None = None
+
+ListWorkoutResponse = RootModel[list[WorkoutResponse]]

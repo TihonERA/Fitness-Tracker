@@ -1,4 +1,5 @@
 import asyncio
+from typing import Sequence
 from Backend.services.BaseService import BaseService
 from Backend.services.TrainingDayService import TrainingDayService
 
@@ -6,8 +7,9 @@ from Backend.utils.uow import UnitOfWork
 from Backend.utils.decorators import cache, invalidate_cache
 from Backend.utils.exceptions import Forbidden, InternalServerError, NotFound, DBErrorHandler
 
+import json
 
-from ..schemas.workout import WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter, WorkoutResponse, WorkoutUpdate
+from ..schemas.workout import ListWorkoutResponse, WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter, WorkoutResponse, WorkoutUpdate
 
 from ..repositories.WorkoutRepository import WorkoutRepository
 
@@ -52,7 +54,6 @@ class WorkoutService(BaseService):
         async with self.uow as uow:
             workout = await uow.workout.get_workout(workout_id=workout_id)
 
-            print(workout)
             if not self.check_if_instaces_is_not_none(workout):
                 raise NotFound()
 
@@ -63,21 +64,38 @@ class WorkoutService(BaseService):
 
     async def get_all_workouts(self, 
         filter: WorkoutGetAllFilter,
-    ):
-        workouts_id = await self.workoutrepo.get_all_workouts(
-            skip=filter.skip,
-            limit=filter.limit,
-            user_id=filter.user_id,
-            public=filter.public
+    ) -> list[WorkoutResponse]:
+        key = "workouts:all:"+":".join(
+            [
+                f"{key}={value}" 
+                for key, value in sorted(filter.model_dump().items())
+            ]
         )
+        workouts = await self.redis.get(key)
 
-        if not workouts_id:
-            return []
-        
-        tasks = [self._get_workout_or_raise(workout_id) for workout_id in workouts_id]
+        if workouts:
+            return ListWorkoutResponse.model_validate_json(workouts).root
 
-        workouts = await asyncio.gather(*tasks)
-        return list(workouts)
+        async with self.uow as uow:
+            workouts = await uow.workout.get_all_workouts(
+                skip=filter.skip,
+                limit=filter.limit,
+                user_id=filter.user_id,
+                public=filter.public
+            )
+
+            if not workouts:
+                return []
+
+            validated_workouts = ListWorkoutResponse.model_validate(workouts)
+
+            await self.redis.set(
+                name=key, 
+                value=validated_workouts.model_dump_json(), 
+                ex=timedelta(hours=12)
+            )
+
+            return validated_workouts.root
 
     async def update_workout(
         self,
