@@ -9,7 +9,7 @@ from Backend.utils.exceptions import Forbidden, InternalServerError, NotFound, D
 
 import json
 
-from ..schemas.workout import ListWorkoutResponse, WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter, WorkoutResponse, WorkoutUpdate
+from ..schemas.workout import ListWorkoutResponse, WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter, WorkoutRelationsResponse, WorkoutResponse, WorkoutUpdate
 
 from ..repositories.WorkoutRepository import WorkoutRepository
 
@@ -46,11 +46,16 @@ class WorkoutService(BaseService):
         except IntegrityError as e:
             DBErrorHandler.handle_integrity_error(e=e)
             
-    async def get_workout(
+    async def get_loaded_workout(
         self,
         workout_id: int,
         user_id: UUID  
-    ) -> Workout:
+    ) -> Workout | bytes | str:
+        key = "loaded_workout:" + f"user_id={user_id}:workout_id={workout_id}"
+
+        if workout := await self.redis.get(key):
+            return workout
+
         async with self.uow as uow:
             workout = await uow.workout.get_workout(workout_id=workout_id)
 
@@ -60,28 +65,36 @@ class WorkoutService(BaseService):
             if not self.check_if_user_have_access(workout, user_id):
                 raise Forbidden()
 
+            validated_workout = WorkoutRelationsResponse.model_validate(workout)
+            
+            await self.redis.set(
+                name=key,
+                value=validated_workout.model_dump_json(),
+                ex=timedelta(hours=12)
+            )
+
             return workout
 
     async def get_all_workouts(self, 
+        user_id: UUID,
         filter: WorkoutGetAllFilter,
-    ) -> list[WorkoutResponse]:
-        key = "workouts:all:"+":".join(
-            [
-                f"{key}={value}" 
-                for key, value in sorted(filter.model_dump().items())
-            ]
-        )
-        workouts = await self.redis.get(key)
+    ) -> Sequence[Workout] | bytes | str:
+        cache_parts = [f"{key}={value}" for key, value in sorted(filter.model_dump().items())]
+        key = "workouts:all:"+":".join(cache_parts)
 
-        if workouts:
-            return ListWorkoutResponse.model_validate_json(workouts).root
+        if workouts_json := await self.redis.get(key):
+            return workouts_json
 
         async with self.uow as uow:
+            is_public = filter.public
+            if user_id != filter.user_id and not is_public:
+                is_public = True
+
             workouts = await uow.workout.get_all_workouts(
                 skip=filter.skip,
                 limit=filter.limit,
                 user_id=filter.user_id,
-                public=filter.public
+                public=is_public
             )
 
             if not workouts:
@@ -95,7 +108,7 @@ class WorkoutService(BaseService):
                 ex=timedelta(hours=12)
             )
 
-            return validated_workouts.root
+            return workouts
 
     async def update_workout(
         self,
@@ -103,24 +116,25 @@ class WorkoutService(BaseService):
         workout_id: int,
         data: WorkoutUpdate
     ) -> Workout:
-        workout = await self.workoutrepo.get_instance_for_update(
-            id=workout_id,
-        )
-        workout, = self.check_if_instaces_is_none_returning_tuple(workout)
+        async with self.uow as uow:
+            workout = await uow.workout.get_instance_for_update(
+                id=workout_id,
+            )
 
-        if workout.user_id != user_id:
-            raise NotFound()
-        
-        try:
-            updated_workout = await self.workoutrepo.update_instance(
+            if not self.check_if_instaces_is_not_none(workout):
+                raise NotFound()
+
+            if not self.check_if_user_have_access(workout, user_id):
+                raise Forbidden()
+            
+            updated_workout = await uow.workout.update_instance(
                 instance=workout,
                 data=data
             )
-        except AttributeError as e:
-            raise InternalServerError(
-                detail=f"Table: {workout.__tablename__} dont have attribute {e.name}, that was declared at a pydantic model"
-            )
-        return updated_workout
+
+            await uow.commit()
+
+            return updated_workout
        
     async def delete_workout(
         self,

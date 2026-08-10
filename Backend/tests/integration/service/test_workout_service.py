@@ -6,7 +6,7 @@ from redis.asyncio import Redis
 
 from Backend.models.user import User
 from Backend.models.workout import Workout
-from Backend.schemas.workout import WorkoutCreate, WorkoutGetAllFilter
+from Backend.schemas.workout import ListWorkoutResponse, WorkoutCreate, WorkoutGetAllFilter
 from Backend.services.WorkoutService import WorkoutService
 from Backend.utils.exceptions import NotFound
 from Backend.utils.uow import UnitOfWork
@@ -51,6 +51,20 @@ class TestWorkoutService:
         with pytest.raises(NotFound):
             await service.create_workout(user_id=uuid.uuid4(), data=data)
 
+    async def test_get_loaded_workouts(
+        self,
+        service: WorkoutService,
+        workout: Workout
+    ):
+        fetched_workout = await service.get_loaded_workout(
+            user_id=workout.user_id,
+            workout_id=workout.id
+        )
+
+        assert isinstance(fetched_workout, Workout)
+        assert len(fetched_workout.training_days) > 0
+        assert len(fetched_workout.training_days[0].day_exercises) > 0
+
         
     async def test_get_all_workouts_cache(
         self,
@@ -65,7 +79,7 @@ class TestWorkoutService:
             limit=50,
             user_id=workout.user_id
         )
-        result1 = await service.get_all_workouts(filter=filter)
+        db_result = await service.get_all_workouts(user_id=workout.user_id, filter=filter)
         
         caches = [key async for key in redis.scan_iter(match="workouts:all:*")]
 
@@ -73,7 +87,39 @@ class TestWorkoutService:
 
         await db_session.delete(workout)
 
-        result2 = await service.get_all_workouts(filter=filter)
+        cache_result = await service.get_all_workouts(user_id=workout.user_id, filter=filter)
 
-        assert result2 != []
-        assert result1 == result2
+        assert isinstance(cache_result, (str, bytes))
+
+        expected_data = ListWorkoutResponse.model_validate(db_result)
+        actual_data = ListWorkoutResponse.model_validate_json(cache_result)
+
+        assert expected_data == actual_data
+
+        
+    async def test_get_all_workouts_access_rights(
+        self,
+        service: WorkoutService,
+        db_session: AsyncSession,
+        random_workouts: list[Workout]
+    ):
+        for workout in random_workouts:
+            db_session.add(workout)
+
+        await db_session.flush()
+
+        filter = WorkoutGetAllFilter(
+            skip=0,
+            limit=50,
+            user_id=random_workouts[0].user_id,
+            public=False
+        )
+
+        fetched_workouts = await service.get_all_workouts(
+            user_id=uuid.uuid4(),
+            filter=filter
+        )
+        
+        assert isinstance(fetched_workouts, list)
+
+        assert all([workout.public == True for workout in fetched_workouts])

@@ -18,6 +18,10 @@ from alembic.config import Config
 from alembic import command
 from pathlib import Path
 
+import random
+
+from faker import Faker
+
 from typing import cast
 
 alembic_ini_path = Path(__file__).parent.parent.parent.parent / "alembic.ini"
@@ -131,3 +135,22 @@ async def user(db_session):
     await db_session.commit()
 
     yield user
+
+@pytest.fixture
+async def random_workouts(user: User, db_session: AsyncSession, faker: Faker):
+    workouts = []
+    for i in range(1, 11):
+        workout = Workout(
+            id=i, 
+            user_id=user.id, 
+            name=faker.catch_phrase(),
+            description=faker.paragraph(nb_sentences=3),
+            public=random.choice([True, False])
+        )
+        db_session.add(workout)
+        await db_session.flush()
+            
+        workouts.append(workout)
+        
+    return workouts
+

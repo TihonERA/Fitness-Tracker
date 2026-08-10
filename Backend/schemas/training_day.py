@@ -13,7 +13,7 @@ class TrainingDayBase(BaseModel):
     day_order: DayOrderInt
 
 class TrainingDayResponse(BaseResponse, TrainingDayBase):
-    day_id: int
+    id: int
 
 class TrainingDayRelataionsResponse(TrainingDayResponse):
     day_exercises: list[DayExerciseResponse] = []
