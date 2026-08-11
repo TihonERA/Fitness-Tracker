@@ -1,7 +1,11 @@
-from ..utils.uow import UnitOfWork
-from ..utils.exceptions import NotFound
+from uuid import UUID
 
-from typing import Any
+from Backend.core.cache_service import CacheService
+from Backend.models.base import ModelT
+
+from ..utils.uow import UnitOfWork
+
+from typing import Any, TypeGuard
 
 from redis.asyncio import Redis
 
@@ -13,11 +17,23 @@ class BaseService:
         redis: Redis 
     ) -> None:
         self.uow = uow
-        self.redis = redis
+        self.cache_service = CacheService(redis=redis)
 
     @staticmethod
-    def check_if_instaces_is_none_returning_tuple(*args: Any) -> tuple[Any, ...]:
+    def check_if_instaces_is_not_none(*args: ModelT | None) -> TypeGuard[ModelT]:
         for instance in args:
             if instance is None:
-                raise NotFound()
-        return args
+                return False
+        return True
+
+    @staticmethod
+    def check_if_user_have_access(
+        instance: ModelT | None, 
+        user_id: UUID
+    ) -> TypeGuard[ModelT]:
+        user_id_column = getattr(instance, "user_id", None)
+        
+        if user_id_column != user_id:
+            return False
+
+        return True

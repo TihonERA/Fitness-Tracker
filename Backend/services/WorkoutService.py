@@ -1,5 +1,6 @@
 import asyncio
 from typing import Sequence
+from Backend.core.cache_service import CacheService
 from Backend.services.BaseService import BaseService
 from Backend.services.TrainingDayService import TrainingDayService
 
@@ -9,7 +10,7 @@ from Backend.utils.exceptions import Forbidden, InternalServerError, NotFound, D
 
 import json
 
-from ..schemas.workout import ListWorkoutResponse, WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter, WorkoutRelationsResponse, WorkoutResponse, WorkoutUpdate
+from ..schemas.workout import ListWorkoutResponse, WorkoutCachePrefixs, WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter, WorkoutRelationsResponse, WorkoutResponse, WorkoutUpdate
 
 from ..repositories.WorkoutRepository import WorkoutRepository
 
@@ -51,9 +52,13 @@ class WorkoutService(BaseService):
         workout_id: int,
         user_id: UUID  
     ) -> Workout | bytes | str:
-        key = "loaded_workout:" + f"user_id={user_id}:workout_id={workout_id}"
+        key = self.cache_service.formate_key(
+            prefix=WorkoutCachePrefixs.loaded_workout,
+            workout_id=workout_id,
+            user_id=user_id
+        )
 
-        if workout := await self.redis.get(key):
+        if workout := await self.cache_service.get(key):
             return workout
 
         async with self.uow as uow:
@@ -67,10 +72,9 @@ class WorkoutService(BaseService):
 
             validated_workout = WorkoutRelationsResponse.model_validate(workout)
             
-            await self.redis.set(
-                name=key,
+            await self.cache_service.set(
+                key=key,
                 value=validated_workout.model_dump_json(),
-                ex=timedelta(hours=12)
             )
 
             return workout
@@ -79,41 +83,29 @@ class WorkoutService(BaseService):
         user_id: UUID,
         filter: WorkoutGetAllFilter,
     ) -> Sequence[Workout] | bytes | str:
-        search_user_id = filter.user_id
-        if search_user_id is None:
-            search_user_id = user_id
+        filter_dump = filter.model_dump(exclude_unset=True)
+        filter_dump["user_id"] = filter.user_id or user_id
+        filter_dump["public"] = filter.public or (user_id != filter_dump["user_id"])
 
-        search_public = filter.public
-        if user_id != search_user_id and not search_public:
-            search_public = True
+        key = self.cache_service.formate_key(
+            prefix=WorkoutCachePrefixs.all_workouts,
+            filter=filter_dump
+        )
 
-        filter_dump = filter.model_dump()
-        filter_dump["user_id"] = search_user_id
-        filter_dump["public"] = search_public
-
-        cache_parts = [f"{key}={value}" for key, value in sorted(filter_dump.items())]
-        key = "workouts:all:"+":".join(cache_parts)
-
-        if workouts_json := await self.redis.get(key):
+        if workouts_json := await self.cache_service.get(key):
             return workouts_json
 
         async with self.uow as uow:
-            workouts = await uow.workout.get_all_workouts(
-                skip=filter.skip,
-                limit=filter.limit,
-                user_id=search_user_id,
-                public=search_public
-            )
+            workouts = await uow.workout.get_all_workouts(**filter_dump)
 
             if not workouts:
                 return []
 
             validated_workouts = ListWorkoutResponse.model_validate(workouts)
 
-            await self.redis.set(
-                name=key, 
-                value=validated_workouts.model_dump_json(), 
-                ex=timedelta(hours=12)
+            await self.cache_service.set(
+                key=key, 
+                value=validated_workouts.model_dump_json()
             )
 
             return workouts
@@ -142,16 +134,18 @@ class WorkoutService(BaseService):
 
             await uow.commit()
 
-            all_workouts_key = f"workouts:all:*user_id={user_id}*"
-            loaded_workouts_key = f"loaded_workout:user_id={user_id}:workout_id={workout_id}"
 
-            all_workouts_keys = [key async for key in self.redis.scan_iter(match=all_workouts_key, count=10)]
-            loaded_workouts_keys = [key async for key in self.redis.scan_iter(match=loaded_workouts_key, count=10)]
-
-            if all_workouts_keys:
-                await self.redis.delete(*all_workouts_keys)
-            if loaded_workouts_keys:
-                await self.redis.delete(*loaded_workouts_keys)
+            await asyncio.gather(
+                self.cache_service.delete_searching_with_pattern(
+                    prefix=WorkoutCachePrefixs.loaded_workout,
+                    user_id=user_id,
+                    workout_id=workout_id
+                ),
+                self.cache_service.delete_searching_with_pattern(
+                    prefix=WorkoutCachePrefixs.all_workouts,
+                    user_id=user_id,
+                )
+            )
 
             return updated_workout
        
@@ -174,16 +168,17 @@ class WorkoutService(BaseService):
 
             await uow.commit()
 
-            all_workouts_key = f"workouts:all:*user_id={user_id}*"
-            loaded_workouts_key = f"loaded_workout:user_id={user_id}:workout_id={workout_id}"
-
-            all_workouts_keys = [key async for key in self.redis.scan_iter(match=all_workouts_key, count=10)]
-            loaded_workouts_keys = [key async for key in self.redis.scan_iter(match=loaded_workouts_key, count=10)]
-
-            if all_workouts_keys:
-                await self.redis.delete(*all_workouts_keys)
-            if loaded_workouts_keys:
-                await self.redis.delete(*loaded_workouts_keys)
+            await asyncio.gather(
+                self.cache_service.delete_searching_with_pattern(
+                    prefix=WorkoutCachePrefixs.loaded_workout,
+                    user_id=user_id,
+                    workout_id=workout_id
+                ),
+                self.cache_service.delete_searching_with_pattern(
+                    prefix=WorkoutCachePrefixs.all_workouts,
+                    user_id=user_id,
+                )
+            ) 
 
             return workout
 
