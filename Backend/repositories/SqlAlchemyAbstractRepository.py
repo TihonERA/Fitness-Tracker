@@ -7,6 +7,8 @@ from sqlalchemy.exc import IntegrityError
 from typing import Generic, Sequence, Any
 
 from sqlalchemy.orm import InstrumentedAttribute
+
+from Backend.utils.exceptions import DBSchemaMismatchError
 from ..models.base import ModelT
 
 class SQLAlchemyAbstractRepository(Generic[ModelT]):
@@ -74,9 +76,14 @@ class SQLAlchemyAbstractRepository(Generic[ModelT]):
         instance: ModelT,
         data: BaseModel
     ) -> ModelT:
-        data_dump = data.model_dump()
-        for key, value in data_dump.items():
-            setattr(instance, key, value)   
+        data_dump = data.model_dump(exclude_unset=True)
+        try:
+            for key, value in data_dump.items():
+                setattr(instance, key, value)   
+        except AttributeError as e:
+            raise DBSchemaMismatchError(
+                detail=f"Table {instance.__tablename__} dont have attribute {e.name}, that was declared at pydantic scheme"
+            )
         
         await self.flush()
         return instance

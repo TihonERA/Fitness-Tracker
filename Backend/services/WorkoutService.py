@@ -79,22 +79,30 @@ class WorkoutService(BaseService):
         user_id: UUID,
         filter: WorkoutGetAllFilter,
     ) -> Sequence[Workout] | bytes | str:
-        cache_parts = [f"{key}={value}" for key, value in sorted(filter.model_dump().items())]
+        search_user_id = filter.user_id
+        if search_user_id is None:
+            search_user_id = user_id
+
+        search_public = filter.public
+        if user_id != search_user_id and not search_public:
+            search_public = True
+
+        filter_dump = filter.model_dump()
+        filter_dump["user_id"] = search_user_id
+        filter_dump["public"] = search_public
+
+        cache_parts = [f"{key}={value}" for key, value in sorted(filter_dump.items())]
         key = "workouts:all:"+":".join(cache_parts)
 
         if workouts_json := await self.redis.get(key):
             return workouts_json
 
         async with self.uow as uow:
-            is_public = filter.public
-            if user_id != filter.user_id and not is_public:
-                is_public = True
-
             workouts = await uow.workout.get_all_workouts(
                 skip=filter.skip,
                 limit=filter.limit,
-                user_id=filter.user_id,
-                public=is_public
+                user_id=search_user_id,
+                public=search_public
             )
 
             if not workouts:
@@ -134,6 +142,17 @@ class WorkoutService(BaseService):
 
             await uow.commit()
 
+            all_workouts_key = f"workouts:all:*user_id={user_id}*"
+            loaded_workouts_key = f"loaded_workout:user_id={user_id}:workout_id={workout_id}"
+
+            all_workouts_keys = [key async for key in self.redis.scan_iter(match=all_workouts_key, count=10)]
+            loaded_workouts_keys = [key async for key in self.redis.scan_iter(match=loaded_workouts_key, count=10)]
+
+            if all_workouts_keys:
+                await self.redis.delete(*all_workouts_keys)
+            if loaded_workouts_keys:
+                await self.redis.delete(*loaded_workouts_keys)
+
             return updated_workout
        
     async def delete_workout(
@@ -141,17 +160,32 @@ class WorkoutService(BaseService):
         user_id: UUID,
         workout_id: int
     ) -> Workout:
-        workout = await self.workoutrepo.get_instance_for_update(
-            id=workout_id
-        )
-        workout, = self.check_if_instaces_is_none_returning_tuple(workout)
+        async with self.uow as uow:
+            workout = await uow.workout.get_instance_for_update(
+                id=workout_id
+            )
+            if not self.check_if_instaces_is_not_none(workout):
+                raise NotFound()
 
-        if workout.user_id != user_id:
-            raise NotFound()
+            if not self.check_if_user_have_access(workout, user_id):
+                raise Forbidden()
 
-        await self.workoutrepo.delete_by_id(id=workout_id)
+            await uow.workout.delete_by_id(id=workout_id)
 
-        return workout
+            await uow.commit()
+
+            all_workouts_key = f"workouts:all:*user_id={user_id}*"
+            loaded_workouts_key = f"loaded_workout:user_id={user_id}:workout_id={workout_id}"
+
+            all_workouts_keys = [key async for key in self.redis.scan_iter(match=all_workouts_key, count=10)]
+            loaded_workouts_keys = [key async for key in self.redis.scan_iter(match=loaded_workouts_key, count=10)]
+
+            if all_workouts_keys:
+                await self.redis.delete(*all_workouts_keys)
+            if loaded_workouts_keys:
+                await self.redis.delete(*loaded_workouts_keys)
+
+            return workout
 
     async def get_muscles_distribution_list(self,
         workout_id: int

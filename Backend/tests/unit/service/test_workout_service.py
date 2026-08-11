@@ -7,8 +7,10 @@ from faker import Faker
 import pytest
 from redis.asyncio import Redis
 
+import random
+
 from Backend.models.workout import Workout
-from Backend.schemas.workout import WorkoutCreate, WorkoutCreateDTO
+from Backend.schemas.workout import WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter
 from Backend.services.WorkoutService import WorkoutService
 from Backend.utils.exceptions import Forbidden, NotFound
 from Backend.utils.uow import UnitOfWork
@@ -95,3 +97,29 @@ class TestWorkoutService:
 
         with pytest.raises(NotFound):
             await service.get_workout(workout_id=-1, user_id=workout.user_id)
+    
+    async def test_get_all_workouts_dto(
+        self,
+        service: WorkoutService,
+        mocker,
+        random_workouts: list[Workout]
+    ):
+        mock_uow: Any = service.uow
+        mock_uow.workout.get_all_workouts.return_value = random_workouts
+        service.redis = mocker.AsyncMock()
+        service.redis.get.return_value = None
+
+        filter = WorkoutGetAllFilter(
+            skip=0,
+            limit=50,
+            user_id=random_workouts[0].user_id,
+            public=False
+        )
+
+        fetched_workouts = await service.get_all_workouts(user_id=uuid4(), filter=filter)
+
+        mock_uow.workout.get_all_workouts.assert_called_once()
+
+        send_dto = mock_uow.workout.get_all_workouts.call_args.kwargs["public"]
+
+        assert send_dto
