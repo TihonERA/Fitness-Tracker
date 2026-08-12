@@ -1,6 +1,5 @@
 import asyncio
 from typing import Sequence
-from Backend.core.cache_service import CacheService
 from Backend.services.BaseService import BaseService
 from Backend.services.TrainingDayService import TrainingDayService
 
@@ -10,7 +9,7 @@ from Backend.utils.exceptions import Forbidden, InternalServerError, NotFound, D
 
 import json
 
-from ..schemas.workout import ListWorkoutResponse, WorkoutCachePrefixs, WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter, WorkoutRelationsResponse, WorkoutResponse, WorkoutUpdate
+from ..schemas.workout import WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter, WorkoutGetAllFilterDTO, WorkoutRelationsResponse, WorkoutResponse, WorkoutUpdate
 
 from ..repositories.WorkoutRepository import WorkoutRepository
 
@@ -27,8 +26,8 @@ from uuid import UUID
 
 class WorkoutService(BaseService):
 
-    def __init__(self, uow: UnitOfWork, redis: Redis):
-        super().__init__(uow=uow, redis=redis)
+    def __init__(self, uow: UnitOfWork) -> None:
+        super().__init__(uow=uow)
         
     async def create_workout(
         self,
@@ -52,15 +51,6 @@ class WorkoutService(BaseService):
         workout_id: int,
         user_id: UUID  
     ) -> Workout | bytes | str:
-        key = self.cache_service.formate_key(
-            prefix=WorkoutCachePrefixs.loaded_workout,
-            workout_id=workout_id,
-            user_id=user_id
-        )
-
-        if workout := await self.cache_service.get(key):
-            return workout
-
         async with self.uow as uow:
             workout = await uow.workout.get_workout(workout_id=workout_id)
 
@@ -70,43 +60,17 @@ class WorkoutService(BaseService):
             if not self.check_if_user_have_access(workout, user_id):
                 raise Forbidden()
 
-            validated_workout = WorkoutRelationsResponse.model_validate(workout)
-            
-            await self.cache_service.set(
-                key=key,
-                value=validated_workout.model_dump_json(),
-            )
-
             return workout
 
     async def get_all_workouts(self, 
         user_id: UUID,
-        filter: WorkoutGetAllFilter,
-    ) -> Sequence[Workout] | bytes | str:
-        filter_dump = filter.model_dump(exclude_unset=True)
-        filter_dump["user_id"] = filter.user_id or user_id
-        filter_dump["public"] = filter.public or (user_id != filter_dump["user_id"])
-
-        key = self.cache_service.formate_key(
-            prefix=WorkoutCachePrefixs.all_workouts,
-            filter=filter_dump
-        )
-
-        if workouts_json := await self.cache_service.get(key):
-            return workouts_json
-
+        data: WorkoutGetAllFilterDTO,
+    ) -> Sequence[Workout]:
         async with self.uow as uow:
-            workouts = await uow.workout.get_all_workouts(**filter_dump)
+            workouts = await uow.workout.get_all_workouts(data=data)
 
             if not workouts:
                 return []
-
-            validated_workouts = ListWorkoutResponse.model_validate(workouts)
-
-            await self.cache_service.set(
-                key=key, 
-                value=validated_workouts.model_dump_json()
-            )
 
             return workouts
 
@@ -132,21 +96,6 @@ class WorkoutService(BaseService):
                 data=data
             )
 
-            await uow.commit()
-
-
-            await asyncio.gather(
-                self.cache_service.delete_searching_with_pattern(
-                    prefix=WorkoutCachePrefixs.loaded_workout,
-                    user_id=user_id,
-                    workout_id=workout_id
-                ),
-                self.cache_service.delete_searching_with_pattern(
-                    prefix=WorkoutCachePrefixs.all_workouts,
-                    user_id=user_id,
-                )
-            )
-
             return updated_workout
        
     async def delete_workout(
@@ -165,20 +114,6 @@ class WorkoutService(BaseService):
                 raise Forbidden()
 
             await uow.workout.delete_by_id(id=workout_id)
-
-            await uow.commit()
-
-            await asyncio.gather(
-                self.cache_service.delete_searching_with_pattern(
-                    prefix=WorkoutCachePrefixs.loaded_workout,
-                    user_id=user_id,
-                    workout_id=workout_id
-                ),
-                self.cache_service.delete_searching_with_pattern(
-                    prefix=WorkoutCachePrefixs.all_workouts,
-                    user_id=user_id,
-                )
-            ) 
 
             return workout
 
