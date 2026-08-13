@@ -33,17 +33,14 @@ class WorkoutService(BaseService):
         user_id: UUID,
         data: WorkoutCreate
     ) -> Workout:
-        try:
-            async with self.uow as uow:
-                data_dto = WorkoutCreateDTO(
-                    **data.model_dump(),
-                    user_id=user_id
-                )
-                return await uow.workout.create_instance(
-                    data=data_dto
-                )
-        except IntegrityError as e:
-            DBErrorHandler.handle_integrity_error(e=e)
+        async with self.uow as uow:
+            data_dto = WorkoutCreateDTO(
+                **data.model_dump(),
+                user_id=user_id
+            )
+            return await uow.workout.create_instance(
+                data=data_dto
+            )
             
     async def get_loaded_workout(
         self,

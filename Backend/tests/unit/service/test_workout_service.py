@@ -10,7 +10,7 @@ from redis.asyncio import Redis
 import random
 
 from Backend.models.workout import Workout
-from Backend.schemas.workout import WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter
+from Backend.schemas.workout import WorkoutCreate, WorkoutCreateDTO, WorkoutGetAllFilter, WorkoutGetAllFilterDTO
 from Backend.services.WorkoutService import WorkoutService
 from Backend.utils.exceptions import Forbidden, NotFound
 from Backend.utils.uow import UnitOfWork
@@ -21,8 +21,8 @@ from Backend.tests.unit.conftest import user_id
 class TestWorkoutService:
 
     @pytest.fixture
-    def service(self, uow: UnitOfWork, redis: Redis):
-        return WorkoutService(uow=uow, redis=redis)
+    def service(self, uow, redis):
+        return WorkoutService(uow=uow)
 
     async def test_create_workout_success(
         self, 
@@ -64,7 +64,7 @@ class TestWorkoutService:
         )
         return workout
 
-    async def test_get_workout(
+    async def test_get_loaded_workout(
         self,
         service: WorkoutService,
         workout: Workout
@@ -72,11 +72,11 @@ class TestWorkoutService:
         mock_uow: Any = service.uow
         mock_uow.workout.get_workout.return_value = workout
 
-        created_workout = await service.get_workout(workout_id=workout.id, user_id=workout.user_id)
+        created_workout = await service.get_loaded_workout(workout_id=workout.id, user_id=workout.user_id)
 
         assert created_workout == workout
 
-    async def test_get_workout_forbidden(
+    async def test_get_loaded_workout_forbidden(
         self,
         service: WorkoutService,
         workout: Workout
@@ -85,7 +85,7 @@ class TestWorkoutService:
         mock_uow.workout.get_workout.return_value = workout
 
         with pytest.raises(Forbidden):
-            await service.get_workout(workout_id=workout.id, user_id=uuid4())
+            await service.get_loaded_workout(workout_id=workout.id, user_id=uuid4())
 
     async def test_get_workout_not_found(
         self,
@@ -96,30 +96,16 @@ class TestWorkoutService:
         mock_uow.workout.get_workout.return_value = None
 
         with pytest.raises(NotFound):
-            await service.get_workout(workout_id=-1, user_id=workout.user_id)
+            await service.get_loaded_workout(workout_id=-1, user_id=workout.user_id)
     
     async def test_get_all_workouts_dto(
         self,
-        service: WorkoutService,
-        mocker,
-        random_workouts: list[Workout]
     ):
-        mock_uow: Any = service.uow
-        mock_uow.workout.get_all_workouts.return_value = random_workouts
-        service.redis = mocker.AsyncMock()
-        service.redis.get.return_value = None
-
-        filter = WorkoutGetAllFilter(
-            skip=0,
-            limit=50,
-            user_id=random_workouts[0].user_id,
-            public=False
-        )
-
-        fetched_workouts = await service.get_all_workouts(user_id=uuid4(), filter=filter)
-
-        mock_uow.workout.get_all_workouts.assert_called_once()
-
-        send_dto = mock_uow.workout.get_all_workouts.call_args.kwargs["public"]
-
-        assert send_dto
+        with pytest.raises(Forbidden):
+            WorkoutGetAllFilterDTO(
+                skip=0,
+                limit=50,
+                owner_id=uuid4(),
+                target_user_id=uuid4(),
+                public=False
+            )

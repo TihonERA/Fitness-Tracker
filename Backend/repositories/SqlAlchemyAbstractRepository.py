@@ -8,7 +8,7 @@ from typing import Generic, Sequence, Any
 
 from sqlalchemy.orm import InstrumentedAttribute
 
-from Backend.utils.exceptions import DBSchemaMismatchError
+from Backend.utils.exceptions import DBErrorHandler, DBSchemaMismatchError
 from ..models.base import ModelT
 
 class SQLAlchemyAbstractRepository(Generic[ModelT]):
@@ -31,8 +31,11 @@ class SQLAlchemyAbstractRepository(Generic[ModelT]):
         self, 
         data: BaseModel
     ) -> ModelT:
-        instance = self.model(**data.model_dump())
-        return await self._add_and_refresh_instance(instance)
+        try:
+            instance = self.model(**data.model_dump())
+            return await self._add_and_refresh_instance(instance)
+        except IntegrityError as e:
+            DBErrorHandler.handle_integrity_error(e=e)
 
     async def get_instance_by_id(
         self,

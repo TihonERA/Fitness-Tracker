@@ -1,15 +1,15 @@
 import pytest
 
-from Backend.core.cache_service import CacheService
+from Backend.cache_proxies.CacheBaseProxy import CacheBaseProxy
 
 @pytest.mark.asyncio(loop_scope="session")
-class TestCacheService:
+class TestCacheBaseProxy:
 
     @pytest.fixture
     def service(self, mocker):
-        return CacheService(redis=mocker.AsyncMock())
+        return CacheBaseProxy(redis=mocker.AsyncMock(), scheme=mocker.Mock())
 
-    async def test_formate_key_flat_args(self, service: CacheService):
+    async def test_formate_key_flat_args(self, service: CacheBaseProxy):
         key = service.formate_key(
             prefix="workout:all",
             user_id="0000",
@@ -18,7 +18,7 @@ class TestCacheService:
 
         assert key == "workout:all:user_id=0000:workout_id=-1"
 
-    async def test_formate_key_sorting_stability(self, service: CacheService):
+    async def test_formate_key_sorting_stability(self, service: CacheBaseProxy):
         key1 = service.formate_key(
             prefix="workout:all",
             user_id="0000",
@@ -33,7 +33,7 @@ class TestCacheService:
 
         assert key1 == key2
 
-    async def test_formate_key_nested_dict(self, service: CacheService):
+    async def test_formate_key_nested_dict(self, service: CacheBaseProxy):
         key = service.formate_key(
             prefix="workout:all",
             filter={
