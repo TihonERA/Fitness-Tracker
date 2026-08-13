@@ -52,7 +52,7 @@ class WorkoutGetAllFilterDTO(BaseModel):
     public: bool | None
 
     @model_validator(mode="after")
-    def validate_access(self) -> WorkoutGetAllFilterDTO:
+    def validate_access(self) -> "WorkoutGetAllFilterDTO":
         if self.target_user_id is None:
             self.target_user_id = self.owner_id
             return self

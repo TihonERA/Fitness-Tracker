@@ -4,7 +4,6 @@ from Backend.services.BaseService import BaseService
 from Backend.services.TrainingDayService import TrainingDayService
 
 from Backend.utils.uow import UnitOfWork
-from Backend.utils.decorators import cache, invalidate_cache
 from Backend.utils.exceptions import Forbidden, InternalServerError, NotFound, DBErrorHandler
 
 import json
@@ -63,7 +62,6 @@ class WorkoutService(BaseService):
             return workout
 
     async def get_all_workouts(self, 
-        user_id: UUID,
         data: WorkoutGetAllFilterDTO,
     ) -> Sequence[Workout]:
         async with self.uow as uow:

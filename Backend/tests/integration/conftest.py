@@ -1,5 +1,6 @@
 import asyncio
 import pytest
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import Table, select, text
@@ -14,6 +15,7 @@ from Backend.models.training_day_history import TrainingDayHistory
 from Backend.models.exercise_history import ExerciseHistory
 from Backend.core.database import async_session_factory, async_engine
 from Backend.core.database import get_redis
+from Backend.core.config import settings
 from alembic.config import Config
 from alembic import command
 from pathlib import Path
@@ -23,6 +25,8 @@ import random
 from faker import Faker
 
 from typing import cast
+
+from Backend.utils.uow import UnitOfWork
 
 alembic_ini_path = Path(__file__).parent.parent.parent.parent / "alembic.ini"
 
@@ -153,4 +157,12 @@ async def random_workouts(user: User, db_session: AsyncSession, faker: Faker):
         workouts.append(workout)
         
     return workouts
+
+@pytest.fixture
+def uow(db_session):
+    return UnitOfWork(session_maker=async_session_factory)
+
+@pytest.fixture
+def redis():
+    return Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 

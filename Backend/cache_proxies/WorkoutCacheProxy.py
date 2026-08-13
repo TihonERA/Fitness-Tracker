@@ -86,7 +86,6 @@ class WorkoutCacheProxy(CacheBaseProxy[Workout]):
         )
         origin_call = partial(
             self.workout_service.get_all_workouts,
-            user_id=user_id,
             data=data_dto
         )
 
@@ -103,10 +102,11 @@ class WorkoutCacheProxy(CacheBaseProxy[Workout]):
     ) -> None:
         loaded_workout_key = self.formate_key(
             prefix=WorkoutCachePrefixes.loaded_workout, 
+            user_id=user_id,
             workout_id=workout_id
         )
         workouts_all_key = self.formate_key(
-            prefix=WorkoutCachePrefixes.all_workouts,
+            prefix=WorkoutCachePrefixes.version,
             user_id=user_id
         )
         await asyncio.gather(
