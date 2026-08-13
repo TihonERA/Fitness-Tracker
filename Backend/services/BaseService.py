@@ -22,17 +22,28 @@ class BaseService:
     ) -> None:
         self.uow = uow
 
-    async def _get_instance_and_validate(
+    async def _get_existing_instance(
         self,
-        id: int, 
-        user_id: UUID,
-        repo_get_func: Callable[[int], Awaitable]
-    ):
-        instance = await repo_get_func(id)
+        identifier: int | UUID | str,
+        repo_get_func: Callable[[Any], Awaitable[ModelT | None]]
+    ) -> ModelT:
+        instance = await repo_get_func(identifier)
 
         if instance is None:
             raise NotFound()
 
+        return instance
+
+    async def _get_instance_with_access(
+        self,
+        identifier: int | UUID | str, 
+        user_id: UUID,
+        repo_get_func: Callable[[Any], Awaitable[ModelT | None]]
+    ) -> ModelT:
+        instance = await self._get_existing_instance(
+            identifier=identifier,
+            repo_get_func=repo_get_func
+        )
         if not self.check_access(instance, user_id):
             raise Forbidden()
 

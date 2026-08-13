@@ -31,31 +31,25 @@ class UserService(BaseService):
 
     async def get_user_by_id(self, user_id: UUID) -> User:
         async with self.uow as uow:
-            user = await uow.user.get_instance_by_id(id=user_id)
-
-            if user is None:
-                raise NotFound()
-
-            return user
+            return await self._get_existing_instance(
+                identifier=user_id,
+                repo_get_func=uow.user.get_instance_by_id
+            )
 
     async def get_user_by_login(self, login: str) -> User:
         async with self.uow as uow:
-            user = await uow.user.get_user_by_login(login=login)
-
-            if user is None:
-                raise NotFound()
-            
-            return user
+            return await self._get_existing_instance(
+                identifier=login,
+                repo_get_func=uow.user.get_user_by_login
+            )
 
     async def get_user_by_email(self, email: str) -> User:
         async with self.uow as uow:
-            user = await uow.user.get_user_by_email(email=email)
+            return await self._get_existing_instance(
+                identifier=email,
+                repo_get_func=uow.user.get_user_by_email
+            )
 
-            if user is None:
-                raise NotFound()
-
-            return user
-    
     async def check_if_user_exists(
         self,
         login: str,
@@ -73,12 +67,10 @@ class UserService(BaseService):
         data: UserUpdateDTO
     ) -> User:
         async with self.uow as uow:
-            user = await uow.user.get_instance_for_update(
-                id=user_id,
+            user = await self._get_existing_instance(
+                identifier=user_id,
+                repo_get_func=uow.user.get_instance_for_update
             )
-            if user is None:
-                raise NotFound()
-
             result = await uow.user.update_instance(
                 instance=user,
                 data=data
@@ -91,11 +83,10 @@ class UserService(BaseService):
         user_id: UUID
     ) -> User:
         async with self.uow as uow:
-            user =  await uow.user.get_instance_by_id(id=user_id)
-
-            if user is None:
-                raise NotFound()
-
+            user = await self._get_existing_instance(
+                identifier=user_id,
+                repo_get_func=uow.user.get_instance_by_id
+            )
             await uow.user.delete_by_id(
                 id=user_id
             )

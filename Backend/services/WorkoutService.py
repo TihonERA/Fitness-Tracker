@@ -48,8 +48,8 @@ class WorkoutService(BaseService):
         user_id: UUID  
     ) -> Workout | bytes | str:
         async with self.uow as uow:
-            return await self._get_instance_and_validate(
-                id=workout_id,
+            return await self._get_instance_with_access(
+                identifier=workout_id,
                 user_id=user_id,
                 repo_get_func=uow.workout.get_workout
             )
@@ -72,8 +72,8 @@ class WorkoutService(BaseService):
         data: WorkoutUpdate
     ) -> Workout:
         async with self.uow as uow:
-            workout = await self._get_instance_and_validate(
-                id=workout_id,
+            workout = await self._get_instance_with_access(
+                identifier=workout_id,
                 user_id=user_id,
                 repo_get_func=uow.workout.get_instance_for_update
             )
@@ -90,8 +90,8 @@ class WorkoutService(BaseService):
         workout_id: int
     ) -> Workout:
         async with self.uow as uow:
-            workout = await self._get_instance_and_validate(
-                id=workout_id,
+            workout = await self._get_instance_with_access(
+                identifier=workout_id,
                 user_id=user_id,
                 repo_get_func=uow.workout.get_instance_for_update
             )
