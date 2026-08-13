@@ -1,4 +1,6 @@
-from sqlalchemy.ext.asyncio import AsyncSession 
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from Backend.schemas.workout import WorkoutGetAllFilterDTO 
 from .SqlAlchemyAbstractRepository import SQLAlchemyAbstractRepository
 from ..models.workout import Workout
 from sqlalchemy.orm import aliased, selectinload
@@ -30,21 +32,18 @@ class WorkoutRepository(SQLAlchemyAbstractRepository[Workout]):
         return result.scalars().one_or_none()
 
     async def get_all_workouts(self, 
-        skip: int, 
-        limit: int, 
-        user_id: UUID | None = None, 
-        public: bool | None = None
+        data: WorkoutGetAllFilterDTO
     ) -> Sequence[Workout]:
         stmt = select(Workout)
-        if user_id:
+        if data.target_user_id:
             stmt = stmt.where(
-                Workout.user_id == user_id,
+                Workout.user_id == data.target_user_id,
             )
-        if public:
+        if data.public:
             stmt = stmt.where(
-                Workout.public == public
+                Workout.public == data.public
             )
-        stmt = stmt.offset(skip).limit(limit)
+        stmt = stmt.offset(data.skip).limit(data.limit)
 
         result = await self.execute(stmt)
         return result.scalars().all()

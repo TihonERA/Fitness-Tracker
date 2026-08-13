@@ -1,11 +1,14 @@
 from uuid import UUID
 
-from Backend.core.cache_service import CacheService
+from pydantic import BaseModel
+from pydantic.functional_validators import ModelAfterValidator
+
 from Backend.models.base import ModelT
+from Backend.utils.exceptions import Forbidden, NotFound
 
 from ..utils.uow import UnitOfWork
 
-from typing import Any, TypeGuard
+from typing import Any, Awaitable, Callable, Coroutine, TypeGuard, TypeVar
 
 from redis.asyncio import Redis
 
@@ -14,17 +17,12 @@ class BaseService:
     def __init__(
         self,
         uow: UnitOfWork,
-        redis: Redis 
     ) -> None:
         self.uow = uow
-        self.cache_service = CacheService(redis=redis)
 
     @staticmethod
     def check_if_instaces_is_not_none(*args: ModelT | None) -> TypeGuard[ModelT]:
-        for instance in args:
-            if instance is None:
-                return False
-        return True
+        return all(args)
 
     @staticmethod
     def check_if_user_have_access(
