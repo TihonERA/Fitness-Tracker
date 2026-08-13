@@ -21,11 +21,7 @@ class BaseService:
         self.uow = uow
 
     @staticmethod
-    def check_if_instaces_is_not_none(*args: ModelT | None) -> TypeGuard[ModelT]:
-        return all(args)
-
-    @staticmethod
-    def check_if_user_have_access(
+    def check_access(
         instance: ModelT | None, 
         user_id: UUID
     ) -> TypeGuard[ModelT]:

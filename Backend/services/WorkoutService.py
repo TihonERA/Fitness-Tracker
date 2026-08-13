@@ -50,10 +50,10 @@ class WorkoutService(BaseService):
         async with self.uow as uow:
             workout = await uow.workout.get_workout(workout_id=workout_id)
 
-            if not self.check_if_instaces_is_not_none(workout):
+            if workout is None:
                 raise NotFound()
 
-            if not self.check_if_user_have_access(workout, user_id):
+            if not self.check_access(workout, user_id):
                 raise Forbidden()
 
             return workout
@@ -80,10 +80,10 @@ class WorkoutService(BaseService):
                 id=workout_id,
             )
 
-            if not self.check_if_instaces_is_not_none(workout):
+            if workout is None:
                 raise NotFound()
 
-            if not self.check_if_user_have_access(workout, user_id):
+            if not self.check_access(workout, user_id):
                 raise Forbidden()
             
             updated_workout = await uow.workout.update_instance(
@@ -102,10 +102,10 @@ class WorkoutService(BaseService):
             workout = await uow.workout.get_instance_for_update(
                 id=workout_id
             )
-            if not self.check_if_instaces_is_not_none(workout):
+            if workout is None:
                 raise NotFound()
 
-            if not self.check_if_user_have_access(workout, user_id):
+            if not self.check_access(workout, user_id):
                 raise Forbidden()
 
             await uow.workout.delete_by_id(id=workout_id)
