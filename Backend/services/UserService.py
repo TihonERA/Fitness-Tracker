@@ -33,7 +33,7 @@ class UserService(BaseService):
         async with self.uow as uow:
             user = await uow.user.get_instance_by_id(id=user_id)
 
-            if not self.check_if_instaces_is_not_none(user):
+            if user is None:
                 raise NotFound()
 
             return user
@@ -42,7 +42,7 @@ class UserService(BaseService):
         async with self.uow as uow:
             user = await uow.user.get_user_by_login(login=login)
 
-            if not self.check_if_instaces_is_not_none(user):
+            if user is None:
                 raise NotFound()
             
             return user
@@ -51,7 +51,7 @@ class UserService(BaseService):
         async with self.uow as uow:
             user = await uow.user.get_user_by_email(email=email)
 
-            if not self.check_if_instaces_is_not_none(user):
+            if user is None:
                 raise NotFound()
 
             return user
@@ -93,7 +93,7 @@ class UserService(BaseService):
         async with self.uow as uow:
             user =  await uow.user.get_instance_by_id(id=user_id)
 
-            if not self.check_if_instaces_is_not_none(user):
+            if user is None:
                 raise NotFound()
 
             await uow.user.delete_by_id(
