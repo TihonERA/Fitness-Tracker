@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from Backend.models import workout
 from Backend.models.user import User
 from Backend.repositories.UserRepository import UserRepository
-from Backend.schemas.user import UserCachePrefixes, UserCreateDB, UserResponse, UserUpdate
+from Backend.schemas.user import UserCachePrefixes, UserCreateDB, UserResponse, UserUpdate, UserUpdateDTO
 from Backend.schemas.workout import WorkoutResponse
 from Backend.services.BaseService import BaseService
 from Backend.utils.exceptions import DBErrorHandler, InternalServerError, InvalidCredentials, NotFound
@@ -70,7 +70,7 @@ class UserService(BaseService):
     async def update_user(
         self,
         user_id: UUID,
-        data: UserUpdate
+        data: UserUpdateDTO
     ) -> User:
         async with self.uow as uow:
             user = await uow.user.get_instance_for_update(
