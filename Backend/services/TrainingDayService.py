@@ -10,7 +10,6 @@ from Backend.repositories import SqlAlchemyAbstractRepository
 from Backend.repositories.WorkoutRepository import WorkoutRepository
 from Backend.schemas.training_day import TrainingDayCreate, TrainingDayCreateDTO, TrainingDayUpdate
 from Backend.services.BaseService import BaseService
-from Backend.services.DayExerciseService import DayExerciseService
 from Backend.utils.uow import UnitOfWork
 from ..utils.exceptions import Forbidden, InternalServerError, NotFound
 from ..repositories.TrainingDayRepository import TrainingDayRepository
@@ -109,7 +108,7 @@ class TrainingDayService(BaseService):
                 workout_id=workout_id,
                 day_id=day_id,
                 tr_day_get_func=uow.trainingday.get_instance_by_id,
-                workout_get_func=uow.trainingday.get_instance_by_id
+                workout_get_func=uow.workout.get_instance_by_id
             )
             await uow.trainingday.delete_by_id(id=day_id)
 

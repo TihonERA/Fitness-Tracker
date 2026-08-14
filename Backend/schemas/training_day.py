@@ -21,6 +21,9 @@ class TrainingDayRelataionsResponse(TrainingDayResponse):
 class TrainingDayCreate(TrainingDayBase):
     pass
 
+class TrainingDayCreateDTO(TrainingDayBase):
+    workout_id: int
+
 class TrainingDayUpdate(BaseModel):
     name: Str100 | None = None
     day_order: DayOrderInt | None = None

@@ -9,7 +9,7 @@ from Backend.models.dayexercise import DayExercise
 from Backend.models.workout import Workout
 from Backend.repositories.TrainingDayRepository import TrainingDayRepository
 from Backend.repositories.WorkoutRepository import WorkoutRepository
-from Backend.schemas.day_exercise import DayExerciseCreate, DayExerciseCreateDTO, DayExerciseUpdate
+from Backend.schemas.day_exercise import DayExerciseCreate, DayExerciseCreateDTO 
 from Backend.services.BaseService import BaseService
 from Backend.services.TrainingDayService import TrainingDayService
 from Backend.utils.uow import UnitOfWork
@@ -19,7 +19,7 @@ from ..utils.exceptions import Forbidden, InternalServerError, NotFound
 
 class DayExerciseService(BaseService):
     
-    def __init__(self, uow: UnitOfWork, redis: Redis):
+    def __init__(self, uow: UnitOfWork):
         self.tr_day_service = TrainingDayService(uow=uow)
         super().__init__(uow)
 
