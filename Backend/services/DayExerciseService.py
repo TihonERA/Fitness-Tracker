@@ -2,7 +2,6 @@ import asyncio
 from typing import Any
 from uuid import UUID
 
-from annotated_types import Not
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,93 +9,40 @@ from Backend.models.dayexercise import DayExercise
 from Backend.models.workout import Workout
 from Backend.repositories.TrainingDayRepository import TrainingDayRepository
 from Backend.repositories.WorkoutRepository import WorkoutRepository
-from Backend.schemas.day_exercise import DayExerciseCreate, DayExerciseUpdate
+from Backend.schemas.day_exercise import DayExerciseCreate, DayExerciseCreateDTO, DayExerciseUpdate
 from Backend.services.BaseService import BaseService
-from Backend.utils.decorators import invalidate_cache
+from Backend.services.TrainingDayService import TrainingDayService
 from Backend.utils.uow import UnitOfWork
 from ..repositories.DayExerciseRepository import DayExerciseRepository
-from ..utils.exceptions import InternalServerError, NotFound
+from ..utils.exceptions import Forbidden, InternalServerError, NotFound
 
 
 class DayExerciseService(BaseService):
     
     def __init__(self, uow: UnitOfWork, redis: Redis):
-        self.dayexerepo = uow.dayexercise
-        self.trdayrepo = uow.trainingday
-        self.workoutrepo = uow.workout
-        super().__init__(uow, redis)
+        self.tr_day_service = TrainingDayService(uow=uow)
+        super().__init__(uow)
 
-    async def get_day_exercise(
-        self,
-        user_id: UUID,
-        workout_id: int,
-        day_id: int,
-        exercise_id: int
-    ) -> DayExercise:
-        day_exercise = await self.dayexerepo.get_day_exercise_and_check_access(
-            user_id=user_id,
-            workout_id=workout_id,
-            day_id=day_id,
-            exercise_id=exercise_id
-        )
-        day_exercise, = self.check_if_instaces_is_none_returning_tuple(day_exercise)
-
-        return day_exercise
-
-    @invalidate_cache(column=Workout.workout_id)
     async def create_day_exercise(
         self,
         user_id: UUID,
         workout_id: int,
         day_id: int,
-        data: DayExerciseCreate
+        data: DayExerciseCreateDTO
     ):
-        tr_day = await self.trdayrepo.get_training_day_and_check_access(
-            user_id=user_id,
-            workout_id=workout_id,
-            day_id=day_id
-        )
-        tr_day, = self.check_if_instaces_is_none_returning_tuple(tr_day)
-
-        return await self.dayexerepo.create_instance(
-            data={**data.model_dump(), "day_id": day_id, "workout_id": workout_id}
-        )
-
-    @invalidate_cache(column=Workout.workout_id)
-    async def update_day_exercise(
-        self,
-        user_id: UUID,
-        workout_id: int,
-        day_id: int,
-        exercise_id: int,
-        data: DayExerciseUpdate
-    ):
-        tr_day, day_exercise = await asyncio.gather(
-            self.trdayrepo.get_training_day_and_check_access(
+        async with self.uow as uow:
+            await self.tr_day_service.get_tr_day_with_access(
                 user_id=user_id,
                 workout_id=workout_id,
-                day_id=day_id
-            ),
-            self.dayexerepo.get_day_exercise_for_update(
                 day_id=day_id,
-                exercise_id=exercise_id
+                tr_day_get_func=uow.trainingday.get_instance_by_id,
+                workout_get_func=uow.workout.get_instance_by_id
             )
-        )
-
-        tr_day, day_exercise = self.check_if_instaces_is_none_returning_tuple(tr_day, day_exercise)
-
-        try:
-            result = await self.dayexerepo.update_instance(
-                instance=day_exercise,
-                data=data.model_dump(exclude_unset=True)
+                
+            return await uow.dayexercise.create_instance(
+                data=data
             )
-        except AttributeError as e:
-            raise InternalServerError(
-                detail=f"Table: {day_exercise.__tablename__} dont have attribute {e.name}, that was declared at a pydantic model"
-            )
-        return result
 
-    @invalidate_cache(column=Workout.workout_id)
     async def delete_day_exercise(
         self,
         user_id: UUID,
@@ -104,23 +50,27 @@ class DayExerciseService(BaseService):
         day_id: int,
         exercise_id: int
     ):
-        tr_day, ex_day = await asyncio.gather(
-            self.trdayrepo.get_training_day_and_check_access(
+        async with self.uow as uow:
+            training_day = await self.tr_day_service.get_tr_day_with_access(
                 user_id=user_id,
                 workout_id=workout_id,
-                day_id=day_id
-            ),
-            self.dayexerepo.get_day_exercise_for_update(
+                day_id=day_id,
+                tr_day_get_func=uow.trainingday.get_instance_by_id,
+                workout_get_func=uow.workout.get_instance_by_id
+            )
+            day_exercise = await uow.dayexercise.get_day_exercise(
                 day_id=day_id,
                 exercise_id=exercise_id
             )
-        )
+            if day_exercise is None:
+                raise NotFound()
 
-        tr_day, ex_day = self.check_if_instaces_is_none_returning_tuple(tr_day, ex_day)
+            if training_day.id != day_exercise.day_id:
+                raise Forbidden()
 
-        await self.dayexerepo.delete_day_exercise(
-            day_id=day_id,
-            exercise_id=exercise_id
-        )
+            await uow.dayexercise.delete_day_exercise(
+                day_id=day_id,
+                exercise_id=exercise_id
+            )
 
-        return ex_day
+            return day_exercise
