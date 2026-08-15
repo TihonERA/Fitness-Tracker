@@ -23,15 +23,9 @@ class DayExercise(Base):
         index=True,
         nullable=False
     )
-    workout_id: Mapped[int] = mapped_column(
-        ForeignKey("workout.id", ondelete="CASCADE"),
-        index=True,
-        nullable=False
-    )
     exercise_order: Mapped[int] = mapped_column(
         nullable=False
     )
 
     training_day: Mapped["TrainingDay"] = relationship(back_populates="day_exercises")
     exercises: Mapped["Exercise"] = relationship(back_populates="day_exercises")
-    workout: Mapped["Workout"] = relationship(back_populates="day_exercises")

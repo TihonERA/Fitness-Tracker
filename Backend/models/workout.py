@@ -40,7 +40,3 @@ class Workout(Base):
         back_populates="workout",
         cascade="all, delete-orphan"
     )
-    day_exercises: Mapped[list["DayExercise"]] = relationship(
-        back_populates="workout",
-        cascade="all, delete-orphan"
-    )
