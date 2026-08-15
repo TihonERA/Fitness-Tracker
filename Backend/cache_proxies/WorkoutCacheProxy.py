@@ -30,10 +30,7 @@ class WorkoutCacheProxy(CacheBaseProxy[Workout]):
             data=data
         )
 
-        await self.delete_searching_with_pattern(
-            prefix=WorkoutCachePrefixes.all_workouts,
-            user_id=user_id
-        )
+        await self.invalidate_get_all_workouts_cache(user_id=user_id)
 
         return db_data
 
@@ -95,25 +92,50 @@ class WorkoutCacheProxy(CacheBaseProxy[Workout]):
             db_func=origin_call
         )
 
-    async def invalidate_workout_cache(
+    def _formate_workouts_all_key(self, user_id: UUID) -> str:
+        workouts_all_key = self.formate_key(
+            prefix=WorkoutCachePrefixes.version,
+            user_id=user_id
+        )
+        return workouts_all_key
+
+    def _formate_loaded_workout_key(
         self,
         user_id: UUID,
         workout_id: int
-    ) -> None:
+    ) -> str:
         loaded_workout_key = self.formate_key(
             prefix=WorkoutCachePrefixes.loaded_workout, 
             user_id=user_id,
             workout_id=workout_id
         )
-        workouts_all_key = self.formate_key(
-            prefix=WorkoutCachePrefixes.version,
-            user_id=user_id
+        return loaded_workout_key
+
+    async def invalidate_get_all_workouts_cache(
+        self,
+        user_id: UUID
+    ) -> None:
+        workouts_all_key = self._formate_workouts_all_key(user_id=user_id)
+
+        await self.redis.incr(workouts_all_key)
+
+    async def invalidate_workout_cache(
+        self,
+        user_id: UUID,
+        workout_id: int
+    ) -> None:
+        loaded_workout_key = self._formate_loaded_workout_key(
+            user_id=user_id,
+            workout_id=workout_id
         )
-        await asyncio.gather(
-            self.redis.delete(loaded_workout_key),
-            self.redis.incr(workouts_all_key)
-        )
-        
+        workouts_all_key = self._formate_workouts_all_key(user_id)       
+
+        async with self.redis.pipeline(transaction=True) as pipe:
+            pipe.incr(workouts_all_key)
+            pipe.delete(loaded_workout_key)
+
+            await pipe.execute()
+
     async def update_workout(
         self,
         user_id: UUID,

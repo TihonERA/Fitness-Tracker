@@ -29,6 +29,7 @@ class CacheBaseProxy(Generic[ModelT]):
             validated_db_data = response_model.model_validate(db_data)
         else:
             validated_db_data = self.scheme.model_validate(db_data)
+
         db_data_json = validated_db_data.model_dump_json()
 
         await self.set(
@@ -69,19 +70,6 @@ class CacheBaseProxy(Generic[ModelT]):
                 parts.append(f"{key.replace(' ', '')}={value}")
 
         return parts
-
-    async def delete_searching_with_pattern(
-        self,
-        prefix: str,
-        **identifiers: Any
-    ) -> None:
-        cache_parts = self._return_formated_cache_parts(data=identifiers)
-
-        pattern = f"{prefix}:*{'*'.join(cache_parts)}*"
-        cache_keys = [key async for key in self.redis.scan_iter(match=pattern, count=10)]
-
-        if cache_keys:
-            await self.redis.delete(*cache_keys)
 
     def formate_key(
         self,
