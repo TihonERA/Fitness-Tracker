@@ -8,11 +8,11 @@ from redis.asyncio import Redis
 
 from Backend.cache_proxies.CacheBaseProxy import CacheBaseProxy
 
-from Backend.cache_proxies.CacheKeyFormatter import CacheKeyFormatter
 from Backend.cache_proxies.invalidators.CacheWorkoutInvalidator import CacheWorkoutInvalidator
+from Backend.cache_proxies.key_formatters.WorkoutCacheKeyFormatter import WorkoutCacheKeyFormatter
 from Backend.models.workout import Workout
 
-from Backend.schemas.workout import ListWorkoutResponse, WorkoutCachePrefixes, WorkoutCreate, WorkoutGetAllFilter, WorkoutGetAllFilterDTO, WorkoutRelationsResponse, WorkoutResponse, WorkoutUpdate
+from Backend.schemas.workout import ListWorkoutResponse, WorkoutCreate, WorkoutGetAllFilter, WorkoutGetAllFilterDTO, WorkoutRelationsResponse, WorkoutResponse, WorkoutUpdate
 from Backend.utils.uow import UnitOfWork
 
 from Backend.services.WorkoutService import WorkoutService
@@ -23,12 +23,11 @@ class WorkoutCacheProxy(CacheBaseProxy):
         service: WorkoutService, 
         redis: Redis, 
         invalidator: CacheWorkoutInvalidator,
-        formatter: CacheKeyFormatter
+        formatter: WorkoutCacheKeyFormatter
     ) -> None:
         self.service = service
         self.invalidator = invalidator
         self.formatter = formatter
-        self.pref = WorkoutCachePrefixes
         super().__init__(redis=redis, scheme=WorkoutResponse)
 
     async def create_workout(
@@ -45,23 +44,13 @@ class WorkoutCacheProxy(CacheBaseProxy):
 
         return db_data
 
-    def _get_loaded_workout_key(
-        self,
-        user_id: UUID,
-        workout_id: int
-    ) -> str:
-        return self.formatter.formate_key(
-            prefix=WorkoutCachePrefixes.loaded_workout,
-            user_id=user_id,
-            workout_id=workout_id
-        )
-
     async def get_loaded_workout(
         self,
         user_id: UUID,
         workout_id: int
     ) -> str:
-        key = self._get_loaded_workout_key(user_id=user_id, workout_id=workout_id)
+        key = self.formatter.get_loaded_workout_key(user_id=user_id, workout_id=workout_id)
+
         return await self._wrap_cache(
             key=key,
             response_model=WorkoutRelationsResponse,
@@ -69,19 +58,6 @@ class WorkoutCacheProxy(CacheBaseProxy):
         )
 
     
-    def _get_workouts_version_key(self, target_user_id: UUID | None) -> str:
-        return self.formatter.formate_key(
-            prefix=self.pref.version,
-            user_id=target_user_id
-        )
-
-    def _get_all_workouts_key(self, version: str, data: WorkoutGetAllFilterDTO) -> str:
-        return self.formatter.formate_key(
-            prefix=self.pref.all_workouts,
-            version=version,
-            data=data.model_dump()
-        )
-
     async def get_all_workouts(
         self,
         user_id: UUID,
@@ -95,10 +71,10 @@ class WorkoutCacheProxy(CacheBaseProxy):
             public=data.public
         )
 
-        version_key = self._get_workouts_version_key(target_user_id=data_dto.target_user_id)
+        version_key = self.formatter.get_workouts_version_key(target_user_id=data_dto.target_user_id)
         version = await self.get(version_key) or '0'
 
-        key = self._get_all_workouts_key(version=version, data=data_dto)
+        key = self.formatter.get_all_workouts_key(version=version, data=data_dto)
 
         return await self._wrap_cache(
             key=key,

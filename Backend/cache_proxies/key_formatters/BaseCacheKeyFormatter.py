@@ -1,7 +1,7 @@
 from typing import Any
 
 
-class CacheKeyFormatter:
+class BaseCacheKeyFormatter:
     def _return_formated_cache_parts(
         self,
         data: dict[str, Any]
