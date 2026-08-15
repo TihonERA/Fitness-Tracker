@@ -2,6 +2,8 @@ from functools import partial
 from uuid import UUID
 
 from Backend.cache_proxies.CacheBaseProxy import CacheBaseProxy
+from Backend.cache_proxies.CacheKeyFormatter import CacheKeyFormatter
+from Backend.cache_proxies.invalidators.CacheUserInvalidator import CacheUserInvalidator
 from Backend.models.user import User
 from Backend.schemas.user import UserCachePrefixes, UserCreateDB, UserResponse, UserUpdate, UserUpdateDTO
 from Backend.services.UserService import UserService
@@ -9,55 +11,69 @@ from Backend.utils.uow import UnitOfWork
 
 from redis.asyncio import Redis
 
-class UserCacheProxy(CacheBaseProxy[User]):
-    def __init__(self, uow: UnitOfWork, redis: Redis) -> None:
-        self.user_service = UserService(uow=uow)
-        super().__init__(redis, UserResponse)
+class UserCacheProxy(CacheBaseProxy):
+    def __init__(
+        self, 
+        service: UserService, 
+        redis: Redis, 
+        invalidator: CacheUserInvalidator,
+        formatter: CacheKeyFormatter
+    ) -> None:
+        self.service = service
+        self.invalidator = invalidator
+        self.formatter = formatter
+        self.pref = UserCachePrefixes
+        super().__init__(redis=redis, scheme=UserResponse)
+
 
     async def create_user(self, data: UserCreateDB) -> User:
-        return await self.user_service.create_user(data=data)
+        return await self.service.create_user(data=data)
+
+    def _get_user_by_id_key(self, user_id: UUID) -> str:
+        return self.formatter.formate_key(
+            prefix=self.pref.user_by_id,
+            user_id=user_id
+        )
 
     async def get_user_by_id(self, user_id: UUID) -> str:
-        key = self.formate_key(
-            prefix=UserCachePrefixes.user_by_id,
-            user_id=user_id
-        )
-
-        get_user_by_id = partial(
-            self.user_service.get_user_by_id,
-            user_id=user_id
-        )
+        key = self._get_user_by_id_key(user_id)
 
         return await self._wrap_cache(
             key=key,
-            db_func=get_user_by_id
+            db_func=partial(self.service.get_user_by_id, user_id)
+        )
+
+    def _get_user_by_login_key(self, login: str) -> str:
+        return self.formatter.formate_key(
+            prefix=self.pref.user_by_login,
+            login=login
         )
 
     async def get_user_by_login(self, login: str) -> User | str:
-        key = self.formate_key(
-            prefix=UserCachePrefixes.user_by_login, 
-            login=login
-        )
+        key = self._get_user_by_login_key(login)
 
         if uuid := await self.get(key):
             return await self.get_user_by_id(user_id=UUID(uuid))
 
-        user = await self.user_service.get_user_by_login(login=login)
+        user = await self.service.get_user_by_login(login=login)
 
         await self.set(key=key, value=str(user.id))
 
         return user
 
-    async def get_user_by_email(self, email: str) -> User | str:
-        key = self.formate_key(
-            prefix=UserCachePrefixes.user_by_email,
+    def _get_user_by_email(self, email: str) -> str:
+        return self.formatter.formate_key(
+            prefix=self.pref.user_by_email,
             email=email
         )
+
+    async def get_user_by_email(self, email: str) -> User | str:
+        key = self._get_user_by_email(email)
 
         if uuid := await self.get(key):
             return await self.get_user_by_id(UUID(uuid))
 
-        user = await self.user_service.get_user_by_email(email=email)
+        user = await self.service.get_user_by_email(email=email)
 
         await self.set(key=key, value=str(user.id))
 
@@ -68,17 +84,12 @@ class UserCacheProxy(CacheBaseProxy[User]):
         user_id: UUID,
         data: UserUpdateDTO
     ) -> User:
-        user = await self.user_service.update_user(
+        user = await self.service.update_user(
             user_id=user_id, 
             data=data
         )
 
-        user_by_id_key = self.formate_key(
-            prefix=UserCachePrefixes.user_by_id,
-            user_id=user_id
-        )
-
-        await self.redis.delete(user_by_id_key)
+        await self.invalidator.invalidate_get_user_by_id(user_id)
 
         return user
 
@@ -86,25 +97,13 @@ class UserCacheProxy(CacheBaseProxy[User]):
         self,
         user_id: UUID
     ) -> User:
-        user = await self.user_service.delete_user(user_id=user_id)
+        user = await self.service.delete_user(user_id=user_id)
 
-
-        keys = [
-            self.formate_key(
-                prefix=UserCachePrefixes.user_by_id,
-                user_id=user_id
-            ),
-            self.formate_key(
-                prefix=UserCachePrefixes.user_by_login,
-                login=user.login
-            ),
-            self.formate_key(
-                prefix=UserCachePrefixes.user_by_email,
-                email=user.email
-            )
-        ]
-
-        await self.redis.delete(*keys)
+        await self.invalidator.invalidate_all(
+            user_id=user.id,
+            login=user.login,
+            email=user.email
+        )
 
         return user
 

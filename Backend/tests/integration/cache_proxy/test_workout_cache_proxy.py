@@ -2,6 +2,8 @@ import pytest
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from Backend.cache_proxies.CacheKeyFormatter import CacheKeyFormatter
+from Backend.cache_proxies.invalidators.CacheWorkoutInvalidator import CacheWorkoutInvalidator
 from Backend.models.workout import Workout
 from Backend.schemas.workout import ListWorkoutResponse, WorkoutGetAllFilter, WorkoutUpdate
 from Backend.services.WorkoutService import WorkoutService
@@ -13,23 +15,25 @@ from Backend.utils.uow import UnitOfWork
 class TestWorkoutCachyProxy:
 
     @pytest.fixture
-    def service(self, uow: UnitOfWork, redis: Redis):
-        return WorkoutCacheProxy(uow=uow, redis=redis)
+    def proxy(self, workout_service: WorkoutService, redis: Redis):
+        formatter = CacheKeyFormatter()
+        invalidator = CacheWorkoutInvalidator(redis=redis, formatter=formatter)
+        return WorkoutCacheProxy(service=workout_service, redis=redis, invalidator=invalidator, formatter=formatter)
 
     async def test_get_all_workouts_cache(
         self,
-        service: WorkoutCacheProxy,
+        proxy: WorkoutCacheProxy,
         db_session: AsyncSession,
         workout: Workout
     ):
-        redis = service.redis
+        redis = proxy.redis
 
         data = WorkoutGetAllFilter(
             skip=0,
             limit=50,
             user_id=workout.user_id
         )
-        await service.get_all_workouts(user_id=workout.user_id, data=data)
+        await proxy.get_all_workouts(user_id=workout.user_id, data=data)
         
         caches = [key async for key in redis.scan_iter(match="workouts:all:*")]
 
@@ -37,22 +41,22 @@ class TestWorkoutCachyProxy:
 
         await db_session.delete(workout)
 
-        cache_result = await service.get_all_workouts(user_id=workout.user_id, data=data)
+        cache_result = await proxy.get_all_workouts(user_id=workout.user_id, data=data)
 
         assert cache_result is not None
         assert isinstance(cache_result, (str, bytes))
 
     async def test_get_loaded_workout_cache(
         self,
-        service: WorkoutCacheProxy,
+        proxy: WorkoutCacheProxy,
         workout: Workout
     ):
-        await service.get_loaded_workout(
+        await proxy.get_loaded_workout(
             workout_id=workout.id,
             user_id=workout.user_id
         )
 
-        cache_result = await service.get_loaded_workout(
+        cache_result = await proxy.get_loaded_workout(
             workout_id=workout.id,
             user_id=workout.user_id
         )
@@ -62,12 +66,12 @@ class TestWorkoutCachyProxy:
 
     async def test_update_workout_invalidate_cache(
         self,
-        service: WorkoutCacheProxy,
+        proxy: WorkoutCacheProxy,
         workout: Workout
     ):
-        redis: Redis = service.redis
+        redis: Redis = proxy.redis
 
-        await service.get_loaded_workout(
+        await proxy.get_loaded_workout(
             workout_id=workout.id,
             user_id=workout.user_id
         )
@@ -77,7 +81,7 @@ class TestWorkoutCachyProxy:
             user_id=workout.user_id,
             public=None
         )
-        await service.get_all_workouts(
+        await proxy.get_all_workouts(
             user_id=workout.user_id,
             data=data
         )
@@ -100,7 +104,7 @@ class TestWorkoutCachyProxy:
 
         data = WorkoutUpdate(name="dump") 
 
-        await service.update_workout(
+        await proxy.update_workout(
             user_id=workout.user_id,
             workout_id=workout.id,
             data=data

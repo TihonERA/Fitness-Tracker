@@ -26,6 +26,8 @@ from faker import Faker
 
 from typing import cast
 
+from Backend.services.UserService import UserService
+from Backend.services.WorkoutService import WorkoutService
 from Backend.utils.uow import UnitOfWork
 
 alembic_ini_path = Path(__file__).parent.parent.parent.parent / "alembic.ini"
@@ -160,4 +162,12 @@ def uow(db_session):
 @pytest.fixture
 def redis():
     return Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
+
+@pytest.fixture
+def workout_service(uow):
+    return WorkoutService(uow=uow)
+
+@pytest.fixture
+def user_service(uow):
+    return UserService(uow=uow)
 

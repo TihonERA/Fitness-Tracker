@@ -1,7 +1,9 @@
 import pytest
 from redis.asyncio import Redis
 
+from Backend.cache_proxies.CacheKeyFormatter import CacheKeyFormatter
 from Backend.cache_proxies.UserCacheProxy import UserCacheProxy
+from Backend.cache_proxies.invalidators.CacheUserInvalidator import CacheUserInvalidator
 from Backend.models.user import User
 from Backend.schemas.user import UserCachePrefixes, UserUpdateDTO
 from Backend.utils.uow import UnitOfWork
@@ -10,8 +12,10 @@ from Backend.utils.uow import UnitOfWork
 class TestUserCacheProxy:
 
     @pytest.fixture
-    def proxy(self, uow: UnitOfWork, redis: Redis):
-        return UserCacheProxy(uow=uow, redis=redis)
+    def proxy(self, user_service, redis: Redis):
+        formatter = CacheKeyFormatter()
+        invalidator = CacheUserInvalidator(redis=redis, formatter=formatter)
+        return UserCacheProxy(service=user_service, redis=redis, invalidator=invalidator, formatter=formatter)
 
     @pytest.fixture
     async def by_id_login_email_cache(self, user: User, proxy: UserCacheProxy):
