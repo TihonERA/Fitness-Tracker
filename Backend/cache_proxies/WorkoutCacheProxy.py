@@ -8,6 +8,8 @@ from redis.asyncio import Redis
 
 from Backend.cache_proxies.CacheBaseProxy import CacheBaseProxy
 
+from Backend.cache_proxies.CacheKeyFormatter import CacheKeyFormatter
+from Backend.cache_proxies.invalidators.CacheWorkoutInvalidator import CacheWorkoutInvalidator
 from Backend.models.workout import Workout
 
 from Backend.schemas.workout import ListWorkoutResponse, WorkoutCachePrefixes, WorkoutCreate, WorkoutGetAllFilter, WorkoutGetAllFilterDTO, WorkoutRelationsResponse, WorkoutResponse, WorkoutUpdate
@@ -15,9 +17,18 @@ from Backend.utils.uow import UnitOfWork
 
 from Backend.services.WorkoutService import WorkoutService
 
-class WorkoutCacheProxy(CacheBaseProxy[Workout]):
-    def __init__(self, uow: UnitOfWork, redis: Redis) -> None:
-        self.workout_service = WorkoutService(uow=uow)
+class WorkoutCacheProxy(CacheBaseProxy):
+    def __init__(
+        self, 
+        service: WorkoutService, 
+        redis: Redis, 
+        invalidator: CacheWorkoutInvalidator,
+        formatter: CacheKeyFormatter
+    ) -> None:
+        self.service = service
+        self.invalidator = invalidator
+        self.formatter = formatter
+        self.pref = WorkoutCachePrefixes
         super().__init__(redis=redis, scheme=WorkoutResponse)
 
     async def create_workout(
@@ -25,36 +36,50 @@ class WorkoutCacheProxy(CacheBaseProxy[Workout]):
         user_id: UUID,
         data: WorkoutCreate
     ) -> Workout:
-        db_data = await self.workout_service.create_workout(
+        db_data = await self.service.create_workout(
             user_id=user_id,
             data=data
         )
 
-        await self.invalidate_get_all_workouts_cache(user_id=user_id)
+        await self.invalidator.invalidate_workouts_all(user_id=user_id)
 
         return db_data
+
+    def _get_loaded_workout_key(
+        self,
+        user_id: UUID,
+        workout_id: int
+    ) -> str:
+        return self.formatter.formate_key(
+            prefix=WorkoutCachePrefixes.loaded_workout,
+            user_id=user_id,
+            workout_id=workout_id
+        )
 
     async def get_loaded_workout(
         self,
         user_id: UUID,
         workout_id: int
     ) -> str:
-        key = self.formate_key(
-            prefix=WorkoutCachePrefixes.loaded_workout,
-            user_id=user_id,
-            workout_id=workout_id
-        )
-
-        origin_call = partial(
-            self.workout_service.get_loaded_workout,
-            user_id=user_id,
-            workout_id=workout_id
-        )
-
+        key = self._get_loaded_workout_key(user_id=user_id, workout_id=workout_id)
         return await self._wrap_cache(
             key=key,
             response_model=WorkoutRelationsResponse,
-            db_func=origin_call
+            db_func=partial(self.service.get_loaded_workout, workout_id, user_id)
+        )
+
+    
+    def _get_workouts_version_key(self, target_user_id: UUID | None) -> str:
+        return self.formatter.formate_key(
+            prefix=self.pref.version,
+            user_id=target_user_id
+        )
+
+    def _get_all_workouts_key(self, version: str, data: WorkoutGetAllFilterDTO) -> str:
+        return self.formatter.formate_key(
+            prefix=self.pref.all_workouts,
+            version=version,
+            data=data.model_dump()
         )
 
     async def get_all_workouts(
@@ -70,85 +95,33 @@ class WorkoutCacheProxy(CacheBaseProxy[Workout]):
             public=data.public
         )
 
-        version_key = self.formate_key(
-            prefix=WorkoutCachePrefixes.version,
-            user_id=data_dto.target_user_id
-        )
+        version_key = self._get_workouts_version_key(target_user_id=data_dto.target_user_id)
         version = await self.get(version_key) or '0'
 
-        key = self.formate_key(
-            prefix=WorkoutCachePrefixes.all_workouts,
-            version=version,
-            data=data_dto.model_dump()
-        )
-        origin_call = partial(
-            self.workout_service.get_all_workouts,
-            data=data_dto
-        )
+        key = self._get_all_workouts_key(version=version, data=data_dto)
 
         return await self._wrap_cache(
             key=key,
             response_model=ListWorkoutResponse,
-            db_func=origin_call
+            db_func=partial(self.service.get_all_workouts, data=data_dto)
         )
-
-    def _formate_workouts_all_key(self, user_id: UUID) -> str:
-        workouts_all_key = self.formate_key(
-            prefix=WorkoutCachePrefixes.version,
-            user_id=user_id
-        )
-        return workouts_all_key
-
-    def _formate_loaded_workout_key(
-        self,
-        user_id: UUID,
-        workout_id: int
-    ) -> str:
-        loaded_workout_key = self.formate_key(
-            prefix=WorkoutCachePrefixes.loaded_workout, 
-            user_id=user_id,
-            workout_id=workout_id
-        )
-        return loaded_workout_key
-
-    async def invalidate_get_all_workouts_cache(
-        self,
-        user_id: UUID
-    ) -> None:
-        workouts_all_key = self._formate_workouts_all_key(user_id=user_id)
-
-        await self.redis.incr(workouts_all_key)
-
-    async def invalidate_workout_cache(
-        self,
-        user_id: UUID,
-        workout_id: int
-    ) -> None:
-        loaded_workout_key = self._formate_loaded_workout_key(
-            user_id=user_id,
-            workout_id=workout_id
-        )
-        workouts_all_key = self._formate_workouts_all_key(user_id)       
-
-        async with self.redis.pipeline(transaction=True) as pipe:
-            pipe.incr(workouts_all_key)
-            pipe.delete(loaded_workout_key)
-
-            await pipe.execute()
-
+   
     async def update_workout(
         self,
         user_id: UUID,
         workout_id: int,
         data: WorkoutUpdate
     ) -> Workout:
-        workout = await self.workout_service.update_workout(
+        workout = await self.service.update_workout(
             user_id=user_id,
             workout_id=workout_id,
             data=data
         )
 
-        await self.invalidate_workout_cache(user_id=user_id, workout_id=workout_id)
+        await self.invalidator.invalidate_all(
+            user_id=user_id, 
+            workout_id=workout_id
+        )
 
         return workout
 
@@ -157,11 +130,14 @@ class WorkoutCacheProxy(CacheBaseProxy[Workout]):
         user_id: UUID,
         workout_id: int
     ) -> Workout:
-        workout = await self.workout_service.delete_workout(
+        workout = await self.service.delete_workout(
             user_id=user_id,
             workout_id=workout_id
         )
 
-        await self.invalidate_workout_cache(user_id=user_id, workout_id=workout_id)
+        await self.invalidator.invalidate_all(
+            user_id=user_id, 
+            workout_id=workout_id
+        )
 
         return workout
