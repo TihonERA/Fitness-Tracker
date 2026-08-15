@@ -1,7 +1,7 @@
 import pytest
 from redis.asyncio import Redis
 
-from Backend.cache_proxies.CacheKeyFormatter import CacheKeyFormatter
+from Backend.cache_proxies.key_formatters.UserCacheKeyFormatter import UserCacheKeyFormatter
 from Backend.cache_proxies.UserCacheProxy import UserCacheProxy
 from Backend.cache_proxies.invalidators.CacheUserInvalidator import CacheUserInvalidator
 from Backend.models.user import User
@@ -13,7 +13,7 @@ class TestUserCacheProxy:
 
     @pytest.fixture
     def proxy(self, user_service, redis: Redis):
-        formatter = CacheKeyFormatter()
+        formatter = UserCacheKeyFormatter()
         invalidator = CacheUserInvalidator(redis=redis, formatter=formatter)
         return UserCacheProxy(service=user_service, redis=redis, invalidator=invalidator, formatter=formatter)
 

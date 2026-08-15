@@ -2,8 +2,8 @@ from functools import partial
 from uuid import UUID
 
 from Backend.cache_proxies.CacheBaseProxy import CacheBaseProxy
-from Backend.cache_proxies.CacheKeyFormatter import CacheKeyFormatter
 from Backend.cache_proxies.invalidators.CacheUserInvalidator import CacheUserInvalidator
+from Backend.cache_proxies.key_formatters.UserCacheKeyFormatter import UserCacheKeyFormatter
 from Backend.models.user import User
 from Backend.schemas.user import UserCachePrefixes, UserCreateDB, UserResponse, UserUpdate, UserUpdateDTO
 from Backend.services.UserService import UserService
@@ -17,40 +17,27 @@ class UserCacheProxy(CacheBaseProxy):
         service: UserService, 
         redis: Redis, 
         invalidator: CacheUserInvalidator,
-        formatter: CacheKeyFormatter
+        formatter: UserCacheKeyFormatter
     ) -> None:
         self.service = service
         self.invalidator = invalidator
         self.formatter = formatter
-        self.pref = UserCachePrefixes
         super().__init__(redis=redis, scheme=UserResponse)
 
 
     async def create_user(self, data: UserCreateDB) -> User:
         return await self.service.create_user(data=data)
 
-    def _get_user_by_id_key(self, user_id: UUID) -> str:
-        return self.formatter.formate_key(
-            prefix=self.pref.user_by_id,
-            user_id=user_id
-        )
-
     async def get_user_by_id(self, user_id: UUID) -> str:
-        key = self._get_user_by_id_key(user_id)
+        key = self.formatter.get_user_by_id_key(user_id)
 
         return await self._wrap_cache(
             key=key,
             db_func=partial(self.service.get_user_by_id, user_id)
         )
 
-    def _get_user_by_login_key(self, login: str) -> str:
-        return self.formatter.formate_key(
-            prefix=self.pref.user_by_login,
-            login=login
-        )
-
     async def get_user_by_login(self, login: str) -> User | str:
-        key = self._get_user_by_login_key(login)
+        key = self.formatter.get_user_by_login_key(login)
 
         if uuid := await self.get(key):
             return await self.get_user_by_id(user_id=UUID(uuid))
@@ -61,14 +48,8 @@ class UserCacheProxy(CacheBaseProxy):
 
         return user
 
-    def _get_user_by_email(self, email: str) -> str:
-        return self.formatter.formate_key(
-            prefix=self.pref.user_by_email,
-            email=email
-        )
-
     async def get_user_by_email(self, email: str) -> User | str:
-        key = self._get_user_by_email(email)
+        key = self.formatter.get_user_by_email(email)
 
         if uuid := await self.get(key):
             return await self.get_user_by_id(UUID(uuid))
