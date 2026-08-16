@@ -1,8 +1,15 @@
+from datetime import timedelta
 from functools import partial
+from os import wait
+from typing import Any, Awaitable, Callable
 from uuid import UUID
 
-from Backend.cache_proxies.CacheBaseProxy import CacheBaseProxy
-from Backend.cache_proxies.invalidators.CacheUserInvalidator import CacheUserInvalidator
+import json
+
+from pydantic import BaseModel
+
+from Backend.cache_proxies.CacheBaseProxy import BaseCacheProxy 
+from Backend.cache_proxies.invalidators.CacheUserInvalidator import UserCacheInvalidator
 from Backend.cache_proxies.key_formatters.UserCacheKeyFormatter import UserCacheKeyFormatter
 from Backend.models.user import User
 from Backend.schemas.user import UserCachePrefixes, UserCreateDB, UserResponse, UserUpdate, UserUpdateDTO
@@ -11,12 +18,12 @@ from Backend.utils.uow import UnitOfWork
 
 from redis.asyncio import Redis
 
-class UserCacheProxy(CacheBaseProxy):
+class UserCacheProxy(BaseCacheProxy[UserResponse]):
     def __init__(
         self, 
         service: UserService, 
         redis: Redis, 
-        invalidator: CacheUserInvalidator,
+        invalidator: UserCacheInvalidator,
         formatter: UserCacheKeyFormatter
     ) -> None:
         self.service = service
@@ -28,37 +35,49 @@ class UserCacheProxy(CacheBaseProxy):
     async def create_user(self, data: UserCreateDB) -> User:
         return await self.service.create_user(data=data)
 
-    async def get_user_by_id(self, user_id: UUID) -> str:
+    async def get_user_by_id(self, user_id: UUID) -> UserResponse:
         key = self.formatter.get_user_by_id_key(user_id)
 
-        return await self._wrap_cache(
+        user = await self._wrap_cache(
             key=key,
             db_func=partial(self.service.get_user_by_id, user_id)
         )
 
-    async def get_user_by_login(self, login: str) -> User | str:
-        key = self.formatter.get_user_by_login_key(login)
+        return user
+
+    async def _get_user_by_field(
+        self, 
+        field_value: str,
+        key_formatter_func: Callable[[str], str],
+        service_func: Callable[[str], Awaitable[User]]
+    ) -> UserResponse:
+        key = key_formatter_func(field_value)
 
         if uuid := await self.get(key):
             return await self.get_user_by_id(user_id=UUID(uuid))
 
-        user = await self.service.get_user_by_login(login=login)
+        user = await service_func(field_value)
 
         await self.set(key=key, value=str(user.id))
 
-        return user
+        tag_key = self.formatter.get_tag_key(user.id)
+        await self.sadd(key=tag_key, values=key)
 
-    async def get_user_by_email(self, email: str) -> User | str:
-        key = self.formatter.get_user_by_email(email)
+        return self.scheme.model_validate(user)
 
-        if uuid := await self.get(key):
-            return await self.get_user_by_id(UUID(uuid))
-
-        user = await self.service.get_user_by_email(email=email)
-
-        await self.set(key=key, value=str(user.id))
-
-        return user
+    async def get_user_by_login(self, login: str) -> UserResponse:
+        return await self._get_user_by_field(
+            field_value=login,
+            key_formatter_func=self.formatter.get_user_by_login_key,
+            service_func=self.service.get_user_by_login
+        )
+        
+    async def get_user_by_email(self, email: str) -> UserResponse:
+        return await self._get_user_by_field(
+            field_value=email,
+            key_formatter_func=self.formatter.get_user_by_email_key,
+            service_func=self.service.get_user_by_email
+        )
 
     async def update_user(
         self,
@@ -70,7 +89,7 @@ class UserCacheProxy(CacheBaseProxy):
             data=data
         )
 
-        await self.invalidator.invalidate_get_user_by_id(user_id)
+        await self.invalidator.invalidate_all(user_id)
 
         return user
 
@@ -78,13 +97,9 @@ class UserCacheProxy(CacheBaseProxy):
         self,
         user_id: UUID
     ) -> User:
-        user = await self.service.delete_user(user_id=user_id)
+        user = await self.service.delete_user(user_id)
 
-        await self.invalidator.invalidate_all(
-            user_id=user.id,
-            login=user.login,
-            email=user.email
-        )
+        await self.invalidator.invalidate_all(user_id)
 
         return user
 

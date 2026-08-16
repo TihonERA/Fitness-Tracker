@@ -20,10 +20,16 @@ class UserCacheKeyFormatter(BaseCacheKeyFormatter):
             login=login
         )
 
-    def get_user_by_email(self, email: str) -> str:
+    def get_user_by_email_key(self, email: str) -> str:
         return self.formate_key(
             prefix=self.pref.user_by_email,
             email=email
+        )
+
+    def get_tag_key(self, user_id: UUID) -> str:
+        return self.formate_key(
+            prefix=self.pref.tag_user,
+            user_id=user_id
         )
  
 
