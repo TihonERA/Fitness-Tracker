@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from Backend.cache_proxies.key_formatters.WorkoutCacheKeyFormatter import WorkoutCacheKeyFormatter
 
-from Backend.cache_proxies.invalidators.CacheWorkoutInvalidator import CacheWorkoutInvalidator
+from Backend.cache_proxies.invalidators.WorkoutCacheInvalidator import WorkoutCacheInvalidator
 from Backend.models.workout import Workout
 from Backend.schemas.workout import ListWorkoutResponse, WorkoutGetAllFilter, WorkoutUpdate
 from Backend.services.WorkoutService import WorkoutService
@@ -16,10 +16,11 @@ from Backend.utils.uow import UnitOfWork
 class TestWorkoutCachyProxy:
 
     @pytest.fixture
-    def proxy(self, workout_service: WorkoutService, redis: Redis):
+    def proxy(self, uow: UnitOfWork, redis: Redis):
         formatter = WorkoutCacheKeyFormatter()
-        invalidator = CacheWorkoutInvalidator(redis=redis, formatter=formatter)
-        return WorkoutCacheProxy(service=workout_service, redis=redis, invalidator=invalidator, formatter=formatter)
+        invalidator = WorkoutCacheInvalidator(redis=redis, formatter=formatter)
+        service = WorkoutService(uow=uow)
+        return WorkoutCacheProxy(service=service, redis=redis, invalidator=invalidator, formatter=formatter)
 
     async def test_get_all_workouts_cache(
         self,

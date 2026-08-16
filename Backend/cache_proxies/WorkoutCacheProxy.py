@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 
 from Backend.cache_proxies.BaseCacheProxy import BaseCacheProxy
 
-from Backend.cache_proxies.invalidators.WorkoutCacheInvalidator import CacheWorkoutInvalidator
+from Backend.cache_proxies.invalidators.WorkoutCacheInvalidator import WorkoutCacheInvalidator 
 from Backend.cache_proxies.key_formatters.WorkoutCacheKeyFormatter import WorkoutCacheKeyFormatter
 from Backend.models.workout import Workout
 
@@ -23,7 +23,7 @@ class WorkoutCacheProxy(BaseCacheProxy[WorkoutResponse]):
         self, 
         service: WorkoutService, 
         redis: Redis, 
-        invalidator: CacheWorkoutInvalidator,
+        invalidator: WorkoutCacheInvalidator,
         formatter: WorkoutCacheKeyFormatter
     ) -> None:
         self.service = service
@@ -35,7 +35,7 @@ class WorkoutCacheProxy(BaseCacheProxy[WorkoutResponse]):
         self,
         user_id: UUID,
         data: WorkoutCreate
-    ) -> Workout:
+    ) -> WorkoutResponse:
         db_data = await self.service.create_workout(
             user_id=user_id,
             data=data
@@ -43,7 +43,7 @@ class WorkoutCacheProxy(BaseCacheProxy[WorkoutResponse]):
 
         await self.invalidator.invalidate_workouts_all(user_id=user_id)
 
-        return db_data
+        return self.scheme.model_validate(db_data)
 
     async def get_loaded_workout(
         self,

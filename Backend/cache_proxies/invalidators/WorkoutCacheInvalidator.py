@@ -6,7 +6,7 @@ from Backend.cache_proxies.invalidators.BaseCacheInvalidator import BaseCacheInv
 
 from Backend.cache_proxies.key_formatters.WorkoutCacheKeyFormatter import WorkoutCacheKeyFormatter
 
-class CacheWorkoutInvalidator(BaseCacheInvalidator[WorkoutCacheKeyFormatter]):
+class WorkoutCacheInvalidator(BaseCacheInvalidator[WorkoutCacheKeyFormatter]):
     def __init__(self, redis: Redis, formatter: WorkoutCacheKeyFormatter) -> None:
         super().__init__(redis, formatter)
 
@@ -17,6 +17,14 @@ class CacheWorkoutInvalidator(BaseCacheInvalidator[WorkoutCacheKeyFormatter]):
         workouts_all_key_version = self.formatter.get_workouts_version_key(user_id)
 
         await self.redis.incr(workouts_all_key_version)
+
+    async def invalidate_loaded_workout(
+        self,
+        workout_id: int
+    ) -> None:
+        loaded_workout_key = self.formatter.get_loaded_workout_key(workout_id)
+
+        await self.redis.delete(loaded_workout_key)
 
     async def invalidate_all(
         self,

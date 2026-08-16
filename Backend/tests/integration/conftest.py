@@ -162,12 +162,3 @@ def uow(db_session):
 @pytest.fixture
 def redis():
     return Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
-
-@pytest.fixture
-def workout_service(uow):
-    return WorkoutService(uow=uow)
-
-@pytest.fixture
-def user_service(uow):
-    return UserService(uow=uow)
-
