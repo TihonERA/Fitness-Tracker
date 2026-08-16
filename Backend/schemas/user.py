@@ -32,3 +32,4 @@ class UserCachePrefixes(StrEnum):
     user_by_id = "user:by_id"
     user_by_login = "user:login"
     user_by_email = "user:email"
+    tag_user = "tag"

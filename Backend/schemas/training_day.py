@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 from pydantic import BaseModel, Field
 
 from typing import Annotated
@@ -27,5 +29,3 @@ class TrainingDayCreateDTO(TrainingDayBase):
 class TrainingDayUpdate(BaseModel):
     name: Str100 | None = None
     day_order: DayOrderInt | None = None
-
-

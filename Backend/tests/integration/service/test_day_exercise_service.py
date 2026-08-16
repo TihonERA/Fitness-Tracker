@@ -29,7 +29,6 @@ class TestDayExerciseService:
         created_training_day = await service.create_day_exercise(
             user_id=workout.user_id,
             workout_id=workout.id,
-            day_id=day_id,
             data=data
         )
 

@@ -1,10 +1,12 @@
 import pytest
 from redis.asyncio import Redis
 
+from Backend.cache_proxies.DayExerciseCacheProxy import DayExerciseCacheProxy
 from Backend.cache_proxies.TrainingDayCacheProxy import TrainingDayCacheProxy
 from Backend.cache_proxies.WorkoutCacheProxy import WorkoutCacheProxy
 from Backend.cache_proxies.invalidators.WorkoutCacheInvalidator import WorkoutCacheInvalidator
 from Backend.cache_proxies.key_formatters.WorkoutCacheKeyFormatter import WorkoutCacheKeyFormatter
+from Backend.services.DayExerciseService import DayExerciseService
 from Backend.services.TrainingDayService import TrainingDayService
 from Backend.services.WorkoutService import WorkoutService
 from Backend.utils.uow import UnitOfWork
@@ -19,7 +21,12 @@ def workout_invalidator(redis, workout_formatter):
     return WorkoutCacheInvalidator(redis, workout_formatter)
 
 @pytest.fixture
-def tr_day_proxy(uow: UnitOfWork, redis: Redis, workout_formatter, workout_invalidator):
+def day_exercise_proxy(uow: UnitOfWork, redis: Redis, workout_invalidator):
+    service = DayExerciseService(uow=uow)
+    return DayExerciseCacheProxy(service=service, redis=redis, workout_invalidator=workout_invalidator)
+
+@pytest.fixture
+def tr_day_proxy(uow: UnitOfWork, redis: Redis, workout_invalidator):
     service = TrainingDayService(uow=uow)
     return TrainingDayCacheProxy(
         service=service, 
