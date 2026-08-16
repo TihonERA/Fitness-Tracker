@@ -16,20 +16,6 @@ class TestTrainingDayService:
     def service(self, uow: UnitOfWork):
         return TrainingDayService(uow=uow)
 
-    async def test_get_training_day(
-        self,
-        service: TrainingDayService,
-        workout: Workout
-    ):
-        fetched_training_day = await service.get_training_day(
-            user_id=workout.user_id,
-            workout_id=workout.id,
-            day_id=workout.training_days[0].id
-        )
-
-        assert fetched_training_day is not None
-        assert len(fetched_training_day.day_exercises) > 0
-
     async def test_create_training_day(
         self,
         service: TrainingDayService,
@@ -44,7 +30,6 @@ class TestTrainingDayService:
 
         created_training_day = await service.create_training_day(
             user_id=workout.user_id,
-            workout_id=workout.id,
             data=data
         )
 
@@ -82,10 +67,7 @@ class TestTrainingDayService:
             workout_id=workout.id,
             day_id=day_id
         )
-        
-        with pytest.raises(NotFound):
-            await service.get_training_day(
-                user_id=workout.user_id,
-                workout_id=workout.id,
-                day_id=day_id
-            )
+
+        async with service.uow as uow:
+            assert await uow.trainingday.get_instance_by_id(id=day_id) is None
+

@@ -20,21 +20,6 @@ class TrainingDayService(BaseService):
     def __init__(self, uow: UnitOfWork):
         super().__init__(uow)
 
-    async def get_training_day(
-        self,
-        user_id: UUID,
-        workout_id: int,
-        day_id: int
-    ) -> TrainingDay:
-        async with self.uow as uow:
-            return await self.get_tr_day_with_access(
-                user_id=user_id,
-                workout_id=workout_id,
-                day_id=day_id,
-                tr_day_get_func=uow.trainingday.get_loaded_training_day,
-                workout_get_func=uow.workout.get_instance_by_id
-            )
-
     async def get_tr_day_with_access(
         self,
         user_id: UUID,
@@ -61,12 +46,11 @@ class TrainingDayService(BaseService):
     async def create_training_day(
         self,
         user_id: UUID,
-        workout_id: int,
         data: TrainingDayCreateDTO
     ) -> TrainingDay:
         async with self.uow as uow:
             await self._get_instance_with_access(
-                identifier=workout_id,
+                identifier=data.workout_id,
                 user_id=user_id,
                 repo_get_func=uow.workout.get_instance_by_id
             )
