@@ -7,9 +7,9 @@ from uuid import UUID
 from pydantic import BaseModel
 from redis.asyncio import Redis
 
-from Backend.cache_proxies.CacheBaseProxy import BaseCacheProxy
+from Backend.cache_proxies.BaseCacheProxy import BaseCacheProxy
 
-from Backend.cache_proxies.invalidators.CacheWorkoutInvalidator import CacheWorkoutInvalidator
+from Backend.cache_proxies.invalidators.WorkoutCacheInvalidator import CacheWorkoutInvalidator
 from Backend.cache_proxies.key_formatters.WorkoutCacheKeyFormatter import WorkoutCacheKeyFormatter
 from Backend.models.workout import Workout
 
@@ -88,7 +88,7 @@ class WorkoutCacheProxy(BaseCacheProxy[WorkoutResponse]):
         user_id: UUID,
         workout_id: int,
         data: WorkoutUpdate
-    ) -> Workout:
+    ) -> WorkoutResponse:
         workout = await self.service.update_workout(
             user_id=user_id,
             workout_id=workout_id,
@@ -100,13 +100,13 @@ class WorkoutCacheProxy(BaseCacheProxy[WorkoutResponse]):
             workout_id=workout_id
         )
 
-        return workout
+        return self.scheme.model_validate(workout)
 
     async def delete_workout(
         self,
         user_id: UUID,
         workout_id: int
-    ) -> Workout:
+    ) -> WorkoutResponse:
         workout = await self.service.delete_workout(
             user_id=user_id,
             workout_id=workout_id
@@ -117,4 +117,4 @@ class WorkoutCacheProxy(BaseCacheProxy[WorkoutResponse]):
             workout_id=workout_id
         )
 
-        return workout
+        return self.scheme.model_validate(workout)

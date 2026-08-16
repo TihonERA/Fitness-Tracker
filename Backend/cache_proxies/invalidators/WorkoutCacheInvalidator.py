@@ -2,7 +2,7 @@ from uuid import UUID
 
 from redis.asyncio import Redis
 
-from Backend.cache_proxies.invalidators.BaseCacheInvalidators import BaseCacheInvalidator 
+from Backend.cache_proxies.invalidators.BaseCacheInvalidator import BaseCacheInvalidator 
 
 from Backend.cache_proxies.key_formatters.WorkoutCacheKeyFormatter import WorkoutCacheKeyFormatter
 

@@ -8,8 +8,8 @@ import json
 
 from pydantic import BaseModel
 
-from Backend.cache_proxies.CacheBaseProxy import BaseCacheProxy 
-from Backend.cache_proxies.invalidators.CacheUserInvalidator import UserCacheInvalidator
+from Backend.cache_proxies.BaseCacheProxy import BaseCacheProxy 
+from Backend.cache_proxies.invalidators.UserCacheInvalidator import UserCacheInvalidator
 from Backend.cache_proxies.key_formatters.UserCacheKeyFormatter import UserCacheKeyFormatter
 from Backend.models.user import User
 from Backend.schemas.user import UserCachePrefixes, UserCreateDB, UserResponse, UserUpdate, UserUpdateDTO
