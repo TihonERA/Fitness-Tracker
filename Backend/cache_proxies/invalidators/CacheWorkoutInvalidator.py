@@ -5,12 +5,9 @@ from redis.asyncio import Redis
 from Backend.cache_proxies.invalidators.BaseCacheInvalidators import BaseCacheInvalidator 
 
 from Backend.cache_proxies.key_formatters.WorkoutCacheKeyFormatter import WorkoutCacheKeyFormatter
-from Backend.schemas.workout import WorkoutCachePrefixes
-
 
 class CacheWorkoutInvalidator(BaseCacheInvalidator[WorkoutCacheKeyFormatter]):
     def __init__(self, redis: Redis, formatter: WorkoutCacheKeyFormatter) -> None:
-        self.pref = WorkoutCachePrefixes
         super().__init__(redis, formatter)
 
     async def invalidate_workouts_all(

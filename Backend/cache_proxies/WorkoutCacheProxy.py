@@ -4,9 +4,10 @@ from types import CoroutineType
 from typing import Any, Awaitable, Coroutine
 from uuid import UUID
 
+from pydantic import BaseModel
 from redis.asyncio import Redis
 
-from Backend.cache_proxies.CacheBaseProxy import CacheBaseProxy
+from Backend.cache_proxies.CacheBaseProxy import BaseCacheProxy
 
 from Backend.cache_proxies.invalidators.CacheWorkoutInvalidator import CacheWorkoutInvalidator
 from Backend.cache_proxies.key_formatters.WorkoutCacheKeyFormatter import WorkoutCacheKeyFormatter
@@ -17,7 +18,7 @@ from Backend.utils.uow import UnitOfWork
 
 from Backend.services.WorkoutService import WorkoutService
 
-class WorkoutCacheProxy(CacheBaseProxy):
+class WorkoutCacheProxy(BaseCacheProxy[WorkoutResponse]):
     def __init__(
         self, 
         service: WorkoutService, 
@@ -48,7 +49,7 @@ class WorkoutCacheProxy(CacheBaseProxy):
         self,
         user_id: UUID,
         workout_id: int
-    ) -> str:
+    ) -> WorkoutRelationsResponse:
         key = self.formatter.get_loaded_workout_key(workout_id)
 
         return await self._wrap_cache(
@@ -62,7 +63,7 @@ class WorkoutCacheProxy(CacheBaseProxy):
         self,
         user_id: UUID,
         data: WorkoutGetAllFilter
-    ) -> str:
+    ) -> ListWorkoutResponse:
         data_dto = WorkoutGetAllFilterDTO(
             skip=data.skip,
             limit=data.limit,
