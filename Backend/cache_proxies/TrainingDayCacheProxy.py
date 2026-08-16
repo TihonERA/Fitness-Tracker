@@ -5,9 +5,7 @@ from redis.asyncio import Redis
 
 from Backend.cache_proxies.BaseCacheProxy import BaseCacheProxy
 from Backend.cache_proxies.invalidators.WorkoutCacheInvalidator import WorkoutCacheInvalidator 
-from Backend.cache_proxies.invalidators.TrainingDayCacheInvalidator import TrainingDayCacheInvalidator
-from Backend.cache_proxies.key_formatters.TrainingDayCacheKeyFormatter import TrainingDayCacheKeyFormatter
-from Backend.schemas.training_day import TrainingDayCreate, TrainingDayCreateDTO, TrainingDayRelataionsResponse, TrainingDayResponse
+from Backend.schemas.training_day import TrainingDayCreate, TrainingDayCreateDTO, TrainingDayRelataionsResponse, TrainingDayResponse, TrainingDayUpdate
 from Backend.services.TrainingDayService import TrainingDayService
 
 
@@ -16,14 +14,10 @@ class TrainingDayCacheProxy(BaseCacheProxy[TrainingDayResponse]):
         self,
         service: TrainingDayService, 
         redis: Redis,
-        invalidator: TrainingDayCacheInvalidator,
         workout_invalidator: WorkoutCacheInvalidator,
-        formatter: TrainingDayCacheKeyFormatter
     ) -> None:
         self.service = service
         self.workout_invalidator = workout_invalidator
-        self.invalidator = invalidator
-        self.formatter = formatter
         super().__init__(redis, TrainingDayResponse)
 
     async def create_training_day(
@@ -47,16 +41,36 @@ class TrainingDayCacheProxy(BaseCacheProxy[TrainingDayResponse]):
         
         return self.scheme.model_validate(training_day)
 
-    async def test_get_training_day(
+    async def update_training_day(
+        self,
+        user_id: UUID,
+        workout_id: int,
+        day_id: int,
+        data: TrainingDayUpdate
+    ) -> TrainingDayResponse:
+        training_day = await self.service.update_training_day(
+            user_id=user_id,
+            workout_id=workout_id,
+            day_id=day_id,
+            data=data
+        )
+
+        await self.workout_invalidator.invalidate_loaded_workout(workout_id=workout_id)
+
+        return self.scheme.model_validate(training_day)
+
+    async def delete_training_day(
         self,
         user_id: UUID,
         workout_id: int,
         day_id: int
-    ) -> TrainingDayRelataionsResponse:
-        key = self.formatter.get_loaded_tr_day_key(day_id)
-
-        return await self._wrap_cache(
-            key=key,
-            response_model=TrainingDayRelataionsResponse,
-            db_func=partial(self.service.get_loaded_training_day, user_id, workout_id, day_id)
+    ) -> TrainingDayResponse:
+        training_day = await self.service.delete_training_day(
+            user_id=user_id,
+            workout_id=workout_id,
+            day_id=day_id,
         )
+
+        await self.workout_invalidator.invalidate_loaded_workout(workout_id=workout_id)
+
+        return self.scheme.model_validate(training_day)
