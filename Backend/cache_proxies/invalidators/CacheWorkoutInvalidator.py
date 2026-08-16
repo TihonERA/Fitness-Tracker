@@ -26,10 +26,7 @@ class CacheWorkoutInvalidator(BaseCacheInvalidator[WorkoutCacheKeyFormatter]):
         user_id: UUID,
         workout_id: int
     ) -> None:
-        loaded_workout_key = self.formatter.get_loaded_workout_key(
-            user_id=user_id,
-            workout_id=workout_id
-        )
+        loaded_workout_key = self.formatter.get_loaded_workout_key(workout_id)
         workouts_all_key_version = self.formatter.get_workouts_version_key(user_id)       
 
         async with self.redis.pipeline(transaction=True) as pipe:

@@ -10,12 +10,10 @@ class WorkoutCacheKeyFormatter(BaseCacheKeyFormatter):
 
     def get_loaded_workout_key(
         self,
-        user_id: UUID,
         workout_id: int
     ) -> str:
         return self.formate_key(
             prefix=self.pref.loaded_workout,
-            user_id=user_id,
             workout_id=workout_id
         )
 

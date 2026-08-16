@@ -49,7 +49,7 @@ class WorkoutCacheProxy(CacheBaseProxy):
         user_id: UUID,
         workout_id: int
     ) -> str:
-        key = self.formatter.get_loaded_workout_key(user_id=user_id, workout_id=workout_id)
+        key = self.formatter.get_loaded_workout_key(workout_id)
 
         return await self._wrap_cache(
             key=key,
