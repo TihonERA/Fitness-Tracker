@@ -117,6 +117,7 @@ UserProxyDepends = Annotated[UserCacheProxy, Depends(get_user_proxy)]
 AuthServiceDepends = Annotated[AuthService, Depends(get_auth_service)]
 WorkoutProxyDepends = Annotated[WorkoutCacheProxy, Depends(get_workout_proxy)]
 TrainingDayProxyDepends = Annotated[TrainingDayCacheProxy, Depends(get_training_day_proxy)]
+DayExerciseProxyDepends = Annotated[DayExerciseCacheProxy, Depends(get_day_exercise_proxy)]
 TrDayHistoryServiceDepends = Annotated[TrainingDayHistoryService, Depends(get_tr_day_history_service)]
 
 UUIDPath = Annotated[UUID, Path()]

@@ -27,14 +27,13 @@ class DayExerciseService(BaseService):
         self,
         user_id: UUID,
         workout_id: int,
-        day_id: int,
         data: DayExerciseCreateDTO
     ):
         async with self.uow as uow:
             await self.tr_day_service.get_tr_day_with_access(
                 user_id=user_id,
                 workout_id=workout_id,
-                day_id=day_id,
+                day_id=data.day_id,
                 tr_day_get_func=uow.trainingday.get_instance_by_id,
                 workout_get_func=uow.workout.get_instance_by_id
             )
