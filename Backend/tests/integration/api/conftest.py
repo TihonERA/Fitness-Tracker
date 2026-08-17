@@ -1,7 +1,5 @@
 from Backend.tasks.muscle_rates import cel_app
 
-from Backend.core.database import get_session
-
 from httpx import AsyncClient, ASGITransport
 
 from Backend.main import app
@@ -26,14 +24,6 @@ def celery_app():
 
 @pytest.fixture(scope="function")
 async def client(db_session):
-    def _override_get_db():
-        yield db_session
-
-    app.dependency_overrides[get_session] = _override_get_db
-
     transport = ASGITransport(app=app) #type: ignore
     async with AsyncClient(transport=transport, base_url="https://test") as c:
         yield c
-
-    app.dependency_overrides.clear()
-

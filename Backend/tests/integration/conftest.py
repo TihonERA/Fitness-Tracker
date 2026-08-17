@@ -14,7 +14,6 @@ from Backend.models.dayexercise import DayExercise
 from Backend.models.training_day_history import TrainingDayHistory
 from Backend.models.exercise_history import ExerciseHistory
 from Backend.core.database import async_session_factory, async_engine
-from Backend.core.database import get_redis
 from Backend.core.config import settings
 from alembic.config import Config
 from alembic import command
@@ -63,7 +62,7 @@ async def setup_and_teardown_database():
 
 @pytest.fixture(scope="function", autouse=True)
 async def clear_redis():
-    redis = get_redis()
+    redis = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
     await redis.flushall()
 

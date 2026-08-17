@@ -1,11 +1,13 @@
+from httpx import AsyncClient
+from Backend.models.user import User
 import pytest
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestAuthAPI:
     
-    async def test_login(self, client):
+    async def test_login(self, client: AsyncClient, user: User):
         login_data = {
-            "login_or_email": "testmail@mail.com",
+            "login_or_email": user.login,
             "password": "registration_data_password"
         }
         

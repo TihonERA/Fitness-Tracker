@@ -8,7 +8,9 @@ from Backend.services.BaseService import BaseService
 from Backend.utils.exceptions import InvalidCredentials, NotFound
 from Backend.utils.uow import UnitOfWork
 
-from ..core.config import settings
+from Backend.core.config import settings
+
+from Backend.cache_proxies.UserCacheProxy import UserCacheProxy
 
 import jwt
 from pwdlib import PasswordHash
@@ -19,26 +21,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from Backend.services.UserService import UserService
 
 
-class AuthService(BaseService):
-
-    def __init__(self, uow: UnitOfWork, redis: Redis):
-        self.userservice = UserService(uow=uow, redis=redis)
+class AuthService:
+    def __init__(self, user_proxy: UserCacheProxy):
+        self.user_proxy= user_proxy
         self.password_hash = PasswordHash.recommended()
         self.DUMMYHASH = "dummy_hash_for_safety_YYYYYYYYYYYYYYYYYYYYYYY"
-        super().__init__(uow, redis)
         
     async def register(self, data: UserCreate) -> TokenPair:
-        user = await self.userservice.check_if_user_exists(
+        user = await self.user_proxy.check_if_user_exists(
             login=data.login,
             email=data.email
         )
         if user:
-            if user.login == data.login:
-                raise InvalidCredentials(detail="Login is already taken")
-            elif user.email == data.email:
-                raise InvalidCredentials(detail="Email is already taken")
-            else:
+            if user.email == data.email and user.login == data.login:
                 raise InvalidCredentials(detail="Both login and email are already taken")
+            elif user.login == data.login:
+                raise InvalidCredentials(detail="Login is already taken")
+            else:
+                raise InvalidCredentials(detail="Email is already taken")
 
         hash_password = self.password_hash.hash(data.password)
         user_scheme_db = UserCreateDB(
@@ -47,20 +47,20 @@ class AuthService(BaseService):
             hash_password=hash_password
         )
 
-        user = await self.userservice.create_user(
+        user = await self.user_proxy.create_user(
             data=user_scheme_db
         )
-        tokens = await self._create_token_pair(user_id=user.user_id)
+        tokens = await self._create_token_pair(user_id=user.id)
         return tokens
 
     async def login(self, data: UserAuthorize) -> TokenPair:
         try:
             if '@' in data.login_or_email and '.' in data.login_or_email:
-                user = await self.userservice.get_user_by_email(
+                user = await self.user_proxy.get_user_by_email(
                     email=data.login_or_email
                 )
             else:
-                user = await self.userservice.get_user_by_login(
+                user = await self.user_proxy.get_user_by_login(
                     login=data.login_or_email
                 )
             if not self.password_hash.verify(
@@ -73,7 +73,7 @@ class AuthService(BaseService):
                 )
                 raise InvalidCredentials(detail="Invalid password") 
 
-            tokens = await self._create_token_pair(user_id=user.user_id)
+            tokens = await self._create_token_pair(user_id=user.id)
             return tokens
         except NotFound:
             self.password_hash.verify(
@@ -130,11 +130,10 @@ class AuthService(BaseService):
             data=refresh_token_data,
             expire=refresh_token_expire
         )
-        refresh_token_ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
-        await self.redis.set(
-            name=self._refrest_token_key(user_id=user_id_str, token=refresh_token),
+        await self.user_proxy.set(
+            key=self._refrest_token_key(user_id=user_id_str, token=refresh_token),
             value=refresh_token, 
-            ex=refresh_token_ttl
+            expire=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         )
 
         return TokenPair(
