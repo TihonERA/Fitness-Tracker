@@ -99,7 +99,7 @@ class UserCacheProxy(BaseCacheProxy[UserInDb]):
         self,
         user_id: UUID,
         data: UserUpdateDTO
-    ) -> User:
+    ) -> UserInDb:
         user = await self.service.update_user(
             user_id=user_id, 
             data=data
@@ -107,15 +107,15 @@ class UserCacheProxy(BaseCacheProxy[UserInDb]):
 
         await self.invalidator.invalidate_all(user_id)
 
-        return user
+        return self.scheme.model_validate(user)
 
     async def delete_user(
         self,
         user_id: UUID
-    ) -> User:
+    ) -> UserInDb:
         user = await self.service.delete_user(user_id)
 
         await self.invalidator.invalidate_all(user_id)
 
-        return user
+        return self.scheme.model_validate(user)
 

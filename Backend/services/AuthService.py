@@ -3,9 +3,9 @@ from typing import Any
 from uuid import UUID
 
 from Backend.schemas.auth import TokenPair, UserAuthorize
-from Backend.schemas.user import UserCreate, UserCreateDB
+from Backend.schemas.user import UserCreate, UserCreateDB, UserResponse, UserUpdate, UserUpdateDTO
 from Backend.services.BaseService import BaseService
-from Backend.utils.exceptions import InvalidCredentials, NotFound
+from Backend.utils.exceptions import BadRequest, InvalidCredentials, NotFound
 from Backend.utils.uow import UnitOfWork
 
 from Backend.core.config import settings
@@ -52,6 +52,22 @@ class AuthService:
         )
         tokens = await self._create_token_pair(user_id=user.id)
         return tokens
+    
+    def _verify_password(
+        self,
+        password: str,
+        password_db: str
+    ) -> None:
+        if not self.password_hash.verify(
+             password,
+             password_db
+        ):
+            self.password_hash.verify(
+                self.DUMMYHASH,
+                password_db
+            )
+            raise InvalidCredentials(detail="Invalid password") 
+
 
     async def login(self, data: UserAuthorize) -> TokenPair:
         try:
@@ -63,15 +79,8 @@ class AuthService:
                 user = await self.user_proxy.get_user_by_login(
                     login=data.login_or_email
                 )
-            if not self.password_hash.verify(
-                 data.password,
-                 user.hash_password
-            ):
-                self.password_hash.verify(
-                    self.DUMMYHASH,
-                    user.hash_password
-                )
-                raise InvalidCredentials(detail="Invalid password") 
+
+            self._verify_password(password=data.password, password_db=user.hash_password)
 
             tokens = await self._create_token_pair(user_id=user.id)
             return tokens
@@ -81,6 +90,25 @@ class AuthService:
                 self.password_hash.hash(self.DUMMYHASH)
             )
             raise InvalidCredentials(detail="Invalid login or email")
+
+    async def update_user(self, user_id: UUID, data: UserUpdate) -> UserResponse:
+        user = await self.user_proxy.get_user_by_id(user_id)
+
+        data_dto = UserUpdateDTO(
+            **data.model_dump(exclude_unset=True)
+        )
+        if data.password and data.old_password:
+            self._verify_password(password=data.old_password, password_db=user.hash_password)
+            hash_password = self.password_hash.hash(data.password)
+            data_dto.hash_password = hash_password
+
+        user = await self.user_proxy.update_user(
+            user_id=user_id,
+            data=data_dto
+        )
+
+        return user
+
 
     def get_current_user(self, token: str | bytes) -> UUID:
         try:

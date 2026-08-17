@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, HTTPException, status
 
-from Backend.api.deps import GetCurrentUserDepends, UUIDPath, UserServiceDepends
+from Backend.api.deps import GetCurrentUserDepends, UUIDPath, UserProxyDepends
 from Backend.schemas.user import UserResponse, UserUpdate
 
 router = APIRouter(
@@ -17,7 +17,7 @@ router = APIRouter(
 )
 async def get_current_user(
     user_id: GetCurrentUserDepends,
-    user_service: UserServiceDepends
+    user_service: UserProxyDepends
 ):
     return await user_service.get_user_by_id(
         user_id=user_id
@@ -30,25 +30,10 @@ async def get_current_user(
 )
 async def get_user(
     user_id: UUIDPath,
-    user_service: UserServiceDepends
+    user_service: UserProxyDepends
 ):
     return await user_service.get_user_by_id(
         user_id=user_id
-    )
-
-@router.patch(
-    "/me",
-    response_model=UserResponse,
-    status_code=status.HTTP_200_OK
-)
-async def update_user(
-    user_id: GetCurrentUserDepends,
-    data: Annotated[UserUpdate, Body()],
-    user_service: UserServiceDepends
-):
-    return await user_service.update_user(
-        user_id=user_id,
-        data=data
     )
 
 @router.delete(
@@ -58,7 +43,7 @@ async def update_user(
 )
 async def delete_user(
     user_id: GetCurrentUserDepends,
-    user_service: UserServiceDepends
+    user_service: UserProxyDepends
 ):
     return await user_service.delete_user(
         user_id=user_id

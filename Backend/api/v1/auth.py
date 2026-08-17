@@ -2,9 +2,9 @@ from typing import Annotated
 
 from fastapi import Body, Cookie, APIRouter, HTTPException, Response, status
 
-from Backend.api.deps import AuthServiceDepends
+from Backend.api.deps import AuthServiceDepends, GetCurrentUserDepends
 from Backend.schemas.auth import UserAuthorize
-from Backend.schemas.user import UserCreate
+from Backend.schemas.user import UserCreate, UserUpdate
 
 router = APIRouter(
    tags=["Authorization Endpoints"],
@@ -84,3 +84,18 @@ async def refresh(
         refresh_token=tokens.refresh_token
     )
     return status.HTTP_200_OK
+
+@router.patch(
+    "/me",
+    status_code=status.HTTP_200_OK
+)
+async def update_user(
+    user_id: GetCurrentUserDepends,
+    data: Annotated[UserUpdate, Body()],
+    auth_service: AuthServiceDepends
+):
+    return await auth_service.update_user(
+        user_id=user_id,
+        data=data
+    )
+

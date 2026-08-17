@@ -80,15 +80,14 @@ class SQLAlchemyAbstractRepository(Generic[ModelT]):
         data: BaseModel
     ) -> ModelT:
         data_dump = data.model_dump(exclude_unset=True)
+        print(data_dump)
         try:
             for key, value in data_dump.items():
                 setattr(instance, key, value)   
-        except AttributeError as e:
-            raise DBSchemaMismatchError(
-                detail=f"Table {instance.__tablename__} dont have attribute {e.name}, that was declared at pydantic scheme"
-            )
+            await self.flush()
+        except IntegrityError as e:
+            DBErrorHandler.handle_integrity_error(e=e)
         
-        await self.flush()
         return instance
 
     async def delete_by_id(

@@ -25,3 +25,13 @@ class TestAuthAPI:
         response = await client.post(f"/auth/users", json=registration_data)
 
         assert response.status_code == 200
+
+    async def test_update_user(self, client: AsyncClient, user_authorized):
+        update_data = {
+            "login": "newupdatedlogin"
+        }
+        response = await client.patch("/auth/me", json=update_data)
+
+        assert response.status_code == 200
+        assert response.json().get("login") == update_data.get("login")
+
