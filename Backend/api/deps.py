@@ -115,6 +115,7 @@ def get_workouts_filter(
 
 UserProxyDepends = Annotated[UserCacheProxy, Depends(get_user_proxy)]
 AuthServiceDepends = Annotated[AuthService, Depends(get_auth_service)]
+TrainingDayProxyDepends = Annotated[TrainingDayCacheProxy, Depends(get_training_day_proxy)]
 TrDayHistoryServiceDepends = Annotated[TrainingDayHistoryService, Depends(get_tr_day_history_service)]
 
 UUIDPath = Annotated[UUID, Path()]
