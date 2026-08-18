@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, RootModel
 
 from Backend.utils.exceptions import Forbidden
-from .base import StrText, Str100, BaseResponse
+from .base import StrText, Str100, BaseResponse, SkipInt, LimitInt
 
 from .training_day import TrainingDayRelataionsResponse
 
@@ -11,9 +11,6 @@ from pydantic import model_validator
 
 from uuid import UUID
 from typing import Annotated
-
-SkipInt = Annotated[int, Field(0, ge=0)]
-LimitInt = Annotated[int, Field(20, gt=0, le=100)]
 
 class WorkoutBase(BaseModel):
     name: Str100

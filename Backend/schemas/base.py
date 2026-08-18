@@ -1,9 +1,14 @@
+from datetime import datetime
 from typing import Any
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 from typing import Annotated
 
 Str100 = Annotated[str, Field(max_length=100)]
 StrText = Annotated[str, Field(max_length=2000)]
+SkipInt = Annotated[int, Field(0, ge=0)]
+LimitInt = Annotated[int, Field(20, gt=0, le=100)]
+OptionalInt = int | None
+OptionalDateTime = datetime | None
 
 def validate_password(value: Str100) -> Str100:
     if len(value) <= 12:

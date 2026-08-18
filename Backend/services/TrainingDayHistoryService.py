@@ -1,9 +1,11 @@
 import asyncio
+from typing import Sequence
 from uuid import UUID
 
 from redis.asyncio import Redis
 
 from Backend.models.training_day_history import TrainingDayHistory
+from Backend.schemas.training_day_history import TrainingDayHistoryGetAll
 
 from .BaseService import BaseService
 
@@ -11,7 +13,7 @@ from ..utils.uow import UnitOfWork
 from ..utils.exceptions import NotFound
 
 class TrainingDayHistoryService(BaseService):
-    def __init__(self, uow: UnitOfWork, redis: Redis):
+    def __init__(self, uow: UnitOfWork):
         super().__init__(uow)
 
     async def get_loaded_tr_day_history(
@@ -24,3 +26,14 @@ class TrainingDayHistoryService(BaseService):
                 repo_get_func=uow.trainingdayhistory.get_tr_day_history
             )
 
+    async def get_all_tr_day_history(
+        self,
+        data: TrainingDayHistoryGetAll
+    ) -> Sequence[TrainingDayHistory]:
+        async with self.uow as uow:
+            histories = await uow.trainingdayhistory.get_all_tr_day_history(data)
+
+            if histories is None:
+                return []
+
+            return histories

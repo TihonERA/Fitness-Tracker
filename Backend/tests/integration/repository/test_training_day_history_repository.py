@@ -3,20 +3,13 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 import pytest
 
+from Backend.tests.integration.conftest import TrDayData
+
 from Backend.models.exercise_history import ExerciseHistory
 from Backend.models.training_day_history import TrainingDayHistory
 from Backend.models.workout import Workout
-from Backend.repositories.TrainingDayHistory import TrainingDayHistoryRepository
-
-class TrDayData(BaseModel):
-    user_id: UUID
-    workout_id: int
-    histories: list[TrainingDayHistory]
-
-    model_config = ConfigDict(
-        from_attributes=True,
-        arbitrary_types_allowed=True
-    )
+from Backend.repositories.TrainingDayHistoryRepository import TrainingDayHistoryRepository
+from Backend.schemas.training_day_history import TrainingDayHistoryGetAll
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestTrainingDayHistoryRepository:
@@ -79,7 +72,13 @@ class TestTrainingDayHistoryRepository:
         service: TrainingDayHistoryRepository, 
         tr_day_history: TrDayData
     ):
-        training_day_histories = await service.get_all_tr_day_history(tr_day_history.user_id)
+        data = TrainingDayHistoryGetAll(
+            skip=0,
+            limit=50,
+            user_id=tr_day_history.user_id, 
+        )
+
+        training_day_histories = await service.get_all_tr_day_history(data)
         assert len(training_day_histories) == len(tr_day_history.histories)
 
     async def test_get_all_specific(
@@ -87,9 +86,12 @@ class TestTrainingDayHistoryRepository:
         service: TrainingDayHistoryRepository,
         tr_day_history: TrDayData
     ):
-        training_day_histories = await service.get_all_tr_day_history(
-            user_id=tr_day_history.user_id,
+        data = TrainingDayHistoryGetAll(
+            skip=0,
+            limit=50,
+            user_id=tr_day_history.user_id, 
             day_id=tr_day_history.histories[0].day_id
         )
+        training_day_histories = await service.get_all_tr_day_history(data)
 
         assert len(training_day_histories) == 1

@@ -40,6 +40,16 @@ class Conflict(Exception):
         self.detail = detail
         super().__init__(detail)
 
+class Forbidden(Exception):
+    def __init__(self, detail: str = "Access defnied") -> None:
+        self.status_code = 403
+        self.detail = detail
+        super().__init__(detail)
+
+class DBSchemaMismatchError(Exception):
+    def __init__(self, detail: str) -> None:
+        self.detail = detail
+
 class PostgreSQLStateStrategy(ABC):
     @abstractmethod
     def raise_exception(self, orig_error) -> None:
