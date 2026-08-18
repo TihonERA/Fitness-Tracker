@@ -38,9 +38,7 @@ class WorkoutService(BaseService):
                 **data.model_dump(),
                 user_id=user_id
             )
-            return await uow.workout.create_instance(
-                data=data_dto
-            )
+            return await uow.workout.create_instance(data_dto)
             
     async def get_loaded_workout(
         self,

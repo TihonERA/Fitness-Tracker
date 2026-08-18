@@ -8,6 +8,9 @@ from .base import BaseResponse, OptionalDateTime, OptionalInt, Str100, SkipInt, 
 class TrainingDayHistoryBase(BaseModel):
     day_name: Str100
 
+class TrainingDayHistoryCreate(TrainingDayHistoryBase):
+    day_id: int
+
 class TrainingDayHistoryResponse(BaseResponse, TrainingDayHistoryBase):
     id: int
     day_id: int

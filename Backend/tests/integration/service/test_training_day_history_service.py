@@ -1,6 +1,7 @@
 import pytest
 
-from Backend.schemas.training_day_history import TrainingDayHistoryGetAll
+from Backend.models.workout import Workout
+from Backend.schemas.training_day_history import TrainingDayHistoryCreate, TrainingDayHistoryGetAll
 from Backend.services.TrainingDayHistoryService import TrainingDayHistoryService
 from Backend.tests.integration.conftest import TrDayData
 
@@ -10,6 +11,17 @@ class TestTrainingDayHistoryService:
     @pytest.fixture
     def service(self, uow):
         return TrainingDayHistoryService(uow)
+
+    async def test_create(self, service: TrainingDayHistoryService, workout: Workout):
+        data = TrainingDayHistoryCreate(
+            day_name=workout.training_days[0].name,
+            day_id=workout.training_days[0].id
+        )
+
+        history = await service.create_history(data)
+
+        assert history.day_name == data.day_name
+        assert history.day_id == data.day_id
 
     async def test_get_all_invalid(
         self,
