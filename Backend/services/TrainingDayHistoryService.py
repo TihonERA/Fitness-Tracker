@@ -41,3 +41,19 @@ class TrainingDayHistoryService(BaseService):
                 return []
 
             return histories
+
+    async def delete_history(
+        self,
+        history_id: int
+    ) -> TrainingDayHistory:
+        async with self.uow as uow:
+            history = await self._get_existing_instance(
+                identifier=history_id,
+                repo_get_func=uow.trainingdayhistory.get_instance_for_update
+            )
+
+            await uow.trainingdayhistory.delete_by_id(history_id)
+
+            return history
+
+            

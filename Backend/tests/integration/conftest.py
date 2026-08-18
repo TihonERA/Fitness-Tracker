@@ -197,7 +197,7 @@ async def tr_day_history(workout: Workout, db_session):
     )
     db_session.add(exercise_history)
 
-    await db_session.flush()
+    await db_session.commit()
 
     data = TrDayData(
         user_id=workout.user_id,

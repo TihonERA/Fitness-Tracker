@@ -4,6 +4,7 @@ from Backend.models.workout import Workout
 from Backend.schemas.training_day_history import TrainingDayHistoryCreate, TrainingDayHistoryGetAll
 from Backend.services.TrainingDayHistoryService import TrainingDayHistoryService
 from Backend.tests.integration.conftest import TrDayData
+from Backend.utils.exceptions import NotFound
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestTrainingDayHistoryService:
@@ -40,3 +41,14 @@ class TestTrainingDayHistoryService:
         assert histories == []
 
 
+    async def test_delete(
+        self,
+        service: TrainingDayHistoryService,
+        tr_day_history: TrDayData
+    ):
+        history_id = tr_day_history.histories[0].id
+
+        await service.delete_history(history_id)
+
+        with pytest.raises(NotFound):
+            await service.get_loaded_tr_day_history(history_id)
