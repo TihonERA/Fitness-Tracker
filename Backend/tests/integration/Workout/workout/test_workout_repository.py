@@ -6,6 +6,7 @@ import pytest
 
 from Backend.models.workout import Workout
 from Backend.repositories.WorkoutRepository import WorkoutRepository
+from Backend.schemas.workout import WorkoutGetAllFilterDTO
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestWorkoutRepository:
@@ -31,9 +32,11 @@ class TestWorkoutRepository:
     async def test_get_all_workouts(
         self,
         repo: WorkoutRepository,
-        workout: Workout
+        workout: Workout,
+        random_workouts: list[Workout]
     ):
-        fetched_workouts = await repo.get_all_workouts(skip=0, limit=50)
+        data = WorkoutGetAllFilterDTO(skip=0, limit=50, owner_id=workout.user_id)
+        fetched_workouts = await repo.get_all_workouts(data)
 
         assert isinstance(fetched_workouts, list)
-        assert workout.id in fetched_workouts
+        assert len(fetched_workouts) > 1
