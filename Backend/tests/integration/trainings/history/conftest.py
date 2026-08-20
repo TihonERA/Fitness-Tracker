@@ -1,10 +1,12 @@
 from dataclasses import dataclass
+from datetime import datetime
 from uuid import UUID
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from Backend.models.exercise_history import ExerciseHistory
+from Backend.models.sets_history import SetsHistory
 from Backend.models.training_day_history import TrainingDayHistory
 from Backend.models.workout import Workout
 
@@ -24,9 +26,16 @@ class TrDayDatas:
 async def tr_history_data(workout: Workout, db_session: AsyncSession):
     day = workout.training_days[0]
 
+    sets_history = SetsHistory(
+        set=3,
+        reps=10,
+        weight=20.5,
+        time_for_set=datetime.now()
+    )
     exercise_history = ExerciseHistory(
         user_id=workout.user_id,
         exercise_id=workout.training_days[0].day_exercises[0].exercise_id,
+        sets_history=[sets_history]
     )
     history = TrainingDayHistory(
         day_id=day.id,

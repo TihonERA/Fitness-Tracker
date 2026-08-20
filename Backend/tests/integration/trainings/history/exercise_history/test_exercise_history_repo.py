@@ -38,3 +38,13 @@ class TestExerciseHistoryRepository:
         created_history = await repo.create_exercise_history(data)
 
         assert len(created_history.sets_history) > 0
+
+    async def test_get(
+        self,
+        repo: ExerciseHistoryRepository,
+        tr_history_data: TrDayData
+    ):
+        fetched_history = await repo.get_exercise_history(tr_history_data.history.id)
+
+        assert fetched_history is not None
+        assert len(fetched_history.sets_history) > 0
