@@ -19,17 +19,13 @@ class WorkoutRepository(SQLAlchemyAbstractRepository[Workout]):
         super().__init__(session, Workout)
 
     async def get_workout(self, workout_id: int) -> Workout | None:
-        stmt = (
-            select(Workout)
-            .where(Workout.id == workout_id)
-            .options(
+        return await self.get_instance_by_id(
+            id=workout_id,
+            options=[
                 selectinload(Workout.training_days)
                 .selectinload(TrainingDay.day_exercises)
-            )
+            ]
         )
-
-        result = await self.execute(stmt)
-        return result.scalars().one_or_none()
 
     async def get_all_workouts(self, 
         data: WorkoutGetAllFilterDTO

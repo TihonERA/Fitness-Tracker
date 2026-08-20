@@ -24,7 +24,7 @@ class TestTrainingDayHistoryRepository:
         tr_history_data: TrDayData
     ):
         fetched_data = await service.get_tr_day_history(
-            id=tr_history_data.history.id
+            history_id=tr_history_data.history.id
         )
 
         assert fetched_data is not None

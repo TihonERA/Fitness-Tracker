@@ -22,20 +22,12 @@ class TrainingDayHistoryRepository(SQLAlchemyAbstractRepository):
 
     async def get_tr_day_history(
         self,
-        id: int
+        history_id: int
     ) -> TrainingDayHistory | None:
-        stmt = (
-            select(TrainingDayHistory)
-            .where(
-                TrainingDayHistory.id == id,
-            )
-            .options(
-                selectinload(TrainingDayHistory.exercises_history)
-            )
+        return await self.get_instance_by_id(
+            id=history_id,
+            options=[selectinload(TrainingDayHistory.exercises_history)]
         )
-
-        result = await self.execute(stmt)
-        return result.scalar_one_or_none()
 
     async def get_all_tr_day_history(
         self,

@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from typing import Generic, Sequence, Any
 
 from sqlalchemy.orm import InstrumentedAttribute
+from sqlalchemy.orm.interfaces import ORMOption
 
 from Backend.utils.exceptions import DBErrorHandler, DBSchemaMismatchError
 from ..models.base import ModelT
@@ -41,31 +42,34 @@ class SQLAlchemyAbstractRepository(Generic[ModelT]):
         except IntegrityError as e:
             DBErrorHandler.handle_integrity_error(e=e)
 
-    async def get_instance_by_id(
-        self,
-        id: int | UUID | str
-    ) -> ModelT | None:
-        stmt = (
-            select(self.model)
-            .where(self.pk_column == id)
-        )
-        result = await self.execute(stmt)
-        return result.scalar_one_or_none()
-
     async def get_instance_by_column(
         self,
-        column: InstrumentedAttribute,
-        search_value: int | str
+        column: InstrumentedAttribute | ColumnElement,
+        search_value: int | UUID | str,
+        options: Sequence[ORMOption] | None = None
     ) -> ModelT | None:
         stmt = (
             select(self.model)
             .where(column == search_value)
         )
+        if options:
+            stmt = stmt.options(*options)
 
         result = await self.execute(stmt)
         return result.scalar_one_or_none()
 
-    
+
+    async def get_instance_by_id(
+        self,
+        id: int | UUID | str,
+        options: Sequence[ORMOption] | None = None
+    ) -> ModelT | None:
+        return await self.get_instance_by_column(
+            column=self.pk_column,
+            search_value=id,
+            options=options
+        )
+
     async def get_instance_for_update(
         self,
         id: int | UUID
