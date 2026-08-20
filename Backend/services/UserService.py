@@ -15,7 +15,7 @@ from Backend.utils.exceptions import DBErrorHandler, InternalServerError, Invali
 from Backend.utils.uow import UnitOfWork
 
 
-class UserService(BaseService):
+class UserService(BaseService[User]):
 
     def __init__(self, uow: UnitOfWork):
         super().__init__(uow)
@@ -67,28 +67,20 @@ class UserService(BaseService):
         data: UserUpdateDTO
     ) -> User:
         async with self.uow as uow:
-            user = await self._get_existing_instance(
-                identifier=user_id,
-                repo_get_func=uow.user.get_instance_for_update
+            return await self.update_instance(
+                user_id=user_id,
+                id=user_id,
+                data=data,
+                repo=uow.user
             )
-            result = await uow.user.update_instance(
-                instance=user,
-                data=data
-            )
-
-            return result
 
     async def delete_user(
         self,
         user_id: UUID
     ) -> User:
         async with self.uow as uow:
-            user = await self._get_existing_instance(
-                identifier=user_id,
-                repo_get_func=uow.user.get_instance_by_id
+            return await self.delete_instance_with_access(
+                user_id=user_id,
+                id=user_id,
+                repo=uow.user
             )
-            await uow.user.delete_by_id(
-                id=user_id
-            )
-
-            return user

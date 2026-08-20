@@ -23,7 +23,7 @@ from datetime import timedelta
 
 from uuid import UUID
 
-class WorkoutService(BaseService):
+class WorkoutService(BaseService[Workout]):
 
     def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow=uow)
@@ -56,12 +56,10 @@ class WorkoutService(BaseService):
         data: WorkoutGetAllFilterDTO,
     ) -> Sequence[Workout]:
         async with self.uow as uow:
-            workouts = await uow.workout.get_all_workouts(data=data)
-
-            if not workouts:
-                return []
-
-            return workouts
+            return await self.get_all_instances(
+                data=data,
+                repo_get_all_func=uow.workout.get_all_workouts
+            )
 
     async def update_workout(
         self,
@@ -70,17 +68,13 @@ class WorkoutService(BaseService):
         data: WorkoutUpdate
     ) -> Workout:
         async with self.uow as uow:
-            workout = await self._get_instance_with_access(
-                identifier=workout_id,
+            return await self.update_instance(
                 user_id=user_id,
-                repo_get_func=uow.workout.get_instance_for_update
-            )
-            updated_workout = await uow.workout.update_instance(
-                instance=workout,
-                data=data
+                id=workout_id,
+                data=data,
+                repo=uow.workout
             )
 
-            return updated_workout
        
     async def delete_workout(
         self,
@@ -88,14 +82,11 @@ class WorkoutService(BaseService):
         workout_id: int
     ) -> Workout:
         async with self.uow as uow:
-            workout = await self._get_instance_with_access(
-                identifier=workout_id,
+            return await self.delete_instance_with_access(
                 user_id=user_id,
-                repo_get_func=uow.workout.get_instance_for_update
+                id=workout_id,
+                repo=uow.workout
             )
-            await uow.workout.delete_by_id(id=workout_id)
-
-            return workout
 
     async def get_muscles_distribution_list(self,
         workout_id: int

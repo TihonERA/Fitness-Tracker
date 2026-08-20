@@ -3,18 +3,20 @@ from uuid import UUID
 from pydantic import BaseModel
 from pydantic.functional_validators import ModelAfterValidator
 
-from Backend.models.base import ModelT
+from Backend.models.base import Base, ModelT
+from Backend.models.user import User
+from Backend.repositories import SqlAlchemyAbstractRepository
 from Backend.utils.exceptions import Forbidden, NotFound
 
 from ..utils.uow import UnitOfWork
 
-from typing import Any, Awaitable, Callable, Coroutine, TypeGuard, TypeVar
+from typing import Any, Awaitable, Callable, Coroutine, Sequence, TypeGuard, TypeVar
 
 from Backend.repositories.SqlAlchemyAbstractRepository import SQLAlchemyAbstractRepository
 
 from redis.asyncio import Redis
 
-class BaseService:
+class BaseService[ModelT: Base]:
 
     def __init__(
         self,
@@ -49,6 +51,54 @@ class BaseService:
 
         return instance
 
+    async def get_all_instances(
+        self, 
+        data: BaseModel,
+        repo_get_all_func: Callable[[Any], Awaitable[Sequence[ModelT]]]
+    ) -> Sequence[ModelT]:
+            instances = await repo_get_all_func(data)
+
+            if not instances:
+                return []
+
+            return instances
+
+    async def delete_instance_with_access(
+        self,
+        user_id: UUID,
+        id: int | UUID,
+        repo: SQLAlchemyAbstractRepository
+    ) -> ModelT:
+        instance = await self._get_instance_with_access(
+            identifier=id,
+            user_id=user_id,
+            repo_get_func=repo.get_instance_for_update
+        )
+
+        await repo.delete_by_id(id)
+
+        return instance
+
+    async def update_instance(
+        self,
+        user_id: UUID,
+        id: int | UUID,
+        data: BaseModel,
+        repo: SQLAlchemyAbstractRepository
+    ) -> ModelT:
+        instance = await self._get_instance_with_access(
+            identifier=id,
+            user_id=user_id,
+            repo_get_func=repo.get_instance_for_update
+        )
+        updated_workout = await repo.update_instance(
+            instance=instance,
+            data=data
+        )
+
+        return updated_workout
+
+
     @staticmethod
     def check_access(
         instance: ModelT | None, 
@@ -56,7 +106,7 @@ class BaseService:
     ) -> TypeGuard[ModelT]:
         user_id_column = getattr(instance, "user_id", None)
         
-        if user_id_column != user_id:
+        if user_id_column != user_id and not isinstance(instance, User):
             return False
 
         return True
