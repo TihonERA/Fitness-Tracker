@@ -45,8 +45,8 @@ class WorkoutGetAllFilterDTO(BaseModel):
     skip: int
     limit: int
     owner_id: UUID = Field(exclude=True)
-    target_user_id: UUID | None
-    public: bool | None
+    target_user_id: UUID | None = None
+    public: bool | None = None
 
     @model_validator(mode="after")
     def validate_access(self) -> "WorkoutGetAllFilterDTO":

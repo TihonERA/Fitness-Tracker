@@ -23,10 +23,10 @@ class SetsHistory(Base):
         index=True,
         nullable=False
     )
-    set: Mapped[int] = mapped_column(nullable=True)
-    reps: Mapped[int] = mapped_column(nullable=True)
-    weight: Mapped[float] = mapped_column(Float(2), nullable=True)
-    time_for_set: Mapped[datetime] = mapped_column(nullable=True)
+    set: Mapped[int | None] = mapped_column(nullable=True)
+    reps: Mapped[int | None] = mapped_column(nullable=True)
+    weight: Mapped[float | None] = mapped_column(Float(2), nullable=True)
+    time_for_set: Mapped[datetime | None] = mapped_column(nullable=True)
 
     exercise_history: Mapped["ExerciseHistory"] = relationship(
         back_populates="sets_history"

@@ -31,10 +31,10 @@ class ExerciseHistory(Base):
         index=True,
         nullable=False
     )
-    training_day_history_id: Mapped[int] = mapped_column(
-        ForeignKey("trainingdayhistory.id", ondelete="RESTRICT"),
+    training_day_history_id: Mapped[int | None] = mapped_column(
+        ForeignKey("trainingdayhistory.id", ondelete="SET NULL"),
         index=True,
-        nullable=False
+        nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
