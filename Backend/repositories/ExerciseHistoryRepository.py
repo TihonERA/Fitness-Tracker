@@ -1,3 +1,7 @@
+from datetime import datetime
+from typing import Sequence
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +12,7 @@ from Backend.models.exercise import Exercise
 from Backend.repositories.SqlAlchemyAbstractRepository import SQLAlchemyAbstractRepository
 
 from Backend.models.exercise_history import ExerciseHistory
-from Backend.schemas.exercise_history import ExerciseHistoryCreateDTO
+from Backend.schemas.exercise_history import ExerciseHistoryCreateDTO, ExerciseHistoryGetAllDTO
 from Backend.utils.exceptions import DBErrorHandler
 
 class ExerciseHistoryRepository(SQLAlchemyAbstractRepository[ExerciseHistory]):
@@ -37,3 +41,25 @@ class ExerciseHistoryRepository(SQLAlchemyAbstractRepository[ExerciseHistory]):
             id=history_id,
             options=[selectinload(ExerciseHistory.sets_history)]
         )
+
+    async def get_all_histories(
+        self,
+        data: ExerciseHistoryGetAllDTO
+    ) -> Sequence[ExerciseHistory]:
+        stmt = (
+            select(ExerciseHistory)
+            .where(
+                ExerciseHistory.user_id == data.user_id,
+                ExerciseHistory.exercise_id == data.exercise_id
+            )
+        )
+        if data.start_date:
+            stmt = stmt.where(ExerciseHistory.created_at >= data.start_date)
+        if data.end_date:
+            stmt = stmt.where(ExerciseHistory.created_at <= data.end_date)
+        
+        stmt = stmt.offset(data.skip).limit(data.limit)
+
+        result = await self.execute(stmt)
+        return result.scalars().all()
+        

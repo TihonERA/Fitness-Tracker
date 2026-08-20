@@ -8,7 +8,7 @@ from Backend.repositories.ExerciseHistoryRepository import ExerciseHistoryReposi
 
 from Backend.tests.integration.trainings.history.conftest import TrDayData
 
-from Backend.schemas.exercise_history import ExerciseHistoryCreateDTO, SetsHistory
+from Backend.schemas.exercise_history import ExerciseHistoryCreateDTO, ExerciseHistoryGetAllDTO, SetsHistory
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestExerciseHistoryRepository:
@@ -44,7 +44,25 @@ class TestExerciseHistoryRepository:
         repo: ExerciseHistoryRepository,
         tr_history_data: TrDayData
     ):
-        fetched_history = await repo.get_exercise_history(tr_history_data.history.id)
+        fetched_history = await repo.get_exercise_history(tr_history_data.history.exercises_history[0].id)
 
         assert fetched_history is not None
         assert len(fetched_history.sets_history) > 0
+
+    async def test_get_all(
+        self,
+        repo: ExerciseHistoryRepository,
+        tr_history_data: TrDayData
+    ):
+        exercise_id = tr_history_data.history.exercises_history[0].exercise_id
+
+        data = ExerciseHistoryGetAllDTO(
+            skip=0,
+            limit=50,
+            user_id=tr_history_data.user_id,
+            exercise_id=exercise_id
+        )
+            
+        fetched_histories = await repo.get_all_histories(data)
+
+        assert isinstance(fetched_histories, list)
