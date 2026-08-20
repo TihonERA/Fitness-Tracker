@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from .user import User
     from .training_day_history import TrainingDayHistory
     from .exercise import Exercise
+    from .sets_history import SetsHistory
     
 class ExerciseHistory(Base):
     __tablename__ = "exercisehistory"
@@ -35,13 +36,6 @@ class ExerciseHistory(Base):
         index=True,
         nullable=False
     )
-    weight: Mapped[float] = mapped_column(
-        Float(precision=2),
-        default=0.0, 
-        nullable=True
-    )
-    sets: Mapped[int] = mapped_column(nullable=True)
-    reps: Mapped[int] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     user: Mapped["User"] = relationship(
@@ -52,4 +46,8 @@ class ExerciseHistory(Base):
     )
     training_day_history: Mapped["TrainingDayHistory"] = relationship(
         back_populates="exercises_history"
+    )
+    sets_history: Mapped["SetsHistory"] = relationship(
+        back_populates="exercise_history",
+        cascade="all, delete-orphan"
     )
