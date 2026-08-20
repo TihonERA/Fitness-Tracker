@@ -47,7 +47,7 @@ class ExerciseHistory(Base):
     training_day_history: Mapped["TrainingDayHistory"] = relationship(
         back_populates="exercises_history"
     )
-    sets_history: Mapped["SetsHistory"] = relationship(
+    sets_history: Mapped[list["SetsHistory"]] = relationship(
         back_populates="exercise_history",
         cascade="all, delete-orphan"
     )

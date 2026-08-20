@@ -21,7 +21,7 @@ class TrDayDatas:
     histories: list[TrainingDayHistory] 
 
 @pytest.fixture
-async def tr_day_history(workout: Workout, db_session: AsyncSession):
+async def tr_history_data(workout: Workout, db_session: AsyncSession):
     day = workout.training_days[0]
 
     exercise_history = ExerciseHistory(
@@ -46,7 +46,7 @@ async def tr_day_history(workout: Workout, db_session: AsyncSession):
     return data
 
 @pytest.fixture
-async def tr_day_histories(workout: Workout, db_session):
+async def tr_history_datas(workout: Workout, db_session):
     days = [
         workout.training_days[0],
         workout.training_days[1],

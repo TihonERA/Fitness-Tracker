@@ -1,3 +1,4 @@
+from pydantic import RootModel
 import pytest
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +7,7 @@ from Backend.cache_proxies.key_formatters.WorkoutCacheKeyFormatter import Workou
 
 from Backend.cache_proxies.invalidators.WorkoutCacheInvalidator import WorkoutCacheInvalidator
 from Backend.models.workout import Workout
-from Backend.schemas.workout import ListWorkoutResponse, WorkoutGetAllFilter, WorkoutUpdate
+from Backend.schemas.workout import ListWorkoutResponse, WorkoutGetAllFilter, WorkoutRelationsResponse, WorkoutUpdate
 from Backend.services.WorkoutService import WorkoutService
 
 from Backend.cache_proxies.WorkoutCacheProxy import WorkoutCacheProxy
@@ -46,7 +47,7 @@ class TestWorkoutCachyProxy:
         cache_result = await proxy.get_all_workouts(user_id=workout.user_id, data=data)
 
         assert cache_result is not None
-        assert isinstance(cache_result, (str, bytes))
+        assert isinstance(cache_result, RootModel) 
 
     async def test_get_loaded_workout_cache(
         self,
@@ -64,7 +65,7 @@ class TestWorkoutCachyProxy:
         )
         
         assert cache_result is not None
-        assert isinstance(cache_result, (str, bytes))
+        assert isinstance(cache_result, WorkoutRelationsResponse)
 
     async def test_update_workout_invalidate_cache(
         self,

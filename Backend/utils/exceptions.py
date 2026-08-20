@@ -64,7 +64,7 @@ class UniqueViolationStrategy(PostgreSQLStateStrategy):
             raise Conflict(detail=self.detail)
 
         err_dict = orig_error.__cause__.__dict__
-        table_name = err_dict.get('table', 'Record')   
+        table_name = err_dict.get('table_name', 'Record')   
 
         raise Conflict(detail=f"{table_name} with this data already exists")
 
@@ -77,7 +77,7 @@ class ForeignKeyViolationStrategy(PostgreSQLStateStrategy):
             raise NotFound(detail=self.detail)
 
         err_dict = orig_error.__cause__.__dict__
-        table_name = err_dict.get('table', 'Record')   
+        table_name = err_dict.get('table_name', 'Record')   
 
         raise NotFound(detail=f"The referenced {table_name} was not found")
 
@@ -90,8 +90,8 @@ class NotNullViolationStrategy(PostgreSQLStateStrategy):
             raise BadRequest(detail=self.detail)
 
         err_dict = orig_error.__cause__.__dict__
-        table_name = err_dict.get('table', 'Record')   
-        column = err_dict.get('column', 'Not found')  
+        table_name = err_dict.get('table_name', 'Record')   
+        column = err_dict.get('column_name', 'Not found')  
 
         raise BadRequest(detail=f"A required field {column} is missing")
 

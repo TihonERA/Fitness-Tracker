@@ -4,7 +4,7 @@ from redis.asyncio import Redis
 
 async_engine = create_async_engine(
     url=settings.DATABASE_URL_asyncpg,
-    echo=False
+    echo=True
 )
 
 async_session_factory = async_sessionmaker(

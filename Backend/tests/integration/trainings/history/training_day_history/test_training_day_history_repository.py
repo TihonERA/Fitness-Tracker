@@ -21,10 +21,10 @@ class TestTrainingDayHistoryRepository:
     async def test_get(
         self,
         service: TrainingDayHistoryRepository,
-        tr_day_history: TrDayData
+        tr_history_data: TrDayData
     ):
         fetched_data = await service.get_tr_day_history(
-            id=tr_day_history.history.id
+            id=tr_history_data.history.id
         )
 
         assert fetched_data is not None
@@ -33,27 +33,27 @@ class TestTrainingDayHistoryRepository:
     async def test_get_all(
         self, 
         service: TrainingDayHistoryRepository, 
-        tr_day_histories: TrDayDatas
+        tr_history_datas: TrDayDatas
     ):
         data = TrainingDayHistoryGetAll(
             skip=0,
             limit=50,
-            user_id=tr_day_histories.user_id, 
+            user_id=tr_history_datas.user_id, 
         )
 
         training_day_histories = await service.get_all_tr_day_history(data)
-        assert len(training_day_histories) == len(tr_day_histories.histories)
+        assert len(training_day_histories) == len(tr_history_datas.histories)
 
     async def test_get_all_specific(
         self,
         service: TrainingDayHistoryRepository,
-        tr_day_histories: TrDayDatas
+        tr_history_datas: TrDayDatas
     ):
         data = TrainingDayHistoryGetAll(
             skip=0,
             limit=50,
-            user_id=tr_day_histories.user_id, 
-            day_id=tr_day_histories.histories[0].day_id
+            user_id=tr_history_datas.user_id, 
+            day_id=tr_history_datas.histories[0].day_id
         )
         training_day_histories = await service.get_all_tr_day_history(data)
 

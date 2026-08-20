@@ -20,11 +20,15 @@ class SQLAlchemyAbstractRepository(Generic[ModelT]):
 
     async def _add_and_refresh_instance(
         self, 
-        instance: ModelT
+        instance: ModelT,
+        attribute_names: Sequence[str] | None = None
     ) -> ModelT:
         self.add(instance)
         await self.flush()
-        await self.refresh(instance)
+        if attribute_names:
+            await self.refresh(instance, attribute_names=attribute_names)
+        else:
+            await self.refresh(instance)
         return instance
 
     async def create_instance(

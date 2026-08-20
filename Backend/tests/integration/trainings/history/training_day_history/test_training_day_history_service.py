@@ -27,12 +27,12 @@ class TestTrainingDayHistoryService:
     async def test_get_all_invalid(
         self,
         service: TrainingDayHistoryService,
-        tr_day_history: TrDayData
+        tr_history_data: TrDayData
     ):
         data = TrainingDayHistoryGetAll(
             skip=0,
             limit=50,
-            user_id=tr_day_history.user_id,
+            user_id=tr_history_data.user_id,
             workout_id=-1
         )
 
@@ -44,9 +44,9 @@ class TestTrainingDayHistoryService:
     async def test_delete(
         self,
         service: TrainingDayHistoryService,
-        tr_day_history: TrDayData
+        tr_history_data: TrDayData
     ):
-        history_id = tr_day_history.history.id
+        history_id = tr_history_data.history.id
 
         await service.delete_history(history_id)
 
