@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from Backend.models.trainingday import TrainingDay
 from Backend.repositories.DayExerciseRepository import DayExerciseRepository
+from Backend.repositories.ExerciseHistoryRepository import ExerciseHistoryRepository
 from Backend.repositories.TrainingDayHistoryRepository import TrainingDayHistoryRepository
 from Backend.repositories.TrainingDayRepository import TrainingDayRepository
 from Backend.repositories.UserRepository import UserRepository
@@ -22,6 +23,7 @@ class UnitOfWork:
         self.trainingday = TrainingDayRepository(session=self.session)
         self.trainingdayhistory = TrainingDayHistoryRepository(session=self.session)
         self.dayexercise = DayExerciseRepository(session=self.session)
+        self.exercisehistory = ExerciseHistoryRepository(self.session)
 
         return self
 
