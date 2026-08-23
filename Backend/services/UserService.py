@@ -67,8 +67,7 @@ class UserService(BaseService[User]):
         data: UserUpdateDTO
     ) -> User:
         async with self.uow as uow:
-            return await self.update_instance(
-                user_id=user_id,
+            return await self.update_existing_instance(
                 id=user_id,
                 data=data,
                 repo=uow.user
@@ -79,8 +78,7 @@ class UserService(BaseService[User]):
         user_id: UUID
     ) -> User:
         async with self.uow as uow:
-            return await self.delete_instance_with_access(
-                user_id=user_id,
+            return await self.delete_existing_instance(
                 id=user_id,
                 repo=uow.user
             )

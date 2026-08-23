@@ -68,7 +68,7 @@ class WorkoutService(BaseService[Workout]):
         data: WorkoutUpdate
     ) -> Workout:
         async with self.uow as uow:
-            return await self.update_instance(
+            return await self.update_instance_with_access(
                 user_id=user_id,
                 id=workout_id,
                 data=data,
