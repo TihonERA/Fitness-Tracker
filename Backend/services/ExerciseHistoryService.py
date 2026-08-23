@@ -33,11 +33,7 @@ class ExerciseHistoryService(BaseService[ExerciseHistory]):
 
     async def delete_history(self, history_id: int) -> ExerciseHistory:
         async with self.uow as uow:
-            history = await uow.exercisehistory.get_instance_for_update(history_id)
-
-            if history is None:
-                raise NotFound()
-
-            await uow.exercisehistory.delete_by_id(history_id)
-
-            return history
+            return await self.delete_existing_instance(
+                id=history_id,
+                repo=uow.exercisehistory
+            )
