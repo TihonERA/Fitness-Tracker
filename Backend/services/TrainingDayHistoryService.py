@@ -35,25 +35,17 @@ class TrainingDayHistoryService(BaseService):
         data: TrainingDayHistoryGetAll
     ) -> Sequence[TrainingDayHistory]:
         async with self.uow as uow:
-            histories = await uow.trainingdayhistory.get_all_tr_day_history(data)
-
-            if histories is None:
-                return []
-
-            return histories
+            return await self.get_all_instances(
+                data=data,
+                repo_get_all_func=uow.trainingdayhistory.get_all_tr_day_history
+            )
 
     async def delete_history(
         self,
         history_id: int
     ) -> TrainingDayHistory:
         async with self.uow as uow:
-            history = await self._get_existing_instance(
-                identifier=history_id,
-                repo_get_func=uow.trainingdayhistory.get_instance_for_update
+            return await self.delete_existing_instance(
+                id=history_id,
+                repo=uow.trainingdayhistory
             )
-
-            await uow.trainingdayhistory.delete_by_id(history_id)
-
-            return history
-
-            

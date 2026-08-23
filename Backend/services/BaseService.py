@@ -2,6 +2,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from pydantic.functional_validators import ModelAfterValidator
+from sqlalchemy.schema import Identity
 
 from Backend.models.base import Base, ModelT
 from Backend.models.user import User
@@ -63,6 +64,20 @@ class BaseService[ModelT: Base]:
 
             return instances
 
+    async def delete_existing_instance(
+        self,
+        id: int | UUID,
+        repo: SQLAlchemyAbstractRepository
+    ) -> ModelT:
+        instance = await self._get_existing_instance(
+            identifier=id,
+            repo_get_func=repo.get_instance_for_update
+        )
+
+        await repo.delete_by_id(id)
+
+        return instance
+
     async def delete_instance_with_access(
         self,
         user_id: UUID,
@@ -79,7 +94,23 @@ class BaseService[ModelT: Base]:
 
         return instance
 
-    async def update_instance(
+    async def update_existing_instance(
+        self,
+        id: int | UUID,
+        data: BaseModel,
+        repo: SQLAlchemyAbstractRepository
+    ) -> ModelT:
+        instance = await self._get_existing_instance(
+            identifier=id,
+            repo_get_func=repo.get_instance_for_update
+        )
+        updated_workout = await repo.update_instance(
+            instance=instance,
+            data=data
+        )
+        return updated_workout
+
+    async def update_instance_with_access(
         self,
         user_id: UUID,
         id: int | UUID,
@@ -95,7 +126,6 @@ class BaseService[ModelT: Base]:
             instance=instance,
             data=data
         )
-
         return updated_workout
 
 
