@@ -1,7 +1,12 @@
+from types import CoroutineType
+from typing import Any, Callable
+
 import pytest
 from redis.asyncio import Redis
 
-from Backend.cache_proxies.key_formatters.UserCacheKeyFormatter import UserCacheKeyFormatter
+from Backend.cache_proxies.key_formatters.UserCacheKeyFormatter import (
+    UserCacheKeyFormatter,
+)
 from Backend.cache_proxies.UserCacheProxy import UserCacheProxy
 from Backend.cache_proxies.invalidators.UserCacheInvalidator import UserCacheInvalidator
 from Backend.models.user import User
@@ -9,15 +14,20 @@ from Backend.schemas.user import UserCachePrefixes, UserUpdateDTO
 from Backend.services.UserService import UserService
 from Backend.utils.uow import UnitOfWork
 
+
 @pytest.mark.asyncio(loop_scope="session")
-class TestUserCacheProxy:
+class TestUserCacheProxy[
+    ld_keys: Callable[[], CoroutineType[Any, Any, list[str | bytes]]],
+]:
 
     @pytest.fixture
     def proxy(self, uow: UnitOfWork, redis: Redis):
         formatter = UserCacheKeyFormatter()
         invalidator = UserCacheInvalidator(redis=redis, formatter=formatter)
         service = UserService(uow=uow)
-        return UserCacheProxy(service=service, redis=redis, invalidator=invalidator, formatter=formatter)
+        return UserCacheProxy(
+            service=service, redis=redis, invalidator=invalidator, formatter=formatter
+        )
 
     @pytest.fixture
     async def by_id_login_email_cache(self, user: User, proxy: UserCacheProxy):
@@ -32,62 +42,45 @@ class TestUserCacheProxy:
         user_by_email_pattern = UserCachePrefixes.user_by_email + ":*"
 
         user_by_id_key = [
-            key
-            async for key in redis.scan_iter(match=user_by_id_pattern)
+            key async for key in redis.scan_iter(match=user_by_id_pattern)
         ]
         user_by_login_key = [
-            key
-            async for key in redis.scan_iter(match=user_by_login_pattern)
+            key async for key in redis.scan_iter(match=user_by_login_pattern)
         ]
         user_by_email_key = [
-            key
-            async for key in redis.scan_iter(match=user_by_email_pattern)
+            key async for key in redis.scan_iter(match=user_by_email_pattern)
         ]
 
         return {
             "user_id": user.id,
             "user_by_id_key": len(user_by_id_key),
             "user_by_login_key": len(user_by_login_key),
-            "user_by_email_key": len(user_by_email_key)
+            "user_by_email_key": len(user_by_email_key),
         }
 
-    async def test_get_user_by_column(
-        self,
-        by_id_login_email_cache
-    ):
+    async def test_get_user_by_column(self, by_id_login_email_cache):
         assert by_id_login_email_cache.get("user_by_id_key") > 0
         assert by_id_login_email_cache.get("user_by_login_key") > 0
         assert by_id_login_email_cache.get("user_by_email_key") > 0
 
-    async def test_update_user(
-        self,
-        proxy: UserCacheProxy,
-        user: User
-    ):
+    async def test_update_user(self, proxy: UserCacheProxy, user: User):
         redis: Redis = proxy.redis
 
         await proxy.get_user_by_id(user_id=user.id)
 
-        data = UserUpdateDTO(
-            login="newlogin"
-        )
+        data = UserUpdateDTO(login="newlogin")
 
         await proxy.update_user(user_id=user.id, data=data)
 
         user_by_id_pattern = UserCachePrefixes.user_by_id + ":*"
 
         user_by_id_key = [
-            key
-            async for key in redis.scan_iter(match=user_by_id_pattern)
+            key async for key in redis.scan_iter(match=user_by_id_pattern)
         ]
 
         assert user_by_id_key == []
 
-    async def test_delete_user(
-        self,
-        proxy: UserCacheProxy,
-        by_id_login_email_cache
-    ):
+    async def test_delete_user(self, proxy: UserCacheProxy, by_id_login_email_cache):
         redis: Redis = proxy.redis
 
         await proxy.delete_user(user_id=by_id_login_email_cache.get("user_id"))
