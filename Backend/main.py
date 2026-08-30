@@ -1,8 +1,11 @@
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from Backend.api.handlers import internal_server_error_handler, invalid_credentials_handler, not_found_handler
-from .tasks.muscle_rates import cel_app
+from Backend.api.handlers import (
+    internal_server_error_handler,
+    invalid_credentials_handler,
+    not_found_handler,
+)
 from Backend.schemas.base import TaskResponse
 from .api.v1 import workout, auth, user, training_day, day_exercise
 from .core.config import settings
@@ -30,32 +33,3 @@ app.include_router(day_exercise.router)
 app.add_exception_handler(NotFound, not_found_handler)
 app.add_exception_handler(InvalidCredentials, invalid_credentials_handler)
 app.add_exception_handler(InternalServerError, internal_server_error_handler)
-
-@app.get(
-    "/tasks/{task_id}",
-    response_model=TaskResponse
-)
-async def get_task_result(task_id: str):
-    task_result = AsyncResult(task_id, app=cel_app)
-
-    if task_result.state in states.UNREADY_STATES:
-        return TaskResponse(
-            task_id=task_id,
-            status=task_result.status,
-            result=None
-        )
-
-    try:
-        result = await asyncio.to_thread(
-            task_result.get,
-            timeout=0.1,
-            propagate=True
-        )
-
-        return TaskResponse(
-            task_id=task_id,
-            status=states.SUCCESS,
-            result=result
-        )
-    except Exception as e:
-        raise InternalServerError(detail=str(e))

@@ -13,22 +13,21 @@ from ..utils.uow import UnitOfWork
 
 from typing import Any, Awaitable, Callable, Coroutine, Sequence, TypeGuard, TypeVar
 
-from Backend.repositories.SqlAlchemyAbstractRepository import SQLAlchemyAbstractRepository
+from Backend.repositories.SqlAlchemyAbstractRepository import (
+    SQLAlchemyAbstractRepository,
+)
 
 from redis.asyncio import Redis
 
-class BaseService[ModelT: Base]:
 
-    def __init__(
-        self,
-        uow: UnitOfWork,
-    ) -> None:
+class BaseService[ModelT: Base]:
+    def __init__(self, uow: UnitOfWork) -> None:
         self.uow = uow
 
     async def _get_existing_instance(
         self,
         identifier: int | UUID | str,
-        repo_get_func: Callable[[Any], Awaitable[ModelT | None]]
+        repo_get_func: Callable[[Any], Awaitable[ModelT | None]],
     ) -> ModelT:
         instance = await repo_get_func(identifier)
 
@@ -39,13 +38,12 @@ class BaseService[ModelT: Base]:
 
     async def _get_instance_with_access(
         self,
-        identifier: int | UUID | str, 
+        identifier: int | UUID | str,
         user_id: UUID,
-        repo_get_func: Callable[[Any], Awaitable[ModelT | None]]
+        repo_get_func: Callable[[Any], Awaitable[ModelT | None]],
     ) -> ModelT:
         instance = await self._get_existing_instance(
-            identifier=identifier,
-            repo_get_func=repo_get_func
+            identifier=identifier, repo_get_func=repo_get_func
         )
         if not self.check_access(instance, user_id):
             raise Forbidden()
@@ -53,25 +51,22 @@ class BaseService[ModelT: Base]:
         return instance
 
     async def get_all_instances(
-        self, 
+        self,
         data: BaseModel,
-        repo_get_all_func: Callable[[Any], Awaitable[Sequence[ModelT]]]
+        repo_get_all_func: Callable[[Any], Awaitable[Sequence[ModelT]]],
     ) -> Sequence[ModelT]:
-            instances = await repo_get_all_func(data)
+        instances = await repo_get_all_func(data)
 
-            if not instances:
-                return []
+        if not instances:
+            return []
 
-            return instances
+        return instances
 
     async def delete_existing_instance(
-        self,
-        id: int | UUID,
-        repo: SQLAlchemyAbstractRepository
+        self, id: int | UUID, repo: SQLAlchemyAbstractRepository
     ) -> ModelT:
         instance = await self._get_existing_instance(
-            identifier=id,
-            repo_get_func=repo.get_instance_for_update
+            identifier=id, repo_get_func=repo.get_instance_for_update
         )
 
         await repo.delete_by_id(id)
@@ -79,15 +74,10 @@ class BaseService[ModelT: Base]:
         return instance
 
     async def delete_instance_with_access(
-        self,
-        user_id: UUID,
-        id: int | UUID,
-        repo: SQLAlchemyAbstractRepository
+        self, user_id: UUID, id: int | UUID, repo: SQLAlchemyAbstractRepository
     ) -> ModelT:
         instance = await self._get_instance_with_access(
-            identifier=id,
-            user_id=user_id,
-            repo_get_func=repo.get_instance_for_update
+            identifier=id, user_id=user_id, repo_get_func=repo.get_instance_for_update
         )
 
         await repo.delete_by_id(id)
@@ -95,19 +85,12 @@ class BaseService[ModelT: Base]:
         return instance
 
     async def update_existing_instance(
-        self,
-        id: int | UUID,
-        data: BaseModel,
-        repo: SQLAlchemyAbstractRepository
+        self, id: int | UUID, data: BaseModel, repo: SQLAlchemyAbstractRepository
     ) -> ModelT:
         instance = await self._get_existing_instance(
-            identifier=id,
-            repo_get_func=repo.get_instance_for_update
+            identifier=id, repo_get_func=repo.get_instance_for_update
         )
-        updated_workout = await repo.update_instance(
-            instance=instance,
-            data=data
-        )
+        updated_workout = await repo.update_instance(instance=instance, data=data)
         return updated_workout
 
     async def update_instance_with_access(
@@ -115,27 +98,18 @@ class BaseService[ModelT: Base]:
         user_id: UUID,
         id: int | UUID,
         data: BaseModel,
-        repo: SQLAlchemyAbstractRepository
+        repo: SQLAlchemyAbstractRepository,
     ) -> ModelT:
         instance = await self._get_instance_with_access(
-            identifier=id,
-            user_id=user_id,
-            repo_get_func=repo.get_instance_for_update
+            identifier=id, user_id=user_id, repo_get_func=repo.get_instance_for_update
         )
-        updated_workout = await repo.update_instance(
-            instance=instance,
-            data=data
-        )
+        updated_workout = await repo.update_instance(instance=instance, data=data)
         return updated_workout
 
-
     @staticmethod
-    def check_access(
-        instance: ModelT | None, 
-        user_id: UUID
-    ) -> TypeGuard[ModelT]:
+    def check_access(instance: ModelT | None, user_id: UUID) -> TypeGuard[ModelT]:
         user_id_column = getattr(instance, "user_id", None)
-        
+
         if user_id_column != user_id and not isinstance(instance, User):
             return False
 

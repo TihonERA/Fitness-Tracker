@@ -3,7 +3,14 @@ from typing import Any
 from uuid import UUID
 
 from Backend.schemas.auth import TokenPair, UserAuthorize
-from Backend.schemas.user import UserCreate, UserCreateDB, UserResponse, UserUpdate, UserUpdateDTO
+from Backend.schemas.user import (
+    UserCreate,
+    UserCreateDB,
+    UserResponse,
+    UserUpdate,
+    UserUpdateDTO,
+    UserUpdatePassword,
+)
 from Backend.services.BaseService import BaseService
 from Backend.utils.exceptions import BadRequest, InvalidCredentials, NotFound
 from Backend.utils.uow import UnitOfWork
@@ -23,18 +30,19 @@ from Backend.services.UserService import UserService
 
 class AuthService:
     def __init__(self, user_proxy: UserCacheProxy):
-        self.user_proxy= user_proxy
+        self.user_proxy = user_proxy
         self.password_hash = PasswordHash.recommended()
         self.DUMMYHASH = "dummy_hash_for_safety_YYYYYYYYYYYYYYYYYYYYYYY"
-        
+
     async def register(self, data: UserCreate) -> TokenPair:
         user = await self.user_proxy.check_if_user_exists(
-            login=data.login,
-            email=data.email
+            login=data.login, email=data.email
         )
         if user:
             if user.email == data.email and user.login == data.login:
-                raise InvalidCredentials(detail="Both login and email are already taken")
+                raise InvalidCredentials(
+                    detail="Both login and email are already taken"
+                )
             elif user.login == data.login:
                 raise InvalidCredentials(detail="Login is already taken")
             else:
@@ -42,36 +50,21 @@ class AuthService:
 
         hash_password = self.password_hash.hash(data.password)
         user_scheme_db = UserCreateDB(
-            login=data.login,
-            email=data.email,
-            hash_password=hash_password
+            login=data.login, email=data.email, hash_password=hash_password
         )
 
-        user = await self.user_proxy.create_user(
-            data=user_scheme_db
-        )
+        user = await self.user_proxy.create_user(data=user_scheme_db)
         tokens = await self._create_token_pair(user_id=user.id)
         return tokens
-    
-    def _verify_password(
-        self,
-        password: str,
-        password_db: str
-    ) -> None:
-        if not self.password_hash.verify(
-             password,
-             password_db
-        ):
-            self.password_hash.verify(
-                self.DUMMYHASH,
-                password_db
-            )
-            raise InvalidCredentials(detail="Invalid password") 
 
+    def _verify_password(self, password: str, password_db: str) -> None:
+        if not self.password_hash.verify(password, password_db):
+            self.password_hash.verify(self.DUMMYHASH, password_db)
+            raise InvalidCredentials(detail="Invalid password")
 
     async def login(self, data: UserAuthorize) -> TokenPair:
         try:
-            if '@' in data.login_or_email and '.' in data.login_or_email:
+            if "@" in data.login_or_email and "." in data.login_or_email:
                 user = await self.user_proxy.get_user_by_email(
                     email=data.login_or_email
                 )
@@ -80,39 +73,39 @@ class AuthService:
                     login=data.login_or_email
                 )
 
-            self._verify_password(password=data.password, password_db=user.hash_password)
+            self._verify_password(
+                password=data.password, password_db=user.hash_password
+            )
 
             tokens = await self._create_token_pair(user_id=user.id)
             return tokens
         except NotFound:
             self.password_hash.verify(
-                self.DUMMYHASH,
-                self.password_hash.hash(self.DUMMYHASH)
+                self.DUMMYHASH, self.password_hash.hash(self.DUMMYHASH)
             )
             raise InvalidCredentials(detail="Invalid login or email")
 
-    async def update_user(self, user_id: UUID, data: UserUpdate) -> UserResponse:
+    async def update_password(
+        self, user_id: UUID, data: UserUpdatePassword
+    ) -> UserResponse:
         user = await self.user_proxy.get_user_by_id(user_id)
 
-        data_dto = UserUpdateDTO(
-            **data.model_dump(exclude_unset=True)
+        self._verify_password(
+            password=data.old_password, password_db=user.hash_password
         )
-        if data.password and data.old_password:
-            self._verify_password(password=data.old_password, password_db=user.hash_password)
-            hash_password = self.password_hash.hash(data.password)
-            data_dto.hash_password = hash_password
+        hash_password = self.password_hash.hash(data.password)
 
-        user = await self.user_proxy.update_user(
-            user_id=user_id,
-            data=data_dto
-        )
+        data_dto = UserUpdateDTO(hash_password=hash_password)
+
+        user = await self.user_proxy.update_user(user_id=user_id, data=data_dto)
 
         return user
 
-
     def get_current_user(self, token: str | bytes) -> UUID:
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=settings.ALGORITHM)
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms=settings.ALGORITHM
+            )
             return self._get_user_id_from_payload(payload=payload)
         except jwt.PyJWTError:
             raise InvalidCredentials(detail="Invalid token")
@@ -127,8 +120,10 @@ class AuthService:
         if token is None:
             raise InvalidCredentials(detail="Invalid Token")
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=settings.ALGORITHM)
-            user_id= self._get_user_id_from_payload(payload=payload)
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms=settings.ALGORITHM
+            )
+            user_id = self._get_user_id_from_payload(payload=payload)
             token_pair = await self._create_token_pair(user_id=user_id)
             return token_pair
         except jwt.PyJWTError:
@@ -147,30 +142,23 @@ class AuthService:
         access_token_expire = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
         access_token = self._create_token(
-            data=access_token_data,
-            expire=access_token_expire
+            data=access_token_data, expire=access_token_expire
         )
 
         refresh_token_data = {"sub": user_id_str, "type": "refresh"}
         refresh_token_expire = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
         refresh_token = self._create_token(
-            data=refresh_token_data,
-            expire=refresh_token_expire
+            data=refresh_token_data, expire=refresh_token_expire
         )
         await self.user_proxy.set(
             key=self._refrest_token_key(user_id=user_id_str, token=refresh_token),
-            value=refresh_token, 
-            expire=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+            value=refresh_token,
+            expire=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
         )
 
-        return TokenPair(
-            access_token=access_token,
-            refresh_token=refresh_token
-        )
+        return TokenPair(access_token=access_token, refresh_token=refresh_token)
 
     @staticmethod
     def _refrest_token_key(user_id, token: str) -> str:
         return f"{user_id}:{token}"
-        
-
