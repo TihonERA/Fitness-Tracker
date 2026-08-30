@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -25,3 +26,9 @@ class TrainingDayHistoryGetAll(BaseModel):
     start_date: OptionalDateTime = None
     end_date: OptionalDateTime = None
     ascending: bool = False
+
+class TrainingDayCachePrefixes(StrEnum):
+    tag = "td_tag"
+    get_loaded_key = "td_loaded"
+    get_all_key = "td_all"
+    version = "td_version"
