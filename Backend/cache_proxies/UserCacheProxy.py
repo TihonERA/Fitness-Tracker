@@ -51,6 +51,9 @@ class UserCacheProxy(BaseCacheProxy[UserInDb]):
             key=key, db_func=partial(self.service.get_user_by_id, user_id)
         )
 
+        tag_key = self.formatter.get_tag_key(user.id)
+        await self.sadd(tag_key, key)
+
         return user
 
     async def _get_user_by_field(
