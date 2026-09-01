@@ -13,21 +13,20 @@ from Backend.schemas.training_day import (
     TrainingDayCreateDTO,
     TrainingDayUpdate,
 )
+from Backend.tests.integration.cache_proxy.conftest import keys_func
 from Backend.services.TrainingDayService import TrainingDayService
 from Backend.tests.integration.cache_proxy.conftest import get_loaded_workouts_keys
 
 
 @pytest.mark.asyncio(loop_scope="session")
-class TestTrainingDayCacheProxy[
-    ld_keys: Callable[[], CoroutineType[Any, Any, list[str | bytes]]]
-]:
+class TestTrainingDayCacheProxy:
 
     async def test_create_training_day(
         self,
         tr_day_proxy: TrainingDayCacheProxy,
         workout_proxy: WorkoutCacheProxy,
         workout: Workout,
-        get_loaded_workouts_keys: ld_keys,
+        get_loaded_workouts_keys: keys_func,
     ):
         await workout_proxy.get_loaded_workout(
             user_id=workout.user_id, workout_id=workout.id
@@ -48,7 +47,7 @@ class TestTrainingDayCacheProxy[
         tr_day_proxy: TrainingDayCacheProxy,
         workout_proxy: WorkoutCacheProxy,
         workout: Workout,
-        get_loaded_workouts_keys: ld_keys,
+        get_loaded_workouts_keys: keys_func,
     ):
         await workout_proxy.get_loaded_workout(
             user_id=workout.user_id, workout_id=workout.id
@@ -72,7 +71,7 @@ class TestTrainingDayCacheProxy[
         tr_day_proxy: TrainingDayCacheProxy,
         workout_proxy: WorkoutCacheProxy,
         workout: Workout,
-        get_loaded_workouts_keys: ld_keys,
+        get_loaded_workouts_keys: keys_func,
     ):
         redis = tr_day_proxy.redis
 

@@ -4,14 +4,14 @@ from Backend.cache_proxies.key_formatters.BaseCacheKeyFormatter import (
     BaseCacheKeyFormatter,
 )
 from Backend.schemas.training_day_history import (
-    TrainingDayCachePrefixes,
+    TrainingDayHistoryCachePrefixes,
     TrainingDayHistoryGetAll,
 )
 
 
 class TrainingDayHistoryCacheKeyFormatter(BaseCacheKeyFormatter):
     def __init__(self) -> None:
-        self.pr = TrainingDayCachePrefixes
+        self.pr = TrainingDayHistoryCachePrefixes
 
     def get_tag_key(self, user_id: UUID) -> str:
         return self.formate_key(prefix=self.pr.tag, user_id=user_id)

@@ -7,6 +7,7 @@ from redis.asyncio import Redis
 from Backend.cache_proxies.key_formatters.UserCacheKeyFormatter import (
     UserCacheKeyFormatter,
 )
+from Backend.tests.integration.cache_proxy.conftest import keys_func
 from Backend.cache_proxies.UserCacheProxy import UserCacheProxy
 from Backend.cache_proxies.invalidators.UserCacheInvalidator import UserCacheInvalidator
 from Backend.models.user import User
@@ -16,9 +17,7 @@ from Backend.utils.uow import UnitOfWork
 
 
 @pytest.mark.asyncio(loop_scope="session")
-class TestUserCacheProxy[
-    ld_keys: Callable[[], CoroutineType[Any, Any, list[str | bytes]]],
-]:
+class TestUserCacheProxy:
 
     @pytest.fixture
     def proxy(self, uow: UnitOfWork, redis: Redis):

@@ -1,5 +1,6 @@
 import asyncio
 from dataclasses import dataclass
+from datetime import datetime
 import pytest
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +9,7 @@ from sqlalchemy import Table, select, text
 from sqlalchemy.dialects.postgresql import insert
 import uuid
 from Backend.models.base import Base
+from Backend.models.sets_history import SetsHistory
 from Backend.models.user import User
 from Backend.models.workout import Workout
 from Backend.models.trainingday import TrainingDay
@@ -32,12 +34,14 @@ from Backend.utils.uow import UnitOfWork
 
 alembic_ini_path = Path(__file__).parent.parent.parent.parent / "alembic.ini"
 
+
 @pytest.fixture(scope="function")
 async def db_session():
     async with async_session_factory() as session:
         yield session
-        
+
         await session.rollback()
+
 
 @pytest.fixture(scope="session")
 async def setup_migrations():
@@ -48,18 +52,23 @@ async def setup_migrations():
 @pytest.fixture(scope="function", autouse=True)
 async def setup_and_teardown_database():
     async with async_engine.begin() as conn:
-        await conn.execute(text(
-            'TRUNCATE TABLE "user", workout, trainingday, dayexercise, '
-            'trainingdayhistory, exercisehistory RESTART IDENTITY CASCADE;'
-        ))
-        
-    yield  
-    
+        await conn.execute(
+            text(
+                'TRUNCATE TABLE "user", workout, trainingday, dayexercise, '
+                "trainingdayhistory, exercisehistory RESTART IDENTITY CASCADE;"
+            )
+        )
+
+    yield
+
     async with async_engine.begin() as conn:
-        await conn.execute(text(
-            'TRUNCATE TABLE "user", workout, trainingday, dayexercise, '
-            'trainingdayhistory, exercisehistory RESTART IDENTITY CASCADE;'
-        ))
+        await conn.execute(
+            text(
+                'TRUNCATE TABLE "user", workout, trainingday, dayexercise, '
+                "trainingdayhistory, exercisehistory RESTART IDENTITY CASCADE;"
+            )
+        )
+
 
 @pytest.fixture(scope="function", autouse=True)
 async def clear_redis():
@@ -69,26 +78,30 @@ async def clear_redis():
 
     await redis.aclose()
 
+
 @pytest.fixture
 async def user(db_session):
     user = User(
         id=uuid.UUID("00000000-0000-0000-0000-000000000000"),
         email="testuser@mail.com",
         login="testuserlogin",
-        hash_password="$argon2id$v=19$m=65536,t=3,p=4$b04HUqHrntSERdQIO+Nz0A$hmNV+lnF9Y6t46tCnXfBJEIxH4MEZZuE69h8RCjBmhA"
+        hash_password="$argon2id$v=19$m=65536,t=3,p=4$b04HUqHrntSERdQIO+Nz0A$hmNV+lnF9Y6t46tCnXfBJEIxH4MEZZuE69h8RCjBmhA",
     )
     db_session.add(user)
     await db_session.commit()
 
     yield user
 
+
 @pytest.fixture
 def uow(db_session):
     return UnitOfWork(session_maker=async_session_factory)
 
+
 @pytest.fixture
 def redis():
     return Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
+
 
 @pytest.fixture
 async def workout(db_session: AsyncSession, user: User):
@@ -125,10 +138,8 @@ async def workout(db_session: AsyncSession, user: User):
         user_id=user.id,
         name="testworkout",
         description="testdescription",
-        training_days=[
-            day_1, day_2,day_3        
-        ]
-    ) 
+        training_days=[day_1, day_2, day_3],
+    )
 
     db_session.add(workout)
     await db_session.flush()
@@ -137,10 +148,66 @@ async def workout(db_session: AsyncSession, user: User):
         select(Workout)
         .where(Workout.id == workout.id)
         .options(
-            selectinload(Workout.training_days)
-            .selectinload(TrainingDay.day_exercises)
+            selectinload(Workout.training_days).selectinload(TrainingDay.day_exercises)
         )
     )
     workout = await db_session.execute(stmt)
     await db_session.commit()
     return workout.scalar()
+
+
+@dataclass
+class TrDayData:
+    user_id: uuid.UUID
+    workout_id: int
+    history: TrainingDayHistory
+
+
+@dataclass
+class TrDayDatas:
+    user_id: uuid.UUID
+    workout_id: int
+    histories: list[TrainingDayHistory]
+
+
+@pytest.fixture
+async def tr_history_data(workout: Workout, db_session: AsyncSession):
+    day = workout.training_days[0]
+
+    sets_history = SetsHistory(set=3, reps=10, weight=20.5, time_for_set=datetime.now())
+    exercise_history = ExerciseHistory(
+        user_id=workout.user_id,
+        exercise_id=workout.training_days[0].day_exercises[0].exercise_id,
+        sets_history=[sets_history],
+    )
+    history = TrainingDayHistory(
+        day_id=day.id, day_name=day.name, exercises_history=[exercise_history]
+    )
+
+    db_session.add(history)
+    await db_session.commit()
+
+    data = TrDayData(user_id=workout.user_id, workout_id=workout.id, history=history)
+
+    return data
+
+
+@pytest.fixture
+async def tr_history_datas(workout: Workout, db_session):
+    days = [
+        workout.training_days[0],
+        workout.training_days[1],
+        workout.training_days[2],
+    ]
+    histories = []
+    for day in days:
+        history = TrainingDayHistory(day_id=day.id, day_name=day.name)
+        histories.append(history)
+        db_session.add(history)
+
+    await db_session.commit()
+
+    data = TrDayDatas(
+        user_id=workout.user_id, workout_id=workout.id, histories=histories
+    )
+    return data

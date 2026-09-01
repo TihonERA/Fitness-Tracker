@@ -9,6 +9,8 @@ from Backend.cache_proxies.key_formatters.WorkoutCacheKeyFormatter import (
     WorkoutCacheKeyFormatter,
 )
 
+from Backend.tests.integration.cache_proxy.conftest import keys_func
+
 from Backend.cache_proxies.invalidators.WorkoutCacheInvalidator import (
     WorkoutCacheInvalidator,
 )
@@ -26,9 +28,7 @@ from Backend.utils.uow import UnitOfWork
 
 
 @pytest.mark.asyncio(loop_scope="session")
-class TestWorkoutCachyProxy[
-    keys_func: Callable[[], CoroutineType[Any, Any, list[str | bytes]]],
-]:
+class TestWorkoutCachyProxy:
     @pytest.fixture
     def proxy(self, uow: UnitOfWork, redis: Redis):
         formatter = WorkoutCacheKeyFormatter()

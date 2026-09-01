@@ -1,10 +1,15 @@
 import pytest
 
 from Backend.models.workout import Workout
-from Backend.schemas.training_day_history import TrainingDayHistoryCreate, TrainingDayHistoryGetAll
+from Backend.schemas.training_day_history import (
+    TrainingDayHistoryCreate,
+    TrainingDayHistoryGetAll,
+    TrainingDayHistoryGetAllDTO,
+)
 from Backend.services.TrainingDayHistoryService import TrainingDayHistoryService
-from Backend.tests.integration.trainings.history.conftest import TrDayData
+from Backend.tests.integration.conftest import TrDayData
 from Backend.utils.exceptions import NotFound
+
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestTrainingDayHistoryService:
@@ -15,8 +20,7 @@ class TestTrainingDayHistoryService:
 
     async def test_create(self, service: TrainingDayHistoryService, workout: Workout):
         data = TrainingDayHistoryCreate(
-            day_name=workout.training_days[0].name,
-            day_id=workout.training_days[0].id
+            day_name=workout.training_days[0].name, day_id=workout.training_days[0].id
         )
 
         history = await service.create_history(data)
@@ -25,26 +29,18 @@ class TestTrainingDayHistoryService:
         assert history.day_id == data.day_id
 
     async def test_get_all_invalid(
-        self,
-        service: TrainingDayHistoryService,
-        tr_history_data: TrDayData
+        self, service: TrainingDayHistoryService, tr_history_data: TrDayData
     ):
-        data = TrainingDayHistoryGetAll(
-            skip=0,
-            limit=50,
-            user_id=tr_history_data.user_id,
-            workout_id=-1
+        data = TrainingDayHistoryGetAllDTO(
+            skip=0, limit=50, user_id=tr_history_data.user_id, workout_id=-1
         )
 
         histories = await service.get_all_tr_day_history(data)
 
         assert histories == []
 
-
     async def test_delete(
-        self,
-        service: TrainingDayHistoryService,
-        tr_history_data: TrDayData
+        self, service: TrainingDayHistoryService, tr_history_data: TrDayData
     ):
         history_id = tr_history_data.history.id
 

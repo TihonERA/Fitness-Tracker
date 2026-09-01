@@ -1,6 +1,6 @@
 import asyncio
 from types import CoroutineType
-from typing import Any, Callable
+from typing import Any, Callable, TypeAlias
 
 from _pytest.config import print_conftest_import_error
 import pytest
@@ -20,6 +20,8 @@ from Backend.services.DayExerciseService import DayExerciseService
 from Backend.services.TrainingDayService import TrainingDayService
 from Backend.services.WorkoutService import WorkoutService
 from Backend.utils.uow import UnitOfWork
+
+keys_func: TypeAlias = Callable[[], CoroutineType[Any, Any, list[str | bytes]]]
 
 
 @pytest.fixture

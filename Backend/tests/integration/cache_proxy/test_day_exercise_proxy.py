@@ -7,19 +7,18 @@ from Backend.cache_proxies.DayExerciseCacheProxy import DayExerciseCacheProxy
 from Backend.cache_proxies.WorkoutCacheProxy import WorkoutCacheProxy
 from Backend.models.workout import Workout
 from Backend.schemas.day_exercise import DayExerciseCreate, DayExerciseCreateDTO
+from Backend.tests.integration.cache_proxy.conftest import keys_func
 
 
 @pytest.mark.asyncio(loop_scope="session")
-class TestDayExerciseProxy[
-    ld_keys: Callable[[], CoroutineType[Any, Any, list[str | bytes]]]
-]:
+class TestDayExerciseProxy:
 
     async def test_create_day_exercise(
         self,
         day_exercise_proxy: DayExerciseCacheProxy,
         workout_proxy: WorkoutCacheProxy,
         workout: Workout,
-        get_loaded_workouts_keys: ld_keys,
+        get_loaded_workouts_keys: keys_func,
     ):
         day_id = workout.training_days[0].id
         data = DayExerciseCreate(
@@ -44,7 +43,7 @@ class TestDayExerciseProxy[
         day_exercise_proxy: DayExerciseCacheProxy,
         workout_proxy: WorkoutCacheProxy,
         workout: Workout,
-        get_loaded_workouts_keys: ld_keys,
+        get_loaded_workouts_keys: keys_func,
     ):
         day_id = workout.training_days[0].id
         exercise_id = workout.training_days[0].day_exercises[0].exercise_id
