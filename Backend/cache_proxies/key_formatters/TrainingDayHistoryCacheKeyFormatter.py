@@ -6,6 +6,7 @@ from Backend.cache_proxies.key_formatters.BaseCacheKeyFormatter import (
 from Backend.schemas.training_day_history import (
     TrainingDayHistoryCachePrefixes,
     TrainingDayHistoryGetAll,
+    TrainingDayHistoryGetAllDTO,
 )
 
 
@@ -22,7 +23,7 @@ class TrainingDayHistoryCacheKeyFormatter(BaseCacheKeyFormatter):
     def get_version_key(self, user_id: UUID) -> str:
         return self.formate_key(self.pr.version, user_id=user_id)
 
-    def get_all_key(self, version: str, data: TrainingDayHistoryGetAll) -> str:
+    def get_all_key(self, version: str, data: TrainingDayHistoryGetAllDTO) -> str:
         return self.formate_key(
             prefix=self.pr.get_all_key, version=version, data=data.model_dump()
         )
