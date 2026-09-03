@@ -1,10 +1,15 @@
 from datetime import timedelta
-from typing import Any, Awaitable, Callable, Generic, TypeVar, cast, overload
+from typing import Any, Awaitable, Callable, Generic, Self, TypeVar, cast, overload
+from uuid import UUID
 
 from redis.asyncio import Redis
 from redis.typing import EncodableT
 
 from pydantic import BaseModel
+
+from Backend.cache_proxies.key_formatters.BaseCacheKeyFormatter import (
+    BaseCacheKeyFormatter,
+)
 
 
 class BaseCacheProxy[SchemeT: BaseModel]:

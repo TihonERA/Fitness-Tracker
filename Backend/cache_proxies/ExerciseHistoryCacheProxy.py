@@ -46,6 +46,22 @@ class ExerciseHistoryCacheProxy(BaseCacheProxy[ExerciseHistoryResponse]):
 
         return ExerciseHistoryRelalationsResponse.model_validate(exercise_history)
 
+    async def get_exercise_history(
+        self, user_id: UUID, history_id: int
+    ) -> ExerciseHistoryRelalationsResponse:
+        key = self.formatter.get_loaded_key(history_id)
+
+        history = await self._wrap_cache(
+            key=key,
+            response_model=ExerciseHistoryRelalationsResponse,
+            db_func=partial(self.service.get_exercise_history, history_id),
+        )
+
+        tag_key = self.formatter.get_tag_key(user_id)
+        await self.sadd(tag_key, key)
+
+        return history
+
     async def get_all_exercise_history(
         self, user_id: UUID, data: ExerciseHistoryGetAll
     ) -> ListExerciseHistoryResponse:
@@ -61,3 +77,12 @@ class ExerciseHistoryCacheProxy(BaseCacheProxy[ExerciseHistoryResponse]):
             response_model=ListExerciseHistoryResponse,
             db_func=partial(self.service.get_all_histories, data_dto),
         )
+
+    async def delete_history(
+        self, user_id: UUID, history_id: int
+    ) -> ExerciseHistoryResponse:
+        history = await self.service.delete_history(history_id)
+
+        await self.invalidator.invalidate_all(user_id, history_id)
+
+        return self.scheme.model_validate(history)

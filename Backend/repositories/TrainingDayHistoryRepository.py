@@ -6,32 +6,56 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, joinedload
 
+from Backend.models import sets_history
 from Backend.models.base import ModelT
+from Backend.models.exercise_history import ExerciseHistory
 from Backend.models.trainingday import TrainingDay
 from Backend.models.workout import Workout
-from Backend.schemas.training_day_history import TrainingDayHistoryGetAll
+from Backend.schemas.exercise_history import ExerciseHistoryCachePrefixes
+from Backend.schemas.training_day_history import (
+    TrainingDayHistoryGetAll,
+    TrainingDayHistoryGetAllDTO,
+)
 
 from ..models.training_day_history import TrainingDayHistory
 
 from .SqlAlchemyAbstractRepository import SQLAlchemyAbstractRepository
+
 
 class TrainingDayHistoryRepository(SQLAlchemyAbstractRepository):
 
     def __init__(self, session: AsyncSession):
         super().__init__(session=session, model=TrainingDayHistory)
 
-    async def get_tr_day_history(
-        self,
-        history_id: int
-    ) -> TrainingDayHistory | None:
+    async def get_tr_day_history(self, history_id: int) -> TrainingDayHistory | None:
         return await self.get_instance_by_id(
             id=history_id,
-            options=[selectinload(TrainingDayHistory.exercises_history)]
+            options=[
+                selectinload(TrainingDayHistory.exercises_history).selectinload(
+                    ExerciseHistory.sets_history
+                )
+            ],
         )
 
+    async def get_last_history(self, user_id: UUID) -> TrainingDayHistory | None:
+        stmt = (
+            select(TrainingDayHistory)
+            .join(TrainingDayHistory.training_day)
+            .join(TrainingDay.workout)
+            .where(Workout.user_id == user_id)
+            .limit(1)
+            .options(
+                selectinload(TrainingDayHistory.exercises_history).selectinload(
+                    ExerciseHistory.sets_history
+                )
+            )
+        )
+
+        result = await self.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_all_tr_day_history(
-        self,
-        data: TrainingDayHistoryGetAll
+        self, data: TrainingDayHistoryGetAllDTO
     ) -> Sequence[TrainingDayHistory]:
         stmt = (
             select(TrainingDayHistory)
@@ -39,10 +63,10 @@ class TrainingDayHistoryRepository(SQLAlchemyAbstractRepository):
             .join(TrainingDay.workout)
             .where(Workout.user_id == data.user_id)
         )
-        
+
         if data.workout_id:
             stmt = stmt.where(Workout.id == data.workout_id)
-        
+
         if data.day_id:
             stmt = stmt.where(TrainingDay.id == data.day_id)
 
