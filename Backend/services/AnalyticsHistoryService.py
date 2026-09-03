@@ -67,7 +67,7 @@ class AnalyticsHistoryService:
             new_tr_index = 0
 
             while (new_tr_index < len(data.exercises)) and last_training:
-                old = last_training.exercises_history[last_tr_index]
+                last = last_training.exercises_history[last_tr_index]
 
                 exercise_data = ExerciseHistoryCreateDTO(
                     user_id=user_id,
@@ -79,39 +79,42 @@ class AnalyticsHistoryService:
                 )
                 current_difference = response.differences[new_tr_index]
 
-                if old.exercise_id != new.exercise_id:
+                if last.exercise_id != new.exercise_id:
                     current_difference.exercise_id = None
                     new_tr_index += 1
                     continue
 
-                old_sets_length = len(old.sets_history)
+                old_sets_length = len(last.sets_history)
                 new_sets_length = len(new.sets_history)
 
                 for i in range(max(old_sets_length, new_sets_length)):
-                    old_or_new_exercise_id = (
-                        old.exercise_id if i < old_sets_length else new.exercise_id
-                    )
                     set_number = i + 1
                     current_difference.sets_differences[set_number] = SetsDifference()
 
-                    if i < old_sets_length and i < new_sets_length:
-                        old_current_set = old.sets_history[i]
-                        new_current_set = new.sets_history[i]
+                    if i >= old_sets_length or i >= new_sets_length:
+                        continue
 
-                        if new_current_set.reps and old_current_set.reps:
-                            current_difference.sets_differences[set_number].reps = (
-                                self.calc_diff_return_none_if_zero(
-                                    first=new_current_set.reps,
-                                    second=old_current_set.reps,
-                                )
-                            )
-                        if new_current_set.weight and old_current_set.weight:
-                            current_difference.sets_differences[set_number].weight = (
-                                self.calc_diff_return_none_if_zero(
-                                    first=new_current_set.weight,
-                                    second=old_current_set.weight,
-                                )
-                            )
+                    old_current_set = last.sets_history[i]
+                    new_current_set = new.sets_history[i]
+
+                    if new_current_set.reps is None or old_current_set.reps is None:
+                        continue
+
+                    current_difference.sets_differences[set_number].reps = (
+                        self.calc_diff_return_none_if_zero(
+                            first=new_current_set.reps,
+                            second=old_current_set.reps,
+                        )
+                    )
+                    if new_current_set.weight is None or old_current_set.weight is None:
+                        continue
+
+                    current_difference.sets_differences[set_number].weight = (
+                        self.calc_diff_return_none_if_zero(
+                            first=new_current_set.weight,
+                            second=old_current_set.weight,
+                        )
+                    )
                 new_tr_index += 1
                 last_tr_index += 1
 
