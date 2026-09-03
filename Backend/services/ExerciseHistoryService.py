@@ -1,17 +1,23 @@
 from typing import Sequence
 
-from Backend.schemas.exercise_history import ExerciseHistoryCreateDTO, ExerciseHistoryGetAllDTO
+from Backend.schemas.exercise_history import (
+    ExerciseHistoryCreateDTO,
+    ExerciseHistoryGetAllDTO,
+)
 from Backend.services.BaseService import BaseService
 
 from Backend.models.exercise_history import ExerciseHistory
 from Backend.utils.exceptions import NotFound
 from Backend.utils.uow import UnitOfWork
 
+
 class ExerciseHistoryService(BaseService[ExerciseHistory]):
     def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
-    async def create_exercise_history(self, data: ExerciseHistoryCreateDTO) -> ExerciseHistory:
+    async def create_exercise_history(
+        self, data: ExerciseHistoryCreateDTO
+    ) -> ExerciseHistory:
         async with self.uow as uow:
             return await uow.exercisehistory.create_exercise_history(data)
 
@@ -19,10 +25,12 @@ class ExerciseHistoryService(BaseService[ExerciseHistory]):
         async with self.uow as uow:
             return await self._get_existing_instance(
                 identifier=history_id,
-                repo_get_func=uow.exercisehistory.get_exercise_history
+                repo_get_func=uow.exercisehistory.get_exercise_history,
             )
 
-    async def get_all_histories(self, data: ExerciseHistoryGetAllDTO) -> Sequence[ExerciseHistory]:
+    async def get_all_histories(
+        self, data: ExerciseHistoryGetAllDTO
+    ) -> Sequence[ExerciseHistory]:
         async with self.uow as uow:
             histories = await uow.exercisehistory.get_all_histories(data)
 
@@ -34,6 +42,5 @@ class ExerciseHistoryService(BaseService[ExerciseHistory]):
     async def delete_history(self, history_id: int) -> ExerciseHistory:
         async with self.uow as uow:
             return await self.delete_existing_instance(
-                id=history_id,
-                repo=uow.exercisehistory
+                id=history_id, repo=uow.exercisehistory
             )

@@ -2,8 +2,8 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-from pydantic import BaseModel
-from .base import LimitInt, OptionalInt, SkipInt
+from pydantic import BaseModel, RootModel
+from .base import BaseResponse, LimitInt, OptionalInt, SkipInt
 
 
 class SetsHistory(BaseModel):
@@ -15,6 +15,14 @@ class SetsHistory(BaseModel):
 
 class ExerciseHistoryBase(BaseModel):
     exercise_id: int
+
+
+class ExerciseHistoryResponse(BaseResponse, ExerciseHistoryBase):
+    created_at: datetime
+
+
+class ExerciseHistoryRelalationsResponse(ExerciseHistoryResponse):
+    sets_history: list[SetsHistory] = []
 
 
 class ExerciseHistoryCreate(ExerciseHistoryBase):
@@ -42,3 +50,6 @@ class ExerciseHistoryCachePrefixes(StrEnum):
 
 class ExerciseHistoryGetAllDTO(ExerciseHistoryGetAll):
     user_id: UUID
+
+
+ListExerciseHistoryResponse = RootModel[list[ExerciseHistoryResponse]]
