@@ -1,6 +1,8 @@
 from typing import Any, overload, override
 from uuid import UUID
 
+import asyncio
+
 from alembic.command import current
 
 from Backend.models.exercise_history import ExerciseHistory
@@ -88,18 +90,20 @@ class AnalyticsHistoryService:
             ex.exercise_id for ex in last_tr_day_history.exercises_history
         }
 
-        differences = [
-            await self.get_exercise_difference(
-                user_id=user_id,
-                training_day_history_id=new_tr_day_history.id,
-                last_ex_history=last_ex_history,
-                new_ex_creation_data=new_ex_creation_data,
-                last_training_exercise_id_set=last_training_exercise_id_set,
-            )
-            for last_ex_history, new_ex_creation_data in zip(
-                last_tr_day_history.exercises_history, data.exercises
-            )
-        ]
+        differences = await asyncio.gather(
+            *[
+                self.get_exercise_difference(
+                    user_id=user_id,
+                    training_day_history_id=new_tr_day_history.id,
+                    last_ex_history=last_ex_history,
+                    new_ex_creation_data=new_ex_creation_data,
+                    last_training_exercise_id_set=last_training_exercise_id_set,
+                )
+                for last_ex_history, new_ex_creation_data in zip(
+                    last_tr_day_history.exercises_history, data.exercises
+                )
+            ]
+        )
 
         response = await self.make_history_response_and_load_new_training(
             new_tr_day_history=new_tr_day_history,
