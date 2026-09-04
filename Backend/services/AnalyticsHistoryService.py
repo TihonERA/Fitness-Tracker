@@ -74,14 +74,11 @@ class AnalyticsHistoryService:
                     data=new_ex_creation_data,
                 )
 
-            loaded_new_training = (
-                await self.load_relations_in_new_training_and_validate(new_training)
+            loaded_new_training = await self.load_relations_in_new_training(
+                new_training
             )
 
-            return HistoryResponse(
-                last_training=None, new_training=loaded_new_training, differences=[]
-            )
-
+            return self.make_history_response(new_training=loaded_new_training)
         last_training_exercise_id_set = {
             ex.exercise_id for ex in last_training.exercises_history
         }
@@ -98,29 +95,35 @@ class AnalyticsHistoryService:
             )
         ]
 
-        last_training = (
-            TrainingDayHistoryResponse.model_validate(last_training)
-            if last_training is not None
-            else None
-        )
-        loaded_new_training = await self.load_relations_in_new_training_and_validate(
-            new_training
-        )
-        response = HistoryResponse(
-            last_training=last_training,
+        loaded_new_training = await self.load_relations_in_new_training(new_training)
+        response = self.make_history_response(
             new_training=loaded_new_training,
+            last_training=last_training,
             differences=differences,
         )
-
         return response
 
-    async def load_relations_in_new_training_and_validate(
+    def make_history_response(
+        self,
+        new_training: TrainingDayHistory,
+        last_training: TrainingDayHistory | None = None,
+        differences: list[ExerciseDifference] = [],
+    ) -> HistoryResponse:
+        return HistoryResponse.model_validate(
+            {
+                "last_training": last_training,
+                "new_training": new_training,
+                "differences": differences,
+            }
+        )
+
+    async def load_relations_in_new_training(
         self, new_training: TrainingDayHistory
-    ) -> TrainingDayHistoryResponse:
+    ) -> TrainingDayHistory:
         loaded = await self.tr_day_history_service.get_loaded_tr_day_history(
             new_training.id
         )
-        return TrainingDayHistoryResponse.model_validate(loaded)
+        return loaded
 
     async def create_new_history(
         self,
