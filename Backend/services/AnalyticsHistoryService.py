@@ -126,30 +126,21 @@ class AnalyticsHistoryService:
     ) -> list[SetsDifference]:
         differences = []
 
-        fset_len = len(first_sets_history)
-        sset_len = len(second_sets_history)
-
-        for i in range(max(fset_len, sset_len)):
-            if i >= fset_len or i >= sset_len:
-                continue
-
+        for first_set, second_set in zip(first_sets_history, second_sets_history):
             current_set = SetsDifference()
 
-            f_current_set = first_sets_history[i]
-            s_current_set = second_sets_history[i]
-
-            if f_current_set.reps is None or s_current_set.reps is None:
+            if first_set.reps is None or second_set.reps is None:
                 continue
 
             current_set.reps = self.calc_diff_return_none_if_zero(
-                f_current_set.reps, s_current_set.reps
+                first_set.reps, second_set.reps
             )
 
-            if f_current_set.weight is None or s_current_set.weight is None:
+            if first_set.weight is None or second_set.weight is None:
                 continue
 
             current_set.weight = self.calc_diff_return_none_if_zero(
-                f_current_set.weight, s_current_set.weight
+                first_set.weight, second_set.weight
             )
 
             differences.append(current_set)
