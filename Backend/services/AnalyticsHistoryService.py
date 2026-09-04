@@ -66,7 +66,6 @@ class AnalyticsHistoryService:
         )
 
         last_tr_day_history = await self.get_last_history_or_none(user_id)
-
         new_tr_day_history = await self.tr_day_history_service.create_history(
             tr_day_history_data
         )
@@ -95,6 +94,7 @@ class AnalyticsHistoryService:
                 training_day_history_id=new_tr_day_history.id,
                 last_ex_history=last_ex_history,
                 new_ex_creation_data=new_ex_creation_data,
+                last_training_exercise_id_set=last_training_exercise_id_set,
             )
             for last_ex_history, new_ex_creation_data in zip(
                 last_tr_day_history.exercises_history, data.exercises
@@ -148,6 +148,7 @@ class AnalyticsHistoryService:
         training_day_history_id: int,
         last_ex_history: ExerciseHistory,
         new_ex_creation_data: ExerciseHistoryCreateNested,
+        last_training_exercise_id_set: set[int],
     ) -> ExerciseDifference:
         new_ex_history = await self.create_new_history(
             user_id=user_id,
@@ -157,7 +158,7 @@ class AnalyticsHistoryService:
 
         difference = ExerciseDifference()
 
-        if last_ex_history.exercise_id != new_ex_history.exercise_id:
+        if new_ex_history.exercise_id not in last_training_exercise_id_set:
             return difference
 
         difference.exercise_id = new_ex_history.exercise_id
