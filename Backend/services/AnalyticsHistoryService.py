@@ -119,30 +119,31 @@ class AnalyticsHistoryService:
 
         return response
 
+    def compare_sets(
+        self, first_set: SetsHistory, second_set: SetsHistory
+    ) -> SetsDifference:
+        set_difference = SetsDifference()
+
+        if first_set.reps and second_set.reps:
+            set_difference.reps = self.calc_diff_return_none_if_zero(
+                first_set.reps, second_set.reps
+            )
+
+        if first_set.weight and second_set.weight:
+            set_difference.weight = self.calc_diff_return_none_if_zero(
+                first_set.weight, second_set.weight
+            )
+
+        return set_difference
+
     def get_sets_differences(
         self,
         first_sets_history: list[SetsHistory],
         second_sets_history: list[SetsHistory],
     ) -> list[SetsDifference]:
-        differences = []
-
-        for first_set, second_set in zip(first_sets_history, second_sets_history):
-            current_set = SetsDifference()
-
-            if first_set.reps is None or second_set.reps is None:
-                continue
-
-            current_set.reps = self.calc_diff_return_none_if_zero(
-                first_set.reps, second_set.reps
-            )
-
-            if first_set.weight is None or second_set.weight is None:
-                continue
-
-            current_set.weight = self.calc_diff_return_none_if_zero(
-                first_set.weight, second_set.weight
-            )
-
-            differences.append(current_set)
+        differences = [
+            self.compare_sets(first_set, second_set)
+            for first_set, second_set in zip(first_sets_history, second_sets_history)
+        ]
 
         return differences
