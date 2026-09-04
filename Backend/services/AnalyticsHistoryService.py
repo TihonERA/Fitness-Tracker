@@ -3,7 +3,9 @@ from uuid import UUID
 
 from alembic.command import current
 
+from Backend.models.exercise_history import ExerciseHistory
 from Backend.models.sets_history import SetsHistory
+from Backend.models.training_day_history import TrainingDayHistory
 from Backend.services.TrainingDayHistoryService import TrainingDayHistoryService
 from Backend.utils.exceptions import NotFound
 from Backend.utils.uow import UnitOfWork
@@ -11,6 +13,7 @@ from Backend.utils.uow import UnitOfWork
 from Backend.schemas.AnalyticsHistory import (
     CreateHistory,
     ExerciseDifference,
+    ExerciseHistoryCreateNested,
     HistoryResponse,
     SetsDifference,
 )
@@ -63,53 +66,45 @@ class AnalyticsHistoryService:
             tr_day_history_data
         )
 
-        last_training_exercise_id_set = set()
+        if last_training is None:
+            for new_ex_creation_data in data.exercises:
+                await self.create_new_history(
+                    user_id=user_id,
+                    training_day_history_id=new_training.id,
+                    data=new_ex_creation_data,
+                )
 
-        if last_training is not None:
-            for ex in last_training.exercises_history:
-                last_training_exercise_id_set.add(ex.exercise_id)
+            loaded_new_training = (
+                await self.load_relations_in_new_training_and_validate(new_training)
+            )
 
-        last_tr_index = 0
-        new_tr_index = 0
+            return HistoryResponse(
+                last_training=None, new_training=loaded_new_training, differences=[]
+            )
 
-        differences: list[ExerciseDifference] = []
-        while (new_tr_index < len(data.exercises)) and last_training:
-            last = last_training.exercises_history[last_tr_index]
+        last_training_exercise_id_set = {
+            ex.exercise_id for ex in last_training.exercises_history
+        }
 
-            exercise_data = ExerciseHistoryCreateDTO(
+        differences = [
+            await self.get_exercise_difference(
                 user_id=user_id,
                 training_day_history_id=new_training.id,
-                **data.exercises[new_tr_index].model_dump(exclude_unset=True),
+                last_ex_history=last_ex_history,
+                new_ex_creation_data=new_ex_creation_data,
             )
-            new = await self.ex_history_service.create_exercise_history(exercise_data)
-
-            difference = ExerciseDifference(exercise_id=new.exercise_id)
-
-            if last.exercise_id != new.exercise_id:
-                difference.exercise_id = None
-                differences.append(difference)
-                new_tr_index += 1
-                continue
-
-            difference.sets_differences = self.get_sets_differences(
-                last.sets_history, new.sets_history
+            for last_ex_history, new_ex_creation_data in zip(
+                last_training.exercises_history, data.exercises
             )
-
-            differences.append(difference)
-
-            new_tr_index += 1
-            last_tr_index += 1
+        ]
 
         last_training = (
             TrainingDayHistoryResponse.model_validate(last_training)
             if last_training is not None
             else None
         )
-        loaded_new_training = (
-            await self.tr_day_history_service.get_loaded_tr_day_history(new_training.id)
-        )
-        loaded_new_training = TrainingDayHistoryResponse.model_validate(
-            loaded_new_training
+        loaded_new_training = await self.load_relations_in_new_training_and_validate(
+            new_training
         )
         response = HistoryResponse(
             last_training=last_training,
@@ -118,6 +113,54 @@ class AnalyticsHistoryService:
         )
 
         return response
+
+    async def load_relations_in_new_training_and_validate(
+        self, new_training: TrainingDayHistory
+    ) -> TrainingDayHistoryResponse:
+        loaded = await self.tr_day_history_service.get_loaded_tr_day_history(
+            new_training.id
+        )
+        return TrainingDayHistoryResponse.model_validate(loaded)
+
+    async def create_new_history(
+        self,
+        user_id: UUID,
+        training_day_history_id: int,
+        data: ExerciseHistoryCreateNested,
+    ) -> ExerciseHistory:
+        exercise_data = ExerciseHistoryCreateDTO(
+            user_id=user_id,
+            training_day_history_id=training_day_history_id,
+            **data.model_dump(exclude_unset=True),
+        )
+        new = await self.ex_history_service.create_exercise_history(exercise_data)
+
+        return new
+
+    async def get_exercise_difference(
+        self,
+        user_id: UUID,
+        training_day_history_id: int,
+        last_ex_history: ExerciseHistory,
+        new_ex_creation_data: ExerciseHistoryCreateNested,
+    ) -> ExerciseDifference:
+        new_ex_history = await self.create_new_history(
+            user_id=user_id,
+            training_day_history_id=training_day_history_id,
+            data=new_ex_creation_data,
+        )
+
+        difference = ExerciseDifference()
+
+        if last_ex_history.exercise_id != new_ex_history.exercise_id:
+            return difference
+
+        difference.exercise_id = new_ex_history.exercise_id
+        difference.sets_differences = self.get_sets_differences(
+            last_ex_history.sets_history, new_ex_history.sets_history
+        )
+
+        return difference
 
     def compare_sets(
         self, first_set: SetsHistory, second_set: SetsHistory
