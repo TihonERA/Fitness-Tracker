@@ -21,12 +21,7 @@ from Backend.services.ExerciseHistoryService import ExerciseHistoryService
 
 
 class AnalyticsHistoryService:
-    def __init__(
-        self,
-        uow: UnitOfWork,
-        ex_hist_service: ExerciseHistoryService,
-        tr_day_hist_service: TrainingDayHistoryService,
-    ) -> None:
+    def __init__(self, uow: UnitOfWork) -> None:
         self.uow = uow
 
     @overload
@@ -58,40 +53,41 @@ class AnalyticsHistoryService:
                 tr_day_history_data
             )
 
-            response = HistoryResponse(
-                last_training=TrainingDayHistoryResponse.model_validate(last_training),
-                new_training=TrainingDayHistoryResponse.model_validate(new_training),
-            )
+            last_training_exercise_id_set = set()
+
+            if last_training is not None:
+                for ex in last_training.exercises_history:
+                    last_training_exercise_id_set.add(ex.exercise_id)
 
             last_tr_index = 0
             new_tr_index = 0
 
+            differences: list[ExerciseDifference] = []
             while (new_tr_index < len(data.exercises)) and last_training:
                 last = last_training.exercises_history[last_tr_index]
 
                 exercise_data = ExerciseHistoryCreateDTO(
                     user_id=user_id,
+                    training_day_history_id=new_training.id,
                     **data.exercises[new_tr_index].model_dump(exclude_unset=True),
                 )
                 new = await uow.exercisehistory.create_exercise_history(exercise_data)
-                response.differences.append(
-                    ExerciseDifference(exercise_id=new.exercise_id)
-                )
-                current_difference = response.differences[new_tr_index]
+
+                differences.append(ExerciseDifference(exercise_id=new.exercise_id))
+                current_difference = differences[new_tr_index]
 
                 if last.exercise_id != new.exercise_id:
                     current_difference.exercise_id = None
                     new_tr_index += 1
                     continue
 
-                old_sets_length = len(last.sets_history)
+                last_sets_length = len(last.sets_history)
                 new_sets_length = len(new.sets_history)
 
-                for i in range(max(old_sets_length, new_sets_length)):
-                    set_number = i + 1
-                    current_difference.sets_differences[set_number] = SetsDifference()
+                for i in range(max(last_sets_length, new_sets_length)):
+                    current_difference.sets_differences.append(SetsDifference())
 
-                    if i >= old_sets_length or i >= new_sets_length:
+                    if i >= last_sets_length or i >= new_sets_length:
                         continue
 
                     old_current_set = last.sets_history[i]
@@ -100,7 +96,7 @@ class AnalyticsHistoryService:
                     if new_current_set.reps is None or old_current_set.reps is None:
                         continue
 
-                    current_difference.sets_differences[set_number].reps = (
+                    current_difference.sets_differences[i].reps = (
                         self.calc_diff_return_none_if_zero(
                             first=new_current_set.reps,
                             second=old_current_set.reps,
@@ -109,7 +105,7 @@ class AnalyticsHistoryService:
                     if new_current_set.weight is None or old_current_set.weight is None:
                         continue
 
-                    current_difference.sets_differences[set_number].weight = (
+                    current_difference.sets_differences[i].weight = (
                         self.calc_diff_return_none_if_zero(
                             first=new_current_set.weight,
                             second=old_current_set.weight,
@@ -117,5 +113,22 @@ class AnalyticsHistoryService:
                     )
                 new_tr_index += 1
                 last_tr_index += 1
+
+            last_training = (
+                TrainingDayHistoryResponse.model_validate(last_training)
+                if last_training is not None
+                else None
+            )
+            loaded_new_training = await uow.trainingdayhistory.get_tr_day_history(
+                new_training.id
+            )
+            loaded_new_training = TrainingDayHistoryResponse.model_validate(
+                loaded_new_training
+            )
+            response = HistoryResponse(
+                last_training=last_training,
+                new_training=loaded_new_training,
+                differences=differences,
+            )
 
             return response

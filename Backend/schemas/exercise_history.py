@@ -13,6 +13,13 @@ class SetsHistory(BaseModel):
     time_for_set: datetime | None = None
 
 
+class SetsHistoryResponse(BaseResponse):
+    set: int | None = None
+    reps: int | None = None
+    weight: float | None = None
+    time_for_set: datetime | None = None
+
+
 class ExerciseHistoryBase(BaseModel):
     exercise_id: int
 
@@ -22,11 +29,11 @@ class ExerciseHistoryResponse(BaseResponse, ExerciseHistoryBase):
 
 
 class ExerciseHistoryRelalationsResponse(ExerciseHistoryResponse):
-    sets_history: list[SetsHistory] = []
+    sets_history: list[SetsHistoryResponse] = []
 
 
 class ExerciseHistoryCreate(ExerciseHistoryBase):
-    training_day_history_id: OptionalInt
+    training_day_history_id: OptionalInt = None
     sets_history: list[SetsHistory] = []
 
 

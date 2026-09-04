@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, RootModel
 
+from Backend.schemas.exercise_history import ExerciseHistoryRelalationsResponse
+
 from .base import BaseResponse, OptionalDateTime, OptionalInt, Str100, SkipInt, LimitInt
 
 
@@ -19,6 +21,7 @@ class TrainingDayHistoryResponse(BaseResponse, TrainingDayHistoryBase):
     id: int
     day_id: int
     created_at: datetime
+    exercises_history: list[ExerciseHistoryRelalationsResponse] = []
 
 
 class TrainingDayHistoryGetAll(BaseModel):
