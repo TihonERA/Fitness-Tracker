@@ -50,6 +50,14 @@ class AnalyticsHistoryService:
             return None
         return difference
 
+    async def get_last_history_or_none(
+        self, user_id: UUID
+    ) -> TrainingDayHistory | None:
+        try:
+            return await self.tr_day_history_service.get_last_history(user_id)
+        except NotFound:
+            return None
+
     async def create_history(
         self, user_id: UUID, data: CreateHistory
     ) -> HistoryResponse:
@@ -57,73 +65,67 @@ class AnalyticsHistoryService:
             day_name=data.day_name, day_id=data.day_id
         )
 
-        try:
-            last_training = await self.tr_day_history_service.get_last_history(user_id)
-        except NotFound:
-            last_training = None
+        last_tr_day_history = await self.get_last_history_or_none(user_id)
 
-        new_training = await self.tr_day_history_service.create_history(
+        new_tr_day_history = await self.tr_day_history_service.create_history(
             tr_day_history_data
         )
 
-        if last_training is None:
+        if last_tr_day_history is None:
             for new_ex_creation_data in data.exercises:
                 await self.create_new_history(
                     user_id=user_id,
-                    training_day_history_id=new_training.id,
+                    training_day_history_id=new_tr_day_history.id,
                     data=new_ex_creation_data,
                 )
 
-            loaded_new_training = await self.load_relations_in_new_training(
-                new_training
+            response = await self.make_history_response_and_load_new_training(
+                new_tr_day_history=new_tr_day_history
             )
 
-            return self.make_history_response(new_training=loaded_new_training)
+            return response
+
         last_training_exercise_id_set = {
-            ex.exercise_id for ex in last_training.exercises_history
+            ex.exercise_id for ex in last_tr_day_history.exercises_history
         }
 
         differences = [
             await self.get_exercise_difference(
                 user_id=user_id,
-                training_day_history_id=new_training.id,
+                training_day_history_id=new_tr_day_history.id,
                 last_ex_history=last_ex_history,
                 new_ex_creation_data=new_ex_creation_data,
             )
             for last_ex_history, new_ex_creation_data in zip(
-                last_training.exercises_history, data.exercises
+                last_tr_day_history.exercises_history, data.exercises
             )
         ]
 
-        loaded_new_training = await self.load_relations_in_new_training(new_training)
-        response = self.make_history_response(
-            new_training=loaded_new_training,
-            last_training=last_training,
+        response = await self.make_history_response_and_load_new_training(
+            new_tr_day_history=new_tr_day_history,
+            last_tr_day_history=last_tr_day_history,
             differences=differences,
         )
         return response
 
-    def make_history_response(
+    async def make_history_response_and_load_new_training(
         self,
-        new_training: TrainingDayHistory,
-        last_training: TrainingDayHistory | None = None,
+        new_tr_day_history: TrainingDayHistory,
+        last_tr_day_history: TrainingDayHistory | None = None,
         differences: list[ExerciseDifference] = [],
     ) -> HistoryResponse:
+        new_tr_day_history = (
+            await self.tr_day_history_service.get_loaded_tr_day_history(
+                new_tr_day_history.id
+            )
+        )
         return HistoryResponse.model_validate(
             {
-                "last_training": last_training,
-                "new_training": new_training,
+                "last_training": last_tr_day_history,
+                "new_training": new_tr_day_history,
                 "differences": differences,
             }
         )
-
-    async def load_relations_in_new_training(
-        self, new_training: TrainingDayHistory
-    ) -> TrainingDayHistory:
-        loaded = await self.tr_day_history_service.get_loaded_tr_day_history(
-            new_training.id
-        )
-        return loaded
 
     async def create_new_history(
         self,
