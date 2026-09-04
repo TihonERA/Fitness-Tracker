@@ -3,6 +3,7 @@ from uuid import UUID
 
 from alembic.command import current
 
+from Backend.models.sets_history import SetsHistory
 from Backend.services.TrainingDayHistoryService import TrainingDayHistoryService
 from Backend.utils.exceptions import NotFound
 from Backend.utils.uow import UnitOfWork
@@ -86,37 +87,13 @@ class AnalyticsHistoryService:
 
             if last.exercise_id != new.exercise_id:
                 difference.exercise_id = None
+                differences.append(difference)
                 new_tr_index += 1
                 continue
 
-            last_sets_length = len(last.sets_history)
-            new_sets_length = len(new.sets_history)
-
-            for i in range(max(last_sets_length, new_sets_length)):
-                if i >= last_sets_length or i >= new_sets_length:
-                    continue
-
-                current_set = SetsDifference()
-
-                old_current_set = last.sets_history[i]
-                new_current_set = new.sets_history[i]
-
-                if new_current_set.reps is None or old_current_set.reps is None:
-                    continue
-
-                current_set.reps = self.calc_diff_return_none_if_zero(
-                    first=new_current_set.reps,
-                    second=old_current_set.reps,
-                )
-                if new_current_set.weight is None or old_current_set.weight is None:
-                    continue
-
-                current_set.weight = self.calc_diff_return_none_if_zero(
-                    first=new_current_set.weight,
-                    second=old_current_set.weight,
-                )
-
-                difference.sets_differences.append(current_set)
+            difference.sets_differences = self.get_sets_differences(
+                last.sets_history, new.sets_history
+            )
 
             differences.append(difference)
 
@@ -141,3 +118,40 @@ class AnalyticsHistoryService:
         )
 
         return response
+
+    def get_sets_differences(
+        self,
+        first_sets_history: list[SetsHistory],
+        second_sets_history: list[SetsHistory],
+    ) -> list[SetsDifference]:
+        differences = []
+
+        fset_len = len(first_sets_history)
+        sset_len = len(second_sets_history)
+
+        for i in range(max(fset_len, sset_len)):
+            if i >= fset_len or i >= sset_len:
+                continue
+
+            current_set = SetsDifference()
+
+            f_current_set = first_sets_history[i]
+            s_current_set = second_sets_history[i]
+
+            if f_current_set.reps is None or s_current_set.reps is None:
+                continue
+
+            current_set.reps = self.calc_diff_return_none_if_zero(
+                f_current_set.reps, s_current_set.reps
+            )
+
+            if f_current_set.weight is None or s_current_set.weight is None:
+                continue
+
+            current_set.weight = self.calc_diff_return_none_if_zero(
+                f_current_set.weight, s_current_set.weight
+            )
+
+            differences.append(current_set)
+
+        return differences
