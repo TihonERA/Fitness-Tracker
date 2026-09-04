@@ -22,7 +22,9 @@ class TestAnalyticsHistoryService:
 
     @pytest.fixture
     def service(self, uow: UnitOfWork):
-        return AnalyticsHistoryService(uow)
+        tr_day_history_service = TrainingDayHistoryService(uow)
+        ex_history_service = ExerciseHistoryService(uow)
+        return AnalyticsHistoryService(tr_day_history_service, ex_history_service)
 
     async def test_create_history(
         self,

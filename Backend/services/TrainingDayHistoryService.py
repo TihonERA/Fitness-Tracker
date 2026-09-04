@@ -34,6 +34,13 @@ class TrainingDayHistoryService(BaseService):
                 repo_get_func=uow.trainingdayhistory.get_tr_day_history,
             )
 
+    async def get_last_history(self, user_id: UUID) -> TrainingDayHistory:
+        async with self.uow as uow:
+            return await self._get_existing_instance(
+                identifier=user_id,
+                repo_get_func=uow.trainingdayhistory.get_last_history,
+            )
+
     async def get_all_tr_day_history(
         self, data: TrainingDayHistoryGetAllDTO
     ) -> Sequence[TrainingDayHistory]:
