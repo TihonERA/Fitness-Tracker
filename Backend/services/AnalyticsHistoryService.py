@@ -160,17 +160,17 @@ class AnalyticsHistoryService:
             data=new_ex_creation_data,
         )
 
-        difference = ExerciseDifference()
-
         if new_ex_history.exercise_id not in last_training_exercise_id_set:
-            return difference
+            return ExerciseDifference()
 
-        difference.exercise_id = new_ex_history.exercise_id
-        difference.sets_differences = self.get_sets_differences(
+        exercise_id = new_ex_history.exercise_id
+        sets_differences = self.get_sets_differences(
             last_ex_history.sets_history, new_ex_history.sets_history
         )
 
-        return difference
+        return ExerciseDifference(
+            exercise_id=exercise_id, sets_differences=sets_differences
+        )
 
     def compare_reps(
         self, first_reps: int | None, second_reps: int | None
