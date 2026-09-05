@@ -60,15 +60,8 @@ class AnalyticsHistoryService:
         except NotFound:
             return None
 
-    def check_exercises_is_not_none(
-        self, exercise1: ExerciseHistory | None, exercise2: ExerciseHistory | None
-    ) -> bool:
-        return all([exercise1, exercise2])
-
     def get_exercises_differences(
         self,
-        user_id: UUID,
-        new_tr_day_history_id: int,
         last_exercises_history: list[ExerciseHistory],
         new_exercises_history: list[ExerciseHistory],
     ) -> list[ExerciseDifference]:
@@ -79,8 +72,6 @@ class AnalyticsHistoryService:
         differences = [
             (
                 self.get_exercise_difference(
-                    user_id=user_id,
-                    training_day_history_id=new_tr_day_history_id,
                     last_ex_history=last_ex_history,
                     new_ex_history=new_ex_history,
                 )
@@ -124,8 +115,6 @@ class AnalyticsHistoryService:
             )
 
         differences = self.get_exercises_differences(
-            user_id=user_id,
-            new_tr_day_history_id=new_tr_day_history.id,
             last_exercises_history=last_tr_day_history.exercises_history,
             new_exercises_history=new_tr_day_history_exercises_history,
         )
@@ -141,8 +130,11 @@ class AnalyticsHistoryService:
         self,
         new_tr_day_history: TrainingDayHistory,
         last_tr_day_history: TrainingDayHistory | None = None,
-        differences: list[ExerciseDifference] = [],
+        differences: list[ExerciseDifference] | None = None,
     ) -> HistoryResponse:
+        if differences is None:
+            differences = []
+
         new_tr_day_history = (
             await self.tr_day_history_service.get_loaded_tr_day_history(
                 new_tr_day_history.id
@@ -173,8 +165,6 @@ class AnalyticsHistoryService:
 
     def get_exercise_difference(
         self,
-        user_id: UUID,
-        training_day_history_id: int,
         last_ex_history: ExerciseHistory,
         new_ex_history: ExerciseHistory,
     ) -> ExerciseDifference:
