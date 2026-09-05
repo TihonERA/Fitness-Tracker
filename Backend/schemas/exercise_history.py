@@ -6,7 +6,7 @@ from pydantic import BaseModel, RootModel
 from .base import BaseResponse, LimitInt, OptionalInt, SkipInt
 
 
-class SetsHistory(BaseModel):
+class SetsHistoryCreate(BaseModel):
     set: int | None = None
     reps: int | None = None
     weight: float | None = None
@@ -34,7 +34,7 @@ class ExerciseHistoryRelalationsResponse(ExerciseHistoryResponse):
 
 class ExerciseHistoryCreate(ExerciseHistoryBase):
     training_day_history_id: OptionalInt = None
-    sets_history: list[SetsHistory] = []
+    sets_history: list[SetsHistoryCreate] = []
 
 
 class ExerciseHistoryCreateDTO(ExerciseHistoryCreate):

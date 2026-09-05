@@ -10,7 +10,7 @@ from Backend.schemas.AnalyticsHistory import (
     HistoryResponse,
     SetsDifference,
 )
-from Backend.schemas.exercise_history import ExerciseHistoryCreate, SetsHistory
+from Backend.schemas.exercise_history import ExerciseHistoryCreate, SetsHistoryCreate
 from Backend.services.AnalyticsHistoryService import AnalyticsHistoryService
 from Backend.services.ExerciseHistoryService import ExerciseHistoryService
 from Backend.services.TrainingDayHistoryService import TrainingDayHistoryService
@@ -43,7 +43,7 @@ class TestAnalyticsHistoryService:
             exercises=[
                 ExerciseHistoryCreateNested(
                     exercise_id=exercise_id,
-                    sets_history=[SetsHistory(set=3, reps=10, weight=30)],
+                    sets_history=[SetsHistoryCreate(set=3, reps=10, weight=30)],
                 )
             ],
         )
@@ -93,7 +93,7 @@ class TestAnalyticsHistoryService:
             exercises=[
                 ExerciseHistoryCreateNested(
                     exercise_id=exercise_id,
-                    sets_history=[SetsHistory(set=3, reps=10, weight=30)],
+                    sets_history=[SetsHistoryCreate(set=3, reps=10, weight=30)],
                 )
             ],
         )
@@ -102,3 +102,77 @@ class TestAnalyticsHistoryService:
 
         assert history.last_training is None
         assert history.differences == []
+
+    async def test_create_history_less_sets_then_previous_training(
+        self, service: AnalyticsHistoryService, workout: Workout
+    ):
+        user_id = workout.user_id
+        day = workout.training_days[0]
+        day_name = day.name
+        day_id = day.id
+        exercises = day.day_exercises
+
+        data_last = CreateHistory(
+            day_name=day_name,
+            day_id=day_id,
+            exercises=[
+                ExerciseHistoryCreateNested(
+                    exercise_id=exercises[0].exercise_id,
+                    sets_history=[
+                        SetsHistoryCreate(set=1, reps=10, weight=20),
+                        SetsHistoryCreate(set=2, reps=10, weight=20),
+                        SetsHistoryCreate(set=3, reps=10, weight=20),
+                    ],
+                ),
+                ExerciseHistoryCreateNested(
+                    exercise_id=exercises[1].exercise_id,
+                    sets_history=[
+                        SetsHistoryCreate(set=1, reps=10, weight=20),
+                        SetsHistoryCreate(set=2, reps=10, weight=20),
+                        SetsHistoryCreate(set=3, reps=10, weight=20),
+                    ],
+                ),
+                ExerciseHistoryCreateNested(
+                    exercise_id=exercises[2].exercise_id,
+                    sets_history=[
+                        SetsHistoryCreate(set=1, reps=10, weight=20),
+                        SetsHistoryCreate(set=2, reps=10, weight=20),
+                        SetsHistoryCreate(set=3, reps=10, weight=20),
+                    ],
+                ),
+            ],
+        )
+
+        last_history = await service.create_history(user_id=user_id, data=data_last)
+
+        data_new = CreateHistory(
+            day_name=day_name,
+            day_id=day_id,
+            exercises=[
+                ExerciseHistoryCreateNested(
+                    exercise_id=exercises[0].exercise_id,
+                    sets_history=[
+                        SetsHistoryCreate(set=1, reps=15, weight=20),
+                        SetsHistoryCreate(set=2, reps=15, weight=20),
+                        SetsHistoryCreate(set=3, reps=15, weight=20),
+                    ],
+                ),
+                ExerciseHistoryCreateNested(
+                    exercise_id=exercises[1].exercise_id,
+                    sets_history=[
+                        SetsHistoryCreate(set=1, reps=15, weight=20),
+                        SetsHistoryCreate(set=2, reps=15, weight=20),
+                        SetsHistoryCreate(set=3, reps=15, weight=20),
+                    ],
+                ),
+                ExerciseHistoryCreateNested(
+                    exercise_id=exercises[2].exercise_id,
+                    sets_history=[
+                        SetsHistoryCreate(set=1, reps=15, weight=20),
+                    ],
+                ),
+            ],
+        )
+
+        new_history = await service.create_history(user_id=user_id, data=data_new)
+        print(new_history.model_dump()["differences"])

@@ -7,13 +7,13 @@ from Backend.schemas.base import BaseResponse, Str100
 from Backend.schemas.exercise_history import (
     ExerciseHistoryBase,
     ExerciseHistoryCreate,
-    SetsHistory,
+    SetsHistoryCreate,
 )
 from Backend.schemas.training_day_history import TrainingDayHistoryResponse
 
 
 class ExerciseHistoryCreateNested(ExerciseHistoryBase):
-    sets_history: list[SetsHistory] = []
+    sets_history: list[SetsHistoryCreate] = []
 
 
 class CreateHistory(BaseModel):

@@ -15,11 +15,11 @@ class ExerciseHistoryService(BaseService[ExerciseHistory]):
     def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
 
-    async def create_exercise_history(
-        self, data: ExerciseHistoryCreateDTO
-    ) -> ExerciseHistory:
+    async def create_bulk_exercise_history(
+        self, data: list[ExerciseHistoryCreateDTO]
+    ) -> list[ExerciseHistory]:
         async with self.uow as uow:
-            return await uow.exercisehistory.create_exercise_history(data)
+            return await uow.exercisehistory.create_bulk_exercise_history(data)
 
     async def get_exercise_history(self, history_id: int) -> ExerciseHistory:
         async with self.uow as uow:
