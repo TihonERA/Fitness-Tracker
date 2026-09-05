@@ -74,7 +74,10 @@ class TestAnalyticsHistoryService:
 
         history = await service.create_history(user_id=workout.user_id, data=data)
 
-        assert history.differences == []
+        exercise_difference = history.differences[0]
+        assert isinstance(exercise_difference, ExerciseDifference)
+        assert exercise_difference.exercise_id is None
+        assert exercise_difference.sets_differences == []
 
     async def test_create_history_without_last_history(
         self, service: AnalyticsHistoryService, workout: Workout
