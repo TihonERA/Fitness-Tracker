@@ -91,21 +91,22 @@ class AnalyticsHistoryService:
             ex.exercise_id for ex in last_tr_day_history.exercises_history
         }
 
-        get_exercise_difference_coroutines = [
-            self.get_exercise_difference(
-                user_id=user_id,
-                training_day_history_id=new_tr_day_history.id,
-                last_ex_history=last_ex_history,
-                new_ex_history=new_ex_history,
+        differences = [
+            (
+                self.get_exercise_difference(
+                    user_id=user_id,
+                    training_day_history_id=new_tr_day_history.id,
+                    last_ex_history=last_ex_history,
+                    new_ex_history=new_ex_history,
+                )
+                if new_ex_history.exercise_id in last_training_exercise_id_set
+                else ExerciseDifference()
             )
             for last_ex_history, new_ex_history in zip(
                 last_tr_day_history.exercises_history,
                 new_tr_day_history_exercises_history,
             )
-            if new_ex_history.exercise_id in last_training_exercise_id_set
         ]
-
-        differences = await asyncio.gather(*get_exercise_difference_coroutines)
 
         response = await self.make_history_response_and_load_new_training(
             new_tr_day_history=new_tr_day_history,
@@ -148,7 +149,7 @@ class AnalyticsHistoryService:
 
         return new
 
-    async def get_exercise_difference(
+    def get_exercise_difference(
         self,
         user_id: UUID,
         training_day_history_id: int,
