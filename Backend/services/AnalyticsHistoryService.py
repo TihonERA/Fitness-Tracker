@@ -3,8 +3,6 @@ from uuid import UUID
 
 import asyncio
 
-from alembic.command import current
-
 from Backend.models.exercise_history import ExerciseHistory
 from Backend.models.sets_history import SetsHistory
 from Backend.models.training_day_history import TrainingDayHistory
@@ -72,38 +70,42 @@ class AnalyticsHistoryService:
             tr_day_history_data
         )
 
-        if last_tr_day_history is None:
-            for new_ex_creation_data in data.exercises:
-                await self.create_new_history(
-                    user_id=user_id,
-                    training_day_history_id=new_tr_day_history.id,
-                    data=new_ex_creation_data,
-                )
+        create_new_history_coroutines = [
+            self.create_new_history(
+                user_id=user_id,
+                training_day_history_id=new_tr_day_history.id,
+                data=data,
+            )
+            for data in data.exercises
+        ]
+        new_tr_day_history_exercises_history = await asyncio.gather(
+            *create_new_history_coroutines
+        )
 
-            response = await self.make_history_response_and_load_new_training(
+        if last_tr_day_history is None:
+            return await self.make_history_response_and_load_new_training(
                 new_tr_day_history=new_tr_day_history
             )
-
-            return response
 
         last_training_exercise_id_set = {
             ex.exercise_id for ex in last_tr_day_history.exercises_history
         }
 
-        differences = await asyncio.gather(
-            *[
-                self.get_exercise_difference(
-                    user_id=user_id,
-                    training_day_history_id=new_tr_day_history.id,
-                    last_ex_history=last_ex_history,
-                    new_ex_creation_data=new_ex_creation_data,
-                    last_training_exercise_id_set=last_training_exercise_id_set,
-                )
-                for last_ex_history, new_ex_creation_data in zip(
-                    last_tr_day_history.exercises_history, data.exercises
-                )
-            ]
-        )
+        get_exercise_difference_coroutines = [
+            self.get_exercise_difference(
+                user_id=user_id,
+                training_day_history_id=new_tr_day_history.id,
+                last_ex_history=last_ex_history,
+                new_ex_history=new_ex_history,
+            )
+            for last_ex_history, new_ex_history in zip(
+                last_tr_day_history.exercises_history,
+                new_tr_day_history_exercises_history,
+            )
+            if new_ex_history.exercise_id in last_training_exercise_id_set
+        ]
+
+        differences = await asyncio.gather(*get_exercise_difference_coroutines)
 
         response = await self.make_history_response_and_load_new_training(
             new_tr_day_history=new_tr_day_history,
@@ -151,18 +153,8 @@ class AnalyticsHistoryService:
         user_id: UUID,
         training_day_history_id: int,
         last_ex_history: ExerciseHistory,
-        new_ex_creation_data: ExerciseHistoryCreateNested,
-        last_training_exercise_id_set: set[int],
+        new_ex_history: ExerciseHistory,
     ) -> ExerciseDifference:
-        new_ex_history = await self.create_new_history(
-            user_id=user_id,
-            training_day_history_id=training_day_history_id,
-            data=new_ex_creation_data,
-        )
-
-        if new_ex_history.exercise_id not in last_training_exercise_id_set:
-            return ExerciseDifference()
-
         exercise_id = new_ex_history.exercise_id
         sets_differences = self.get_sets_differences(
             last_ex_history.sets_history, new_ex_history.sets_history
@@ -172,26 +164,29 @@ class AnalyticsHistoryService:
             exercise_id=exercise_id, sets_differences=sets_differences
         )
 
-    def compare_reps(
-        self, first_reps: int | None, second_reps: int | None
-    ) -> int | None:
-        if first_reps is None or second_reps is None:
-            return None
-        return self.calc_diff_return_none_if_zero(first_reps, second_reps)
+    @overload
+    def compare_metrics(
+        self, first_metric: int | None, second_metric: int | None
+    ) -> int | None: ...
 
-    def compare_weight(
-        self, first_weight: float | None, second_weight: float | None
-    ) -> float | None:
-        if first_weight is None or second_weight is None:
+    @overload
+    def compare_metrics(
+        self, first_metric: float | None, second_metric: float | None
+    ) -> float | None: ...
+
+    def compare_metrics(
+        self, first_metric: int | float | None, second_metric: int | float | None
+    ) -> int | float | None:
+        if first_metric is None or second_metric is None:
             return None
-        return self.calc_diff_return_none_if_zero(first_weight, second_weight)
+        return self.calc_diff_return_none_if_zero(first_metric, second_metric)
 
     def compare_sets(
         self, first_set: SetsHistory, second_set: SetsHistory
     ) -> SetsDifference:
         return SetsDifference(
-            reps=self.compare_reps(first_set.reps, second_set.reps),
-            weight=self.compare_weight(first_set.weight, second_set.weight),
+            reps=self.compare_metrics(first_set.reps, second_set.reps),
+            weight=self.compare_metrics(first_set.weight, second_set.weight),
         )
 
     def get_sets_differences(
