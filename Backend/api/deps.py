@@ -8,14 +8,31 @@ from fastapi import Query
 
 from Backend.cache_proxies.DayExerciseCacheProxy import DayExerciseCacheProxy
 from Backend.cache_proxies.TrainingDayCacheProxy import TrainingDayCacheProxy
+from Backend.cache_proxies.TrainingDayHistoryCacheProxy import (
+    TrainingDayHistoryCacheProxy,
+)
 from Backend.cache_proxies.UserCacheProxy import UserCacheProxy
+from Backend.cache_proxies.invalidators.TrainingDayHistoryCacheInvalidator import (
+    TrainingDayHistoryCacheInvalidator,
+)
 from Backend.cache_proxies.invalidators.UserCacheInvalidator import UserCacheInvalidator
-from Backend.cache_proxies.invalidators.WorkoutCacheInvalidator import WorkoutCacheInvalidator
-from Backend.cache_proxies.key_formatters.UserCacheKeyFormatter import UserCacheKeyFormatter
+from Backend.cache_proxies.invalidators.WorkoutCacheInvalidator import (
+    WorkoutCacheInvalidator,
+)
+from Backend.cache_proxies.key_formatters.TrainingDayHistoryCacheKeyFormatter import (
+    TrainingDayHistoryCacheKeyFormatter,
+)
+from Backend.cache_proxies.key_formatters.UserCacheKeyFormatter import (
+    UserCacheKeyFormatter,
+)
 
 from Backend.cache_proxies.WorkoutCacheProxy import WorkoutCacheProxy
 
-from Backend.cache_proxies.key_formatters.WorkoutCacheKeyFormatter import WorkoutCacheKeyFormatter
+from Backend.cache_proxies.key_formatters.WorkoutCacheKeyFormatter import (
+    WorkoutCacheKeyFormatter,
+)
+from Backend.services.AnalyticsHistoryService import AnalyticsHistoryService
+from Backend.services.ExerciseHistoryService import ExerciseHistoryService
 from Backend.services.AuthService import AuthService
 from Backend.services.DayExerciseService import DayExerciseService
 from Backend.services.TrainingDayHistoryService import TrainingDayHistoryService
@@ -28,67 +45,93 @@ from Backend.services.WorkoutService import WorkoutService
 from Backend.core.database import async_session_factory
 from Backend.core.config import settings
 
+
 def get_redis():
-    return Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, decode_responses=True)
+    return Redis(
+        host=settings.REDIS_HOST, port=settings.REDIS_PORT, decode_responses=True
+    )
+
 
 async def get_uow():
     uow = UnitOfWork(session_maker=async_session_factory)
     return uow
 
-def get_user_proxy(
-    uow=Depends(get_uow),
-    redis=Depends(get_redis)
-) -> UserCacheProxy:
+
+def get_user_proxy(uow=Depends(get_uow), redis=Depends(get_redis)) -> UserCacheProxy:
     formatter = UserCacheKeyFormatter()
     invalidator = UserCacheInvalidator(formatter=formatter, redis=redis)
     service = UserService(uow)
-    return UserCacheProxy(service=service, redis=redis, formatter=formatter, invalidator=invalidator)
+    return UserCacheProxy(
+        service=service, redis=redis, formatter=formatter, invalidator=invalidator
+    )
+
+
 def get_workout_cache_formatter() -> WorkoutCacheKeyFormatter:
     return WorkoutCacheKeyFormatter()
 
+
 def get_workout_cache_invalidator(
-    redis=Depends(get_redis),
-    formatter=Depends(get_workout_cache_formatter)
+    redis=Depends(get_redis), formatter=Depends(get_workout_cache_formatter)
 ) -> WorkoutCacheInvalidator:
     return WorkoutCacheInvalidator(formatter=formatter, redis=redis)
+
 
 def get_workout_proxy(
     uow=Depends(get_uow),
     redis=Depends(get_redis),
     formatter=Depends(get_workout_cache_formatter),
-    invalidator=Depends(get_workout_cache_invalidator)
+    invalidator=Depends(get_workout_cache_invalidator),
 ) -> WorkoutCacheProxy:
     service = WorkoutService(uow)
-    return WorkoutCacheProxy(service=service, redis=redis, formatter=formatter, invalidator=invalidator)
+    return WorkoutCacheProxy(
+        service=service, redis=redis, formatter=formatter, invalidator=invalidator
+    )
+
 
 def get_training_day_proxy(
     uow=Depends(get_uow),
     redis=Depends(get_redis),
-    workout_invalidator=Depends(get_workout_cache_invalidator)
+    workout_invalidator=Depends(get_workout_cache_invalidator),
 ) -> TrainingDayCacheProxy:
     service = TrainingDayService(uow)
-    return TrainingDayCacheProxy(service=service, redis=redis, workout_invalidator=workout_invalidator)
+    return TrainingDayCacheProxy(
+        service=service, redis=redis, workout_invalidator=workout_invalidator
+    )
+
 
 def get_day_exercise_proxy(
     uow=Depends(get_uow),
     redis=Depends(get_redis),
-    workout_invalidator=Depends(get_workout_cache_invalidator)
+    workout_invalidator=Depends(get_workout_cache_invalidator),
 ) -> DayExerciseCacheProxy:
     service = DayExerciseService(uow)
-    return DayExerciseCacheProxy(service=service, redis=redis, workout_invalidator=workout_invalidator)
+    return DayExerciseCacheProxy(
+        service=service, redis=redis, workout_invalidator=workout_invalidator
+    )
+
 
 def get_auth_service(user_proxy=Depends(get_user_proxy)) -> AuthService:
     return AuthService(user_proxy=user_proxy)
 
-def get_tr_day_history_service(
-    uow=Depends(get_uow),
-    redis=Depends(get_redis)
-) -> TrainingDayHistoryService:
-    return TrainingDayHistoryService(uow=uow, redis=redis)
+
+def get_tr_day_history_proxy(
+    uow=Depends(get_uow), redis=Depends(get_redis)
+) -> TrainingDayHistoryCacheProxy:
+    formatter = TrainingDayHistoryCacheKeyFormatter()
+    invalidator = TrainingDayHistoryCacheInvalidator(redis, formatter)
+    tr_day_history_service = TrainingDayHistoryService(uow)
+    ex_history_service = ExerciseHistoryService(uow)
+    analytics_service = AnalyticsHistoryService(
+        tr_day_history_service, ex_history_service
+    )
+    return TrainingDayHistoryCacheProxy(
+        tr_day_history_service, analytics_service, redis, invalidator, formatter
+    )
+
 
 def get_current_user(
     access_token: str | bytes | None = Cookie(None),
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
 ) -> UUID:
     if access_token is None:
         raise HTTPException(status_code=401, detail="Not Authorized")
@@ -98,27 +141,32 @@ def get_current_user(
     except InvalidCredentials as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
+
 GetCurrentUserDepends = Annotated[UUID, Depends(get_current_user)]
+
 
 def get_workouts_filter(
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(gt=0, le=500)] = 50,
     user_id: Annotated[UUID | None, Query()] = None,
-    public: Annotated[bool | None, Query()] = None
+    public: Annotated[bool | None, Query()] = None,
 ) -> WorkoutGetAllFilter:
-    return WorkoutGetAllFilter(
-        skip=skip,
-        limit=limit,
-        user_id=user_id,
-        public=public
-    )
+    return WorkoutGetAllFilter(skip=skip, limit=limit, user_id=user_id, public=public)
+
 
 UserProxyDepends = Annotated[UserCacheProxy, Depends(get_user_proxy)]
 AuthServiceDepends = Annotated[AuthService, Depends(get_auth_service)]
 WorkoutProxyDepends = Annotated[WorkoutCacheProxy, Depends(get_workout_proxy)]
-TrainingDayProxyDepends = Annotated[TrainingDayCacheProxy, Depends(get_training_day_proxy)]
-DayExerciseProxyDepends = Annotated[DayExerciseCacheProxy, Depends(get_day_exercise_proxy)]
-TrDayHistoryServiceDepends = Annotated[TrainingDayHistoryService, Depends(get_tr_day_history_service)]
+TrainingDayProxyDepends = Annotated[
+    TrainingDayCacheProxy, Depends(get_training_day_proxy)
+]
+DayExerciseProxyDepends = Annotated[
+    DayExerciseCacheProxy, Depends(get_day_exercise_proxy)
+]
+TrDayHistoryProxyDepends = Annotated[
+    TrainingDayHistoryCacheProxy, Depends(get_tr_day_history_proxy)
+]
+
 
 UUIDPath = Annotated[UUID, Path()]
 IntPath = Annotated[int, Path()]

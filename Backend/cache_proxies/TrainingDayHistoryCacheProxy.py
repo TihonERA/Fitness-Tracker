@@ -18,6 +18,7 @@ from Backend.schemas.training_day_history import (
     TrainingDayHistoryGetAll,
     TrainingDayHistoryGetAllDTO,
     TrainingDayHistoryResponse,
+    TrainingDayRelationHistoryResponse,
 )
 from Backend.services.AnalyticsHistoryService import AnalyticsHistoryService
 from Backend.services.TrainingDayHistoryService import TrainingDayHistoryService
@@ -49,11 +50,12 @@ class TrainingDayHistoryCacheProxy(BaseCacheProxy[TrainingDayHistoryResponse]):
 
     async def get_loaded_tr_day_history(
         self, user_id: UUID, history_id: int
-    ) -> TrainingDayHistoryResponse:
+    ) -> TrainingDayRelationHistoryResponse:
         key = self.formatter.get_loaded_key(history_id)
 
         history = await self._wrap_cache(
             key=key,
+            response_model=TrainingDayRelationHistoryResponse,
             db_func=partial(self.tr_day_service.get_loaded_tr_day_history, history_id),
         )
 
