@@ -11,6 +11,7 @@ from Backend.cache_proxies.key_formatters.TrainingDayHistoryCacheKeyFormatter im
     TrainingDayHistoryCacheKeyFormatter,
 )
 from Backend.models.training_day_history import TrainingDayHistory
+from Backend.schemas.AnalyticsHistory import CreateHistory, HistoryResponse
 from Backend.schemas.training_day_history import (
     ListTrDayHistoryResponse,
     TrainingDayHistoryCreate,
@@ -18,30 +19,33 @@ from Backend.schemas.training_day_history import (
     TrainingDayHistoryGetAllDTO,
     TrainingDayHistoryResponse,
 )
+from Backend.services.AnalyticsHistoryService import AnalyticsHistoryService
 from Backend.services.TrainingDayHistoryService import TrainingDayHistoryService
 
 
 class TrainingDayHistoryCacheProxy(BaseCacheProxy[TrainingDayHistoryResponse]):
     def __init__(
         self,
-        service: TrainingDayHistoryService,
+        tr_day_service: TrainingDayHistoryService,
+        analytics_service: AnalyticsHistoryService,
         redis: Redis,
         invalidator: TrainingDayHistoryCacheInvalidator,
         formatter: TrainingDayHistoryCacheKeyFormatter,
     ) -> None:
-        self.service = service
+        self.tr_day_service = tr_day_service
+        self.analytics_service = analytics_service
         self.invalidator = invalidator
         self.formatter = formatter
         super().__init__(redis, TrainingDayHistoryResponse)
 
     async def create_history(
-        self, user_id: UUID, data: TrainingDayHistoryCreate
-    ) -> TrainingDayHistoryResponse:
-        history = await self.service.create_history(data)
+        self, user_id: UUID, data: CreateHistory
+    ) -> HistoryResponse:
+        history = await self.analytics_service.create_history(user_id, data)
 
         await self.invalidator.invalidate_get_all(user_id)
 
-        return self.scheme.model_validate(history)
+        return HistoryResponse.model_validate(history)
 
     async def get_loaded_tr_day_history(
         self, user_id: UUID, history_id: int
@@ -49,7 +53,8 @@ class TrainingDayHistoryCacheProxy(BaseCacheProxy[TrainingDayHistoryResponse]):
         key = self.formatter.get_loaded_key(history_id)
 
         history = await self._wrap_cache(
-            key=key, db_func=partial(self.service.get_loaded_tr_day_history, history_id)
+            key=key,
+            db_func=partial(self.tr_day_service.get_loaded_tr_day_history, history_id),
         )
 
         tag_key = self.formatter.get_tag_key(user_id)
@@ -71,13 +76,13 @@ class TrainingDayHistoryCacheProxy(BaseCacheProxy[TrainingDayHistoryResponse]):
         return await self._wrap_cache(
             key=key,
             response_model=ListTrDayHistoryResponse,
-            db_func=partial(self.service.get_all_tr_day_history, data_dto),
+            db_func=partial(self.tr_day_service.get_all_tr_day_history, data_dto),
         )
 
     async def delete_history(
         self, user_id: UUID, history_id: int
     ) -> TrainingDayHistoryResponse:
-        history = await self.service.delete_history(history_id)
+        history = await self.tr_day_service.delete_history(history_id)
 
         await self.invalidator.invalidate_all(user_id, history_id)
 

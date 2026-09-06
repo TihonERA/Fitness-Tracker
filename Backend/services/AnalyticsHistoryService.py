@@ -87,7 +87,7 @@ class AnalyticsHistoryService:
 
     async def create_history(
         self, user_id: UUID, data: CreateHistory
-    ) -> HistoryResponse:
+    ) -> dict[str, TrainingDayHistory | list[ExerciseDifference] | None]:
         tr_day_history_data = TrainingDayHistoryCreate(
             day_name=data.day_name, day_id=data.day_id
         )
@@ -130,7 +130,7 @@ class AnalyticsHistoryService:
         new_tr_day_history: TrainingDayHistory,
         last_tr_day_history: TrainingDayHistory | None = None,
         differences: list[ExerciseDifference] | None = None,
-    ) -> HistoryResponse:
+    ) -> dict[str, TrainingDayHistory | list[ExerciseDifference] | None]:
         if differences is None:
             differences = []
 
@@ -139,13 +139,11 @@ class AnalyticsHistoryService:
                 new_tr_day_history.id
             )
         )
-        return HistoryResponse.model_validate(
-            {
-                "last_training": last_tr_day_history,
-                "new_training": new_tr_day_history,
-                "differences": differences,
-            }
-        )
+        return {
+            "last_training": last_tr_day_history,
+            "new_training": new_tr_day_history,
+            "differences": differences,
+        }
 
     def create_new_histories_dto(
         self,
@@ -192,7 +190,6 @@ class AnalyticsHistoryService:
     ) -> int | float | None:
         if first_metric is None or second_metric is None:
             return None
-        print(first_metric, second_metric, first_metric - second_metric)
         return self.calc_diff_return_none_if_zero(first_metric, second_metric)
 
     def compare_sets(

@@ -9,7 +9,10 @@ from Backend.schemas.exercise_history import (
     ExerciseHistoryCreate,
     SetsHistoryCreate,
 )
-from Backend.schemas.training_day_history import TrainingDayHistoryResponse
+from Backend.schemas.training_day_history import (
+    TrainingDayHistoryResponse,
+    TrainingDayRelationHistoryResponse,
+)
 
 
 class ExerciseHistoryCreateNested(ExerciseHistoryBase):
@@ -33,6 +36,6 @@ class ExerciseDifference(BaseModel):
 
 
 class HistoryResponse(BaseResponse):
-    last_training: TrainingDayHistoryResponse | None = None
-    new_training: TrainingDayHistoryResponse
+    last_training: TrainingDayRelationHistoryResponse | None = None
+    new_training: TrainingDayRelationHistoryResponse
     differences: list[ExerciseDifference] = []

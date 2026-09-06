@@ -21,6 +21,9 @@ class TrainingDayHistoryResponse(BaseResponse, TrainingDayHistoryBase):
     id: int
     day_id: int
     created_at: datetime
+
+
+class TrainingDayRelationHistoryResponse(TrainingDayHistoryResponse):
     exercises_history: list[ExerciseHistoryRelalationsResponse] = []
 
 

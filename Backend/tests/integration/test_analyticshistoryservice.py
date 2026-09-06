@@ -50,10 +50,12 @@ class TestAnalyticsHistoryService:
 
         history = await service.create_history(user_id=workout.user_id, data=data)
 
-        assert isinstance(history, HistoryResponse)
-        assert history.differences != []
+        assert history["differences"] != []
 
-        exercise = history.differences[0]
+        exercises = history["differences"]
+        assert isinstance(exercises, list)
+
+        exercise = exercises[0]
         assert isinstance(exercise, ExerciseDifference)
 
         set_difference = exercise.sets_differences[0]
@@ -74,7 +76,10 @@ class TestAnalyticsHistoryService:
 
         history = await service.create_history(user_id=workout.user_id, data=data)
 
-        exercise_difference = history.differences[0]
+        exercise_differences = history["differences"]
+        assert isinstance(exercise_differences, list)
+
+        exercise_difference = exercise_differences[0]
         assert isinstance(exercise_difference, ExerciseDifference)
         assert exercise_difference.exercise_id is None
         assert exercise_difference.sets_differences == []
@@ -100,8 +105,8 @@ class TestAnalyticsHistoryService:
 
         history = await service.create_history(user_id=workout.user_id, data=data)
 
-        assert history.last_training is None
-        assert history.differences == []
+        assert history.get("last_training") is None
+        assert history.get("differences") == []
 
     async def test_create_history_less_sets_then_previous_training(
         self, service: AnalyticsHistoryService, workout: Workout
@@ -175,4 +180,3 @@ class TestAnalyticsHistoryService:
         )
 
         new_history = await service.create_history(user_id=user_id, data=data_new)
-        print(new_history.model_dump()["differences"])

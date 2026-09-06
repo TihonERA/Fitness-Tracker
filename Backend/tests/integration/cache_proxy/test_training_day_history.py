@@ -4,10 +4,13 @@ import pytest
 from redis.asyncio import Redis
 
 from Backend.models import training_day_history
+from Backend.schemas.AnalyticsHistory import CreateHistory
 from Backend.schemas.training_day_history import (
     TrainingDayHistoryCreate,
     TrainingDayHistoryGetAll,
 )
+from Backend.services.AnalyticsHistoryService import AnalyticsHistoryService
+from Backend.services.ExerciseHistoryService import ExerciseHistoryService
 from Backend.utils.uow import UnitOfWork
 
 from Backend.tests.integration.conftest import TrDayDatas, TrDayData
@@ -35,8 +38,18 @@ class TestTrainingDayHistoryCacheProxy:
     def proxy(self, uow: UnitOfWork, redis: Redis):
         formatter = TrainingDayHistoryCacheKeyFormatter()
         invalidator = TrainingDayHistoryCacheInvalidator(redis, formatter)
-        service = TrainingDayHistoryService(uow)
-        return TrainingDayHistoryCacheProxy(service, redis, invalidator, formatter)
+        tr_day_history_service = TrainingDayHistoryService(uow)
+        ex_history_service = ExerciseHistoryService(uow)
+        analytics_service = AnalyticsHistoryService(
+            tr_day_history_service, ex_history_service
+        )
+        return TrainingDayHistoryCacheProxy(
+            tr_day_service=tr_day_history_service,
+            analytics_service=analytics_service,
+            redis=redis,
+            invalidator=invalidator,
+            formatter=formatter,
+        )
 
     @pytest.fixture
     def get_training_day_history_version_key(self, redis: Redis):
@@ -111,7 +124,9 @@ class TestTrainingDayHistoryCacheProxy:
             data=TrainingDayHistoryGetAll(skip=0, limit=50),
         )
 
-        data = TrainingDayHistoryCreate(
+        assert len(await get_training_day_history_version_key()) == 0
+
+        data = CreateHistory(
             day_name="name", day_id=tr_history_datas.histories[0].day_id
         )
 
