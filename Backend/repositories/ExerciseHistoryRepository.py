@@ -56,6 +56,25 @@ class ExerciseHistoryRepository(SQLAlchemyAbstractRepository[ExerciseHistory]):
 
         return histories
 
+    async def create_exercise_history(
+        self, data: ExerciseHistoryCreateDTO
+    ) -> ExerciseHistory:
+        exercise_history = ExerciseHistory(
+            user_id=data.user_id,
+            exercise_id=data.exercise_id,
+            training_day_history_id=data.training_day_history_id,
+        )
+        exercise_history.sets_history = self._make_sets_history(data.sets_history)
+
+        try:
+            await self._add_and_refresh_instance(
+                exercise_history, attribute_names=["sets_history"]
+            )
+        except IntegrityError as e:
+            DBErrorHandler.handle_integrity_error(e)
+
+        return exercise_history
+
     async def get_exercise_history(self, history_id: int) -> ExerciseHistory | None:
         return await self.get_instance_by_id(
             id=history_id, options=[selectinload(ExerciseHistory.sets_history)]
