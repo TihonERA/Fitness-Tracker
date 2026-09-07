@@ -21,6 +21,12 @@ class ExerciseHistoryService(BaseService[ExerciseHistory]):
         async with self.uow as uow:
             return await uow.exercisehistory.create_bulk_exercise_history(data)
 
+    async def create_exercise_history(
+        self, data: ExerciseHistoryCreateDTO
+    ) -> ExerciseHistory:
+        async with self.uow as uow:
+            return await uow.exercisehistory.create_exercise_history(data)
+
     async def get_exercise_history(self, history_id: int) -> ExerciseHistory:
         async with self.uow as uow:
             return await self._get_existing_instance(
