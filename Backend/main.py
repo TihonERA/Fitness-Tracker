@@ -6,7 +6,7 @@ from Backend.api.handlers import (
     invalid_credentials_handler,
     not_found_handler,
 )
-from Backend.api.v1 import training_day_history
+from Backend.api.v1 import exercise_history, training_day_history
 from Backend.schemas.base import TaskResponse
 from .api.v1 import workout, auth, user, training_day, day_exercise
 from .core.config import settings
@@ -31,6 +31,7 @@ app.include_router(user.router)
 app.include_router(training_day.router)
 app.include_router(day_exercise.router)
 app.include_router(training_day_history.router)
+app.include_router(exercise_history.router)
 
 app.add_exception_handler(NotFound, not_found_handler)
 app.add_exception_handler(InvalidCredentials, invalid_credentials_handler)

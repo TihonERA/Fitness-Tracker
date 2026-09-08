@@ -14,7 +14,7 @@ from Backend.schemas.exercise_history import (
 router = APIRouter(prefix="/exercise_history", tags=["ExerciseHistory Table Endpoints"])
 
 
-@router.get("all")
+@router.get("/all")
 async def get_all_exercise_history(
     user_id: GetCurrentUserDepends,
     data: Annotated[ExerciseHistoryGetAll, Query()],
@@ -23,7 +23,7 @@ async def get_all_exercise_history(
     return await proxy.get_all_exercise_history(user_id, data)
 
 
-@router.get("/{exercise_history_id}")
+@router.get("/{history_id}")
 async def get_exercise_history(
     user_id: GetCurrentUserDepends, history_id: IntPath, proxy: ExHistoryProxyDepends
 ) -> ExerciseHistoryRelalationsResponse:
@@ -39,7 +39,7 @@ async def create_exercise_history(
     return await proxy.create_exercise_history(user_id, data)
 
 
-@router.delete("/{exercise_history_id}")
+@router.delete("/{history_id}")
 async def delete_history(
     user_id: GetCurrentUserDepends, history_id: IntPath, proxy: ExHistoryProxyDepends
 ) -> ExerciseHistoryResponse:

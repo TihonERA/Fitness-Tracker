@@ -7,21 +7,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 
-
 if TYPE_CHECKING:
     from .exercise_history import ExerciseHistory
+
 
 class SetsHistory(Base):
     __tablename__ = "setshistory"
 
-    id: Mapped[int] = mapped_column(
-        primary_key=True,
-        autoincrement=True
-    )
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     exercise_history_id: Mapped[int] = mapped_column(
-        ForeignKey("exercisehistory.id"),
-        index=True,
-        nullable=False
+        ForeignKey("exercisehistory.id", ondelete="CASCADE"), index=True, nullable=False
     )
     set: Mapped[int | None] = mapped_column(nullable=True)
     reps: Mapped[int | None] = mapped_column(nullable=True)
