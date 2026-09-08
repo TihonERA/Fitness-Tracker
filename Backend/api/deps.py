@@ -7,17 +7,24 @@ from redis.asyncio import Redis
 from fastapi import Query
 
 from Backend.cache_proxies.DayExerciseCacheProxy import DayExerciseCacheProxy
+from Backend.cache_proxies.ExerciseHistoryCacheProxy import ExerciseHistoryCacheProxy
 from Backend.cache_proxies.TrainingDayCacheProxy import TrainingDayCacheProxy
 from Backend.cache_proxies.TrainingDayHistoryCacheProxy import (
     TrainingDayHistoryCacheProxy,
 )
 from Backend.cache_proxies.UserCacheProxy import UserCacheProxy
+from Backend.cache_proxies.invalidators.ExerciseHistoryCacheInvalidator import (
+    ExerciseHistoryCacheInvalidator,
+)
 from Backend.cache_proxies.invalidators.TrainingDayHistoryCacheInvalidator import (
     TrainingDayHistoryCacheInvalidator,
 )
 from Backend.cache_proxies.invalidators.UserCacheInvalidator import UserCacheInvalidator
 from Backend.cache_proxies.invalidators.WorkoutCacheInvalidator import (
     WorkoutCacheInvalidator,
+)
+from Backend.cache_proxies.key_formatters.ExerciseHistoryCacheKeyFormatter import (
+    ExerciseHistoryCacheKeyFormatter,
 )
 from Backend.cache_proxies.key_formatters.TrainingDayHistoryCacheKeyFormatter import (
     TrainingDayHistoryCacheKeyFormatter,
@@ -129,6 +136,20 @@ def get_tr_day_history_proxy(
     )
 
 
+def get_exercise_history_proxy(
+    uow=Depends(get_uow), redis=Depends(get_redis)
+) -> ExerciseHistoryCacheProxy:
+    formatter = ExerciseHistoryCacheKeyFormatter()
+    invalidator = ExerciseHistoryCacheInvalidator(redis, formatter)
+    exercise_history_service = ExerciseHistoryService(uow)
+    return ExerciseHistoryCacheProxy(
+        service=exercise_history_service,
+        redis=redis,
+        invalidator=invalidator,
+        formatter=formatter,
+    )
+
+
 def get_current_user(
     access_token: str | bytes | None = Cookie(None),
     auth_service: AuthService = Depends(get_auth_service),
@@ -165,6 +186,9 @@ DayExerciseProxyDepends = Annotated[
 ]
 TrDayHistoryProxyDepends = Annotated[
     TrainingDayHistoryCacheProxy, Depends(get_tr_day_history_proxy)
+]
+ExHistoryProxyDepends = Annotated[
+    ExerciseHistoryCacheProxy, Depends(get_exercise_history_proxy)
 ]
 
 
