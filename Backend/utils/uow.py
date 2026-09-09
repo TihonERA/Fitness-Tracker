@@ -1,21 +1,25 @@
-from types import TracebackType 
+from types import TracebackType
 from typing import Any, Optional, Sequence, Type
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from Backend.models.trainingday import TrainingDay
+from Backend.repositories.MuscleRepository import MuscleRepository
 from Backend.repositories.DayExerciseRepository import DayExerciseRepository
 from Backend.repositories.ExerciseHistoryRepository import ExerciseHistoryRepository
-from Backend.repositories.TrainingDayHistoryRepository import TrainingDayHistoryRepository
+from Backend.repositories.TrainingDayHistoryRepository import (
+    TrainingDayHistoryRepository,
+)
 from Backend.repositories.TrainingDayRepository import TrainingDayRepository
 from Backend.repositories.UserRepository import UserRepository
 from Backend.repositories.WorkoutRepository import WorkoutRepository
+
 
 class UnitOfWork:
     def __init__(self, session_maker: async_sessionmaker[AsyncSession]):
         self.session_maker = session_maker
 
-    async def __aenter__(self) -> "UnitOfWork": 
+    async def __aenter__(self) -> "UnitOfWork":
         self.session = self.session_maker()
 
         self.user = UserRepository(session=self.session)
@@ -23,7 +27,8 @@ class UnitOfWork:
         self.trainingday = TrainingDayRepository(session=self.session)
         self.trainingdayhistory = TrainingDayHistoryRepository(session=self.session)
         self.dayexercise = DayExerciseRepository(session=self.session)
-        self.exercisehistory = ExerciseHistoryRepository(self.session)
+        self.exercisehistory = ExerciseHistoryRepository(session=self.session)
+        self.musclerepository = MuscleRepository(session=self.session)
 
         return self
 
@@ -31,7 +36,7 @@ class UnitOfWork:
         self,
         exc_type: Optional[Type[BaseException]],
         exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType]
+        exc_tb: Optional[TracebackType],
     ) -> None:
         try:
             if exc_type is not None:
