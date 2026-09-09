@@ -1,6 +1,6 @@
-from typing import Sequence
+from typing import Sequence, Tuple
 
-from sqlalchemy import select
+from sqlalchemy import literal_column, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from Backend.models.dayexercise import DayExercise
@@ -17,7 +17,7 @@ class MuscleRepository(SQLAlchemyAbstractRepository[Muscle]):
     def __init__(self, session: AsyncSession):
         super().__init__(session, Muscle)
 
-    async def get_all(self) -> Sequence[str]:
+    async def get_all_muscles(self) -> Sequence[str]:
         stmt = select(Muscle.name)
 
         result = await self.execute(stmt)
@@ -25,7 +25,7 @@ class MuscleRepository(SQLAlchemyAbstractRepository[Muscle]):
 
     async def get_all_trained_muscles_from_workout(
         self, workout_id: int
-    ) -> Sequence[tuple[str, int]]:
+    ) -> Sequence[dict]:
         stmt = (
             select(Exercise.muscle_activation)
             .join(Exercise.day_exercises)
@@ -34,4 +34,4 @@ class MuscleRepository(SQLAlchemyAbstractRepository[Muscle]):
         )
 
         result = await self.execute(stmt)
-        return result.tuples().all()
+        return result.scalars().all()

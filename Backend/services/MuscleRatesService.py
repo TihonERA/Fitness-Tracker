@@ -1,5 +1,7 @@
 from uuid import UUID
 
+from sqlalchemy import values
+
 from Backend.utils.uow import UnitOfWork
 from Backend.services.BaseService import BaseService
 
@@ -17,23 +19,28 @@ class MuscleRatesService(BaseService):
         else:
             return "normalized"
 
+    async def _get_dict_muscle_list(self) -> dict[str, int]:
+        muscles_list = await self.uow.musclerepository.get_all_muscles()
+        return dict.fromkeys(muscles_list, 0)
+
     async def get_muscle_distribution_list(
         self, user_id: UUID, workout_id: int
     ) -> dict:
-        async with self.uow as uow:
-            all_muscles = {muscle: 0 for muscle in await uow.musclerepository.get_all()}
+        async with self.uow:
+            all_muscles = await self._get_dict_muscle_list()
 
-            all_trained_muscles_unfiltered = (
-                await uow.musclerepository.get_all_trained_muscles_from_workout(
+            all_trained_muscles_unfiltered = [
+                items
+                for data in await self.uow.musclerepository.get_all_trained_muscles_from_workout(
                     workout_id
                 )
-            )
+                for items in data.items()
+            ]
 
-            for name, score in all_trained_muscles_unfiltered:
-                if name in all_muscles:
-                    all_muscles[name] += score
-                else:
-                    all_muscles[name] = score
+            all_muscles = {
+                name: all_muscles[name] + score
+                for name, score in all_trained_muscles_unfiltered
+            }
 
             result = {
                 name: self.get_muscle_status(score)
