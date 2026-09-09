@@ -22,3 +22,4 @@ class TestMuscleRatesService:
         )
 
         assert isinstance(muscle_distribution_list, dict)
+        assert len(muscle_distribution_list) == 15
