@@ -4,18 +4,19 @@ from typing import Any, Optional, Sequence, Type
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from Backend.models.trainingday import TrainingDay
-from Backend.repositories.MuscleRepository import MuscleRepository
-from Backend.repositories.DayExerciseRepository import DayExerciseRepository
-from Backend.repositories.ExerciseHistoryRepository import ExerciseHistoryRepository
-from Backend.repositories.TrainingDayHistoryRepository import (
+from Backend.infrastructure.MuscleRepository import MuscleRepository
+from Backend.infrastructure.DayExerciseRepository import DayExerciseRepository
+from Backend.infrastructure.ExerciseHistoryRepository import ExerciseHistoryRepository
+from Backend.infrastructure.TrainingDayHistoryRepository import (
     TrainingDayHistoryRepository,
 )
-from Backend.repositories.TrainingDayRepository import TrainingDayRepository
-from Backend.repositories.UserRepository import UserRepository
-from Backend.repositories.WorkoutRepository import WorkoutRepository
+from Backend.core.interfaces.uow import BaseUOWInterface
+from Backend.infrastructure.TrainingDayRepository import TrainingDayRepository
+from Backend.infrastructure.UserRepository import UserRepository
+from Backend.infrastructure.WorkoutRepository import WorkoutRepository
 
 
-class UnitOfWork:
+class UnitOfWork(BaseUOWInterface):
     def __init__(self, session_maker: async_sessionmaker[AsyncSession]):
         self.session_maker = session_maker
 
