@@ -28,22 +28,6 @@ class BaseRepository[ModelT: Base]:
             await self.refresh(instance)
         return instance
 
-    async def get_instance_for_update(self, id: int | UUID) -> ModelT | None:
-        stmt = select(self.model).where(self.pk_column == id).with_for_update()
-        result = await self.execute(stmt)
-        return result.scalar_one_or_none()
-
-    async def update_instance(self, instance: ModelT, data: BaseModel) -> ModelT:
-        data_dump = data.model_dump(exclude_unset=True)
-        try:
-            for key, value in data_dump.items():
-                setattr(instance, key, value)
-            await self.flush()
-        except IntegrityError as e:
-            DBErrorHandler.handle_integrity_error(e=e)
-
-        return instance
-
     async def delete_by_id(self, id: int | UUID) -> None:
         stmt = delete(self.model).where(self.pk_column == id)
         result = await self.execute(stmt)

@@ -16,7 +16,7 @@ from Backend.models.base import Base
 class BaseReadRepository[ModelT: Base](BaseRepository[ModelT]):
     def __init__(self, session: AsyncSession, model: type[ModelT]) -> None:
         self.model = model
-        self.pk_column = inspect(self.model).columns.primary_key[0]
+        self.pk_column = inspect(self.model).primary_key[0]
         super().__init__(session)
 
     # Метод - конструктор, для создания специфических селект запросов
