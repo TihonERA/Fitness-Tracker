@@ -28,10 +28,6 @@ class BaseRepository[ModelT: Base]:
             await self.refresh(instance)
         return instance
 
-    async def delete_by_id(self, id: int | UUID) -> None:
-        stmt = delete(self.model).where(self.pk_column == id)
-        result = await self.execute(stmt)
-
     def add(self, instance: object, **kwargs) -> None:
         self.session.add(instance, **kwargs)
 

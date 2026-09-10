@@ -3,6 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from Backend.infrastructure.base_repository_components.base_create_repository import (
     BaseCreateRepository,
 )
+from Backend.infrastructure.base_repository_components.base_delete_repository import (
+    BaseDeleteRepository,
+)
 from Backend.infrastructure.base_repository_components.base_update_repository import (
     BaseUpdateRepository,
 )
@@ -28,6 +31,7 @@ class WorkoutRepository(
     BaseCreateRepository[Workout],
     BaseReadRepository[Workout],
     BaseUpdateRepository[Workout],
+    BaseDeleteRepository[Workout],
 ):
 
     def __init__(self, session: AsyncSession):
