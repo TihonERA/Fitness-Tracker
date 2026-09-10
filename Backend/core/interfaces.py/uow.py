@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from types import TracebackType
 from typing import Optional, Type
 
-from Backend.utils.uow import UnitOfWork
+from Backend.infrastructure.uow import UnitOfWork
 
 
 class BaseUOWInterface(ABC):

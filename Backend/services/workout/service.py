@@ -2,7 +2,7 @@ from typing import Sequence
 
 from Backend.services.BaseService import BaseService
 
-from Backend.utils.uow import UnitOfWork
+from Backend.services.workout.interfaces import WorkoutUOWInterface
 from Backend.utils.exceptions import (
     Forbidden,
     InternalServerError,
@@ -27,7 +27,7 @@ from uuid import UUID
 
 class WorkoutService(BaseService[Workout]):
 
-    def __init__(self, uow: UnitOfWork) -> None:
+    def __init__(self, uow: WorkoutUOWInterface) -> None:
         super().__init__(uow=uow)
 
     async def create_workout(self, user_id: UUID, data: WorkoutCreate) -> Workout:

@@ -14,17 +14,21 @@ from Backend.core.interfaces.uow import BaseUOWInterface
 from Backend.infrastructure.TrainingDayRepository import TrainingDayRepository
 from Backend.infrastructure.UserRepository import UserRepository
 from Backend.infrastructure.WorkoutRepository import WorkoutRepository
+from Backend.services.workout.interfaces import WorkoutUOWInterface
 
 
-class UnitOfWork(BaseUOWInterface):
+class UnitOfWork(BaseUOWInterface, WorkoutUOWInterface):
     def __init__(self, session_maker: async_sessionmaker[AsyncSession]):
         self.session_maker = session_maker
+
+    @property
+    def workout(self) -> WorkoutRepository:
+        return WorkoutRepository(self.session)
 
     async def __aenter__(self) -> "UnitOfWork":
         self.session = self.session_maker()
 
         self.user = UserRepository(session=self.session)
-        self.workout = WorkoutRepository(session=self.session)
         self.trainingday = TrainingDayRepository(session=self.session)
         self.trainingdayhistory = TrainingDayHistoryRepository(session=self.session)
         self.dayexercise = DayExerciseRepository(session=self.session)
