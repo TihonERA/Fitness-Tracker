@@ -38,7 +38,7 @@ class WorkoutRepository(
         super().__init__(session, Workout)
 
     async def get_loaded(self, id: int) -> Workout | None:
-        return await self.get_instance_by_column(
+        return await self._get_instance_by_column(
             column=Workout.id,
             search_value=id,
             options=[

@@ -20,7 +20,7 @@ class BaseReadRepository[ModelT: Base](BaseRepository[ModelT]):
         super().__init__(session)
 
     # Метод - конструктор, для создания специфических селект запросов
-    async def get_instance_by_column(
+    async def _get_instance_by_column(
         self,
         column: InstrumentedAttribute | ColumnElement,
         search_value: int | UUID | str,
@@ -28,7 +28,12 @@ class BaseReadRepository[ModelT: Base](BaseRepository[ModelT]):
     ) -> ModelT | None:
         stmt = select(self.model).where(column == search_value)
 
+        if options:
+            stmt.options(*options)
+
         return await self._scalar_one_or_none(stmt)
 
     async def get(self, id: int | UUID) -> ModelT | None:
-        return await self.get_instance_by_column(column=self.pk_column, search_value=id)
+        return await self._get_instance_by_column(
+            column=self.pk_column, search_value=id
+        )

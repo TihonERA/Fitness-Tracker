@@ -1,17 +1,26 @@
 from abc import ABC, abstractmethod
 
+from Backend.core.interfaces.base_repository_interfaces import (
+    BaseCreateRepositoryInterface,
+    BaseDeleteRepositoryInterface,
+    BaseReadRepositoryInterface,
+    BaseUpdateRepositoryInterface,
+)
 from Backend.models.workout import Workout
 
 from Backend.schemas.workout import WorkoutGetAllFilterDTO
 
 from Backend.core.interfaces.uow import BaseUOWInterface
 
-from Backend.infrastructure.WorkoutRepository import WorkoutRepository
-
 from typing import Sequence
 
 
-class WorkoutRepositoryInterface(ABC):
+class WorkoutRepositoryInterface(
+    BaseCreateRepositoryInterface[Workout],
+    BaseReadRepositoryInterface[Workout],
+    BaseUpdateRepositoryInterface[Workout],
+    BaseDeleteRepositoryInterface[Workout],
+):
     @abstractmethod
     async def get_loaded(self, id: int) -> Workout | None:
         pass
