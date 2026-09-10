@@ -2,7 +2,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from Backend.schemas.workout import WorkoutGetAllFilterDTO
 from Backend.services.workout.interfaces import WorkoutRepositoryInterface
-from .SqlAlchemyAbstractRepository import SQLAlchemyAbstractRepository
+from Backend.infrastructure.base_repository_components.base_read_repository import (
+    BaseReadRepository,
+)
 from Backend.models.workout import Workout
 from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy import and_, select
@@ -15,16 +17,15 @@ from typing import Sequence, Any
 from uuid import UUID
 
 
-class WorkoutRepository(
-    WorkoutRepositoryInterface, SQLAlchemyAbstractRepository[Workout]
-):
+class WorkoutRepository(WorkoutRepositoryInterface, BaseReadRepository[Workout]):
 
     def __init__(self, session: AsyncSession):
         super().__init__(session, Workout)
 
-    async def get_workout(self, workout_id: int) -> Workout | None:
-        return await self.get_instance_by_id(
-            id=workout_id,
+    async def get_loaded(self, id: int) -> Workout | None:
+        return await self.get_instance_by_column(
+            column=Workout.id,
+            search_value=id,
             options=[
                 selectinload(Workout.training_days).selectinload(
                     TrainingDay.day_exercises
@@ -32,7 +33,7 @@ class WorkoutRepository(
             ],
         )
 
-    async def get_all_workouts(self, data: WorkoutGetAllFilterDTO) -> Sequence[Workout]:
+    async def get_all(self, data: WorkoutGetAllFilterDTO) -> Sequence[Workout]:
         stmt = select(Workout)
         if data.target_user_id:
             stmt = stmt.where(

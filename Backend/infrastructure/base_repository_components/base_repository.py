@@ -10,15 +10,12 @@ from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.orm.interfaces import ORMOption
 
 from Backend.utils.exceptions import DBErrorHandler, DBSchemaMismatchError
-from ..models.base import ModelT
+from Backend.models.base import Base, ModelT
 
 
-class SQLAlchemyAbstractRepository(Generic[ModelT]):
-
-    def __init__(self, session: AsyncSession, model: type[ModelT]):
+class BaseRepository[ModelT: Base]:
+    def __init__(self, session: AsyncSession):
         self.session = session
-        self.model = model
-        self.pk_column: ColumnElement = inspect(self.model).primary_key[0]
 
     async def _add_and_refresh_instance(
         self, instance: ModelT, attribute_names: Sequence[str] | None = None
@@ -86,6 +83,10 @@ class SQLAlchemyAbstractRepository(Generic[ModelT]):
 
     async def execute(self, stmt, **kwargs):
         return await self.session.execute(stmt, **kwargs)
+
+    async def _scalar_one_or_none(self, stmt):
+        result = await self.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def flush(self, instance: Sequence[Any] | None = None) -> None:
         await self.session.flush(instance)

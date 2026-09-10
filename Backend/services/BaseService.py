@@ -1,28 +1,28 @@
+from abc import abstractmethod
 from uuid import UUID
 
 from pydantic import BaseModel
-from pydantic.functional_validators import ModelAfterValidator
-from sqlalchemy.schema import Identity
 
 from Backend.models.base import Base, ModelT
 from Backend.models.user import User
-from Backend.repositories import SqlAlchemyAbstractRepository
 from Backend.utils.exceptions import Forbidden, NotFound
 
-from ..utils.uow import UnitOfWork
+from Backend.core.interfaces.uow import BaseUOWInterface
 
 from typing import Any, Awaitable, Callable, Coroutine, Sequence, TypeGuard, TypeVar
 
-from Backend.repositories.SqlAlchemyAbstractRepository import (
+from Backend.infrastructure.SqlAlchemyAbstractRepository import (
     SQLAlchemyAbstractRepository,
 )
 
-from redis.asyncio import Redis
-
 
 class BaseService[ModelT: Base]:
-    def __init__(self, uow: UnitOfWork) -> None:
+    def __init__(self, uow: BaseUOWInterface) -> None:
         self.uow = uow
+
+    @abstractmethod
+    def repository(self) -> None:
+        pass
 
     async def _get_existing_instance(
         self,

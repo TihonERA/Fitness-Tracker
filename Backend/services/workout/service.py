@@ -26,7 +26,6 @@ from uuid import UUID
 
 
 class WorkoutService(BaseService[Workout]):
-
     def __init__(self, uow: WorkoutUOWInterface) -> None:
         super().__init__(uow=uow)
 
