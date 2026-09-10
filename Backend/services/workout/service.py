@@ -1,4 +1,5 @@
 from typing import Sequence
+
 from Backend.services.BaseService import BaseService
 
 from Backend.utils.uow import UnitOfWork
@@ -9,7 +10,7 @@ from Backend.utils.exceptions import (
     DBErrorHandler,
 )
 
-from ..schemas.workout import (
+from Backend.schemas.workout import (
     WorkoutCreate,
     WorkoutCreateDTO,
     WorkoutGetAllFilter,
@@ -19,7 +20,7 @@ from ..schemas.workout import (
     WorkoutUpdate,
 )
 
-from ..models.workout import Workout
+from Backend.models.workout import Workout
 
 from uuid import UUID
 
