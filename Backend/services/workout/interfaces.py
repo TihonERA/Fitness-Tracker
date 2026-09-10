@@ -13,15 +13,15 @@ from typing import Sequence
 
 class WorkoutRepositoryInterface(ABC):
     @abstractmethod
-    async def get_workout(self, workout_id: int) -> Workout | None:
+    async def get_loaded(self, id: int) -> Workout | None:
         pass
 
     @abstractmethod
-    async def get_all_workouts(self, data: WorkoutGetAllFilterDTO) -> Sequence[Workout]:
+    async def get_all(self, data: WorkoutGetAllFilterDTO) -> Sequence[Workout]:
         pass
 
 
-class WorkoutUOWInterface(ABC, BaseUOWInterface):
+class WorkoutUOWInterface(BaseUOWInterface):
     @property
     @abstractmethod
     def workout(self) -> WorkoutRepositoryInterface:

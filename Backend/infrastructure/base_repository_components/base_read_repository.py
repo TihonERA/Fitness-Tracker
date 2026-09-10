@@ -13,11 +13,11 @@ from sqlalchemy.orm.interfaces import ORMOption
 from Backend.models.base import Base
 
 
-class BaseReadRepository[ModelT: Base](BaseRepository):
+class BaseReadRepository[ModelT: Base](BaseRepository[ModelT]):
     def __init__(self, session: AsyncSession, model: type[ModelT]) -> None:
-        self.session = session
         self.model = model
         self.pk_column = inspect(self.model).columns.primary_key[0]
+        super().__init__(session)
 
     # Метод - конструктор, для создания специфических селект запросов
     async def get_instance_by_column(

@@ -7,11 +7,11 @@ from Backend.infrastructure.uow import UnitOfWork
 
 class BaseUOWInterface(ABC):
     @abstractmethod
-    def __aenter__(self) -> "UnitOfWork":
+    async def __aenter__(self) -> "UnitOfWork":
         pass
 
     @abstractmethod
-    def __aexit__(
+    async def __aexit__(
         self,
         exc_type: Optional[Type[BaseException]],
         exc_val: Optional[BaseException],

@@ -32,7 +32,7 @@ class WorkoutService(BaseService[Workout]):
     async def create_workout(self, user_id: UUID, data: WorkoutCreate) -> Workout:
         async with self.uow as uow:
             data_dto = WorkoutCreateDTO(**data.model_dump(), user_id=user_id)
-            return await uow.workout.create_instance(data_dto)
+            return await uow.workout.create(data_dto)
 
     async def get_loaded_workout(
         self, workout_id: int, user_id: UUID
@@ -41,7 +41,7 @@ class WorkoutService(BaseService[Workout]):
             return await self._get_instance_with_access(
                 identifier=workout_id,
                 user_id=user_id,
-                repo_get_func=uow.workout.get_workout,
+                repo_get_func=uow.workout.get_loaded,
             )
 
     async def get_all_workouts(
@@ -50,7 +50,7 @@ class WorkoutService(BaseService[Workout]):
     ) -> Sequence[Workout]:
         async with self.uow as uow:
             return await self.get_all_instances(
-                data=data, repo_get_all_func=uow.workout.get_all_workouts
+                data=data, repo_get_all_func=uow.workout.get_all
             )
 
     async def update_workout(

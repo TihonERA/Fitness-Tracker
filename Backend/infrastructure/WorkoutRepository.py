@@ -1,5 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from Backend.infrastructure.base_repository_components.base_create_repository import (
+    BaseCreateRepository,
+)
 from Backend.schemas.workout import WorkoutGetAllFilterDTO
 from Backend.services.workout.interfaces import WorkoutRepositoryInterface
 from Backend.infrastructure.base_repository_components.base_read_repository import (
@@ -17,7 +20,11 @@ from typing import Sequence, Any
 from uuid import UUID
 
 
-class WorkoutRepository(WorkoutRepositoryInterface, BaseReadRepository[Workout]):
+class WorkoutRepository(
+    WorkoutRepositoryInterface,
+    BaseReadRepository[Workout],
+    BaseCreateRepository[Workout],
+):
 
     def __init__(self, session: AsyncSession):
         super().__init__(session, Workout)
