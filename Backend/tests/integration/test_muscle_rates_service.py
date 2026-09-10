@@ -15,11 +15,19 @@ class TestMuscleRatesService:
     async def test_get_muscle_distribution_list(
         self, service: MuscleRatesService, workout: Workout
     ):
-        user_id = workout.user_id
-
         muscle_distribution_list = await service.get_muscle_distribution_list(
-            user_id, workout.id
+            workout.id
         )
 
         assert isinstance(muscle_distribution_list, dict)
         assert len(muscle_distribution_list) == 15
+
+    async def test_get_muscle_antagonists_statuses(
+        self, service: MuscleRatesService, workout: Workout
+    ):
+        muscle_antagonists_statuses = await service.get_muscle_antagonists_statuses(
+            workout.id
+        )
+
+        assert isinstance(muscle_antagonists_statuses, list)
+        assert len(muscle_antagonists_statuses) == 14
