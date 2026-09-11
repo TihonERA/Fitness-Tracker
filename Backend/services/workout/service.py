@@ -1,9 +1,6 @@
 from typing import Sequence
 
-from Backend.services.base_service_components.base_read_authorized_service import (
-    BaseReadAuthorizedService,
-)
-from Backend.services.base_service_components.read_components import (
+from Backend.services.base_service_components.read_components.mixins import (
     ReadRelationAuthorizedService,
 )
 from Backend.services.workout.interfaces import (
@@ -33,10 +30,10 @@ from uuid import UUID
 
 
 class WorkoutService(
-    ReadRelationAuthorizedService[Workout, WorkoutRepositoryInterface]
+    ReadRelationAuthorizedService[
+        Workout, WorkoutRepositoryInterface, WorkoutUOWInterface
+    ]
 ):
-    uow: WorkoutUOWInterface
-
     def __init__(self, uow: WorkoutUOWInterface) -> None:
         super().__init__(uow=uow)
 

@@ -11,13 +11,9 @@ from Backend.core.interfaces.uow import BaseUOWInterface
 
 from typing import Any, Awaitable, Callable, Coroutine, Sequence, TypeGuard, TypeVar
 
-from Backend.infrastructure.SqlAlchemyAbstractRepository import (
-    SQLAlchemyAbstractRepository,
-)
 
-
-class BaseService[ModelT, RepoT]:
-    def __init__(self, uow: BaseUOWInterface) -> None:
+class BaseService[ModelT: Base, RepoT, UowT: BaseUOWInterface]:
+    def __init__(self, uow: UowT) -> None:
         self.uow = uow
 
     @property
