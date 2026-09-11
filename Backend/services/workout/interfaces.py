@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 from Backend.core.interfaces.base_repository_interfaces import (
     BaseCreateRepositoryInterface,
     BaseDeleteRepositoryInterface,
+    BaseReadAllRepositoryInterface,
+    BaseReadRelationRepositoryInterface,
     BaseReadRepositoryInterface,
     BaseUpdateRepositoryInterface,
 )
@@ -17,17 +19,12 @@ from typing import Sequence
 
 class WorkoutRepositoryInterface(
     BaseCreateRepositoryInterface[Workout],
-    BaseReadRepositoryInterface[Workout],
+    BaseReadRelationRepositoryInterface[Workout],
+    BaseReadAllRepositoryInterface[Workout, WorkoutGetAllFilterDTO],
     BaseUpdateRepositoryInterface[Workout],
     BaseDeleteRepositoryInterface[Workout],
 ):
-    @abstractmethod
-    async def get_loaded(self, id: int) -> Workout | None:
-        pass
-
-    @abstractmethod
-    async def get_all(self, data: WorkoutGetAllFilterDTO) -> Sequence[Workout]:
-        pass
+    pass
 
 
 class WorkoutUOWInterface(BaseUOWInterface):

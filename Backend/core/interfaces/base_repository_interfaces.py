@@ -31,6 +31,18 @@ class BaseReadRepositoryInterface[ModelT: Base](ABC):
         pass
 
 
+class BaseReadRelationRepositoryInterface[ModelT: Base](ABC):
+    @abstractmethod
+    async def get_loaded(self, id: int) -> ModelT | None:
+        pass
+
+
+class BaseReadAllRepositoryInterface[ModelT: Base, FilterDTOT: BaseModel](ABC):
+    @abstractmethod
+    async def get_all(self, data: FilterDTOT) -> Sequence[ModelT]:
+        pass
+
+
 class BaseUpdateRepositoryInterface[ModelT: Base](ABC):
     @abstractmethod
     async def get_for_update(self, id: int | UUID) -> ModelT | None:

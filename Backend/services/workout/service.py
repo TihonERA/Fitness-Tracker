@@ -1,8 +1,15 @@
 from typing import Sequence
 
-from Backend.services.BaseService import BaseService
-
-from Backend.services.workout.interfaces import WorkoutUOWInterface
+from Backend.services.base_service_components.base_read_authorized_service import (
+    BaseReadAuthorizedService,
+)
+from Backend.services.base_service_components.read_components import (
+    ReadRelationAuthorizedService,
+)
+from Backend.services.workout.interfaces import (
+    WorkoutRepositoryInterface,
+    WorkoutUOWInterface,
+)
 from Backend.utils.exceptions import (
     Forbidden,
     InternalServerError,
@@ -25,24 +32,22 @@ from Backend.models.workout import Workout
 from uuid import UUID
 
 
-class WorkoutService(BaseService[Workout]):
+class WorkoutService(
+    ReadRelationAuthorizedService[Workout, WorkoutRepositoryInterface]
+):
+    uow: WorkoutUOWInterface
+
     def __init__(self, uow: WorkoutUOWInterface) -> None:
         super().__init__(uow=uow)
+
+    @property
+    def repository(self) -> WorkoutRepositoryInterface:
+        return self.uow.workout
 
     async def create_workout(self, user_id: UUID, data: WorkoutCreate) -> Workout:
         async with self.uow as uow:
             data_dto = WorkoutCreateDTO(**data.model_dump(), user_id=user_id)
             return await uow.workout.create(data_dto)
-
-    async def get_loaded_workout(
-        self, workout_id: int, user_id: UUID
-    ) -> Workout | bytes | str:
-        async with self.uow as uow:
-            return await self._get_instance_with_access(
-                identifier=workout_id,
-                user_id=user_id,
-                repo_get_func=uow.workout.get_loaded,
-            )
 
     async def get_all_workouts(
         self,
