@@ -43,7 +43,9 @@ class WorkoutService(
 
     async def create_workout(self, user_id: UUID, data: WorkoutCreate) -> Workout:
         async with self.uow as uow:
-            data_dto = WorkoutCreateDTO(**data.model_dump(), user_id=user_id)
+            data_dto = WorkoutCreateDTO(
+                **data.model_dump(exclude_unset=True), user_id=user_id
+            )
             return await uow.workout.create(data_dto)
 
     async def get_all_workouts(
