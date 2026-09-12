@@ -37,7 +37,7 @@ class BaseRepository[ModelT: Base]:
     async def execute(self, stmt, **kwargs):
         return await self.session.execute(stmt, **kwargs)
 
-    async def _scalar_one_or_none(self, stmt):
+    async def _scalar_one_or_none(self, stmt) -> ModelT | None:
         result = await self.execute(stmt)
         return result.scalar_one_or_none()
 
