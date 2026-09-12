@@ -13,27 +13,21 @@ from Backend.services.base_service_components.base_service import BaseService
 class CreateService[
     ModelT: Base,
     RepoT: BaseCreateRepositoryInterface,
-    UowT: BaseUOWInterface,
-    CreateDataT: BaseModel,
-](BaseService[ModelT, RepoT, UowT]):
-    def __init__(self, uow: UowT) -> None:
-        super().__init__(uow)
-
-    async def create(self, data: CreateDataT) -> ModelT:
+    SchemaT: BaseModel,
+](BaseService[ModelT, RepoT]):
+    async def create(self, data: SchemaT) -> ModelT:
         return await self.repository.create(data)
 
 
 class RegisterService[
     ModelT: Base,
     RepoT: BaseCreateRepositoryInterface,
-    UowT: BaseUOWInterface,
-    CreateDataT: BaseModel,
-    CreateDataDTOT: BaseModel,
-](BaseService[ModelT, RepoT, UowT]):
-    def __init__(self, uow: UowT, dto_scheme: type[CreateDataDTOT]) -> None:
+    SchemaT: BaseModel,
+    SchemaDTOT: BaseModel,
+](BaseService[ModelT, RepoT]):
+    def __init__(self, dto_scheme: type[SchemaDTOT]) -> None:
         self.dto_scheme = dto_scheme
-        super().__init__(uow)
 
-    async def create(self, user_id: UUID, data: CreateDataT) -> ModelT:
+    async def create(self, user_id: UUID, data: SchemaT) -> ModelT:
         dto = self.dto_scheme(user_id=user_id, **data.model_dump(exclude_unset=True))
         return await self.repository.create(dto)

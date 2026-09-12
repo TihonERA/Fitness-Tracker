@@ -13,13 +13,9 @@ from Backend.utils.exceptions import Forbidden, NotFound
 
 ModelT = TypeVar("ModelT", bound=Base)
 RepoT = TypeVar("RepoT")
-UowT = TypeVar("UowT", bound=BaseUOWInterface)
 
 
-class BaseReadEngine(BaseService[ModelT, RepoT, UowT]):
-    def __init__(self, uow: UowT) -> None:
-        super().__init__(uow)
-
+class BaseReadEngine(BaseService[ModelT, RepoT]):
     @property
     @abstractmethod
     def get_func(self) -> Callable[..., Awaitable[ModelT | None]]:
@@ -34,18 +30,12 @@ class BaseReadEngine(BaseService[ModelT, RepoT, UowT]):
         return instance
 
 
-class BaseReadPublicService(BaseReadEngine[ModelT, RepoT, UowT]):
-    def __init__(self, uow: UowT) -> None:
-        super().__init__(uow)
-
+class BaseReadPublicService(BaseReadEngine[ModelT, RepoT]):
     async def fetch(self, id: int) -> ModelT:
         return await self._base_fetch(id)
 
 
-class BaseReadAuthorizedService(BaseReadEngine[ModelT, RepoT, UowT]):
-    def __init__(self, uow: UowT) -> None:
-        super().__init__(uow)
-
+class BaseReadAuthorizedService(BaseReadEngine[ModelT, RepoT]):
     @staticmethod
     def check_user_access(instance: ModelT | None, user_id: UUID) -> TypeGuard[ModelT]:
         return getattr(instance, "user_id", None) == user_id
