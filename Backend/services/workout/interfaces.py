@@ -1,4 +1,7 @@
 from abc import ABC, abstractmethod
+from uuid import UUID
+
+from pydantic.main import ModelT
 from Backend.schemas.workout import WorkoutCreate, WorkoutGetAllFilter, WorkoutUpdate
 
 from Backend.core.interfaces.base_repository_interfaces import (
@@ -21,7 +24,7 @@ from Backend.models.workout import Workout
 
 from Backend.core.interfaces.uow import BaseUOWInterface
 
-from typing import Sequence
+from typing import Sequence, TypeGuard
 
 
 class WorkoutRepositoryInterface(
@@ -48,7 +51,9 @@ class WorkoutRegisterServiceInterface(RegisterServiceInterface[Workout, WorkoutC
 class WorkoutReadRelationAuthServiceInterface(
     ReadRelationAuthorizedServiceInterface[Workout]
 ):
-    pass
+    @abstractmethod
+    async def fetch_authorized(self, *, id: int, user_id: UUID) -> Workout:
+        pass
 
 
 class WorkoutReadAllServiceInterface(

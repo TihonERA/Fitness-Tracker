@@ -1,4 +1,4 @@
-from typing import Awaitable, Callable, TypeVar
+from typing import Awaitable, Callable, ParamSpec, TypeVar
 
 from sqlalchemy.util import get_func_kwargs
 

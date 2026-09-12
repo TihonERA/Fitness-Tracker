@@ -1,5 +1,14 @@
 from abc import abstractmethod
-from typing import Any, Awaitable, Callable, Type, TypeGuard, TypeVar
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Generic,
+    ParamSpec,
+    Type,
+    TypeGuard,
+    TypeVar,
+)
 from uuid import UUID
 
 from Backend.core.interfaces.base_repository_interfaces import (
@@ -35,15 +44,16 @@ class BaseReadPublicService(BaseReadEngine[ModelT, RepoT]):
         return await self._base_fetch(id)
 
 
-class BaseReadAuthorizedService(BaseReadEngine[ModelT, RepoT]):
-    @staticmethod
-    def check_user_access(instance: ModelT | None, user_id: UUID) -> TypeGuard[ModelT]:
-        return getattr(instance, "user_id", None) == user_id
+class BaseReadAuthorizedService(BaseReadEngine[ModelT, RepoT], Generic[ModelT, RepoT]):
+    @property
+    @abstractmethod
+    def auth_validation_func(self) -> Callable[..., bool]:
+        pass
 
-    async def fetch_authorized(self, id: int, user_id: UUID) -> ModelT:
+    async def fetch_authorized(self, *, id: int, **kwargs: Any) -> ModelT:
         instance = await self._base_fetch(id)
 
-        if not self.check_user_access(instance, user_id):
+        if not self.auth_validation_func(instance, **kwargs):
             raise Forbidden()
 
         return instance

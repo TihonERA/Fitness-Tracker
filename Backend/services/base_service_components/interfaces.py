@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Sequence
+from typing import Callable, Sequence, TypeGuard
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -8,9 +8,10 @@ from Backend.models.base import Base
 
 
 class ReadAuthorizedServiceInterface[ModelT: Base](ABC):
+    @property
     @abstractmethod
-    async def fetch_authorized(self, id: int, user_id: UUID) -> ModelT:
-        pass
+    def auth_validation_func(self) -> Callable[..., bool]:
+        raise NotImplementedError()
 
 
 class ReadRelationAuthorizedServiceInterface[ModelT: Base](
@@ -19,10 +20,10 @@ class ReadRelationAuthorizedServiceInterface[ModelT: Base](
     pass
 
 
-class ReadLockAuthorizedServiceInterface[ModelT: Base](
-    ReadAuthorizedServiceInterface[ModelT]
-):
-    pass
+class ReadLockAuthorizedServiceInterface[ModelT: Base, **P](ABC):
+    @abstractmethod
+    async def fetch_authorized(self, *args: P.args, **kwargs: P.kwargs) -> ModelT:
+        pass
 
 
 class ReadLockPublicServiceInterface[ModelT: Base](ABC):

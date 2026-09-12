@@ -1,3 +1,6 @@
+from typing import Any, Callable, TypeGuard, final
+from uuid import UUID
+
 from Backend.models.workout import Workout
 from Backend.schemas.workout import (
     WorkoutCreate,
@@ -35,6 +38,7 @@ from Backend.services.workout.interfaces import (
     WorkoutRegisterServiceInterface,
     WorkoutUpdateAuthServiceInterface,
 )
+from Backend.utils.validators import check_instance_ownership
 
 
 class WorkoutRegisterService(
@@ -48,7 +52,9 @@ class WorkoutReadRelationAuthService(
     ReadRelationAuthorizedService[Workout, WorkoutRepository],
     WorkoutReadRelationAuthServiceInterface,
 ):
-    pass
+    @property
+    def auth_validation_func(self) -> Callable[[Workout, UUID], bool]:
+        return check_instance_ownership
 
 
 class WorkoutReadAllService(
@@ -61,7 +67,7 @@ class WorkoutReadAllService(
 
 
 class WorkoutUpdateAuthService(
-    UpdateAuthorizedService[Workout, WorkoutRepository, WorkoutUpdate],
+    UpdateAuthorizedService[Workout, WorkoutRepository, WorkoutUpdate, [Workout, UUID]],
     WorkoutUpdateAuthServiceInterface,
 ):
     pass

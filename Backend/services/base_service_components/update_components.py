@@ -29,8 +29,8 @@ class BaseUpdateEngine[
     def fetch_func(self) -> Callable[..., Awaitable[ModelT]]:
         pass
 
-    async def update(self, data: SchemaT, **id_kwargs: int | UUID) -> ModelT:
-        instance = await self.fetch_func(**id_kwargs)
+    async def update(self, data: SchemaT, **kwargs) -> ModelT:
+        instance = await self.fetch_func(**kwargs)
 
         return await self.repository.update(instance, data)
 
@@ -49,16 +49,16 @@ class UpdatePublicService[
 
 
 class UpdateAuthorizedService[
-    ModelT: Base, RepoT: BaseUpdateRepositoryInterface, SchemaT: BaseModel
+    ModelT: Base, RepoT: BaseUpdateRepositoryInterface, SchemaT: BaseModel, **P
 ](
     BaseUpdateEngine[ModelT, RepoT, SchemaT],
     UpdateAuthorizedServiceInterface[ModelT, SchemaT],
 ):
     def __init__(
-        self, read_lock_auth_service: ReadLockAuthorizedServiceInterface[ModelT]
+        self, read_lock_auth_service: ReadLockAuthorizedServiceInterface[ModelT, P]
     ) -> None:
         self.read_lock_auth_service = read_lock_auth_service
 
     @property
-    def fetch_func(self) -> Callable[[int, UUID], Awaitable[ModelT]]:
+    def fetch_func(self) -> Callable[..., Awaitable[ModelT]]:
         return self.read_lock_auth_service.fetch_authorized

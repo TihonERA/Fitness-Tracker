@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, final
 
 from Backend.services.workout.interfaces import (
     WorkoutDeleteAuthServiceInterface,
@@ -24,6 +24,7 @@ from Backend.models.workout import Workout
 from uuid import UUID
 
 
+@final
 class WorkoutService:
     def __init__(
         self,
@@ -52,7 +53,7 @@ class WorkoutService:
     async def get_loaded(self, workout_id: int, user_id: UUID) -> Workout:
         async with self.uow:
             return await self.read_relation_auth_service.fetch_authorized(
-                workout_id, user_id
+                id=workout_id, user_id=user_id
             )
 
     async def get_all_workouts(
