@@ -17,28 +17,27 @@ from Backend.services.base_service_components.read_components.mixins import (
 from Backend.services.base_service_components.interfaces import (
     ReadLockAuthorizedServiceInterface,
     ReadLockPublicServiceInterface,
+    UpdateAuthorizedServiceInterface,
 )
 
 
 class BaseUpdateEngine[
-    ModelT: Base, RepoT: BaseUpdateRepositoryInterface, SchemaT: BaseModel, **P
+    ModelT: Base, RepoT: BaseUpdateRepositoryInterface, SchemaT: BaseModel
 ](BaseService[ModelT, RepoT]):
     @property
     @abstractmethod
-    def fetch_func(self) -> Callable[P, Awaitable[ModelT]]:
+    def fetch_func(self) -> Callable[..., Awaitable[ModelT]]:
         pass
 
-    async def update(
-        self, data: SchemaT, *id_args: P.args, **id_kwargs: P.kwargs
-    ) -> ModelT:
-        instance = await self.fetch_func(*id_args, **id_kwargs)
+    async def update(self, data: SchemaT, **id_kwargs: int | UUID) -> ModelT:
+        instance = await self.fetch_func(**id_kwargs)
 
         return await self.repository.update(instance, data)
 
 
 class UpdatePublicService[
     ModelT: Base, RepoT: BaseUpdateRepositoryInterface, SchemaT: BaseModel
-](BaseUpdateEngine[ModelT, RepoT, SchemaT, [int]]):
+](BaseUpdateEngine[ModelT, RepoT, SchemaT]):
     def __init__(
         self, read_lock_public_service: ReadLockPublicServiceInterface[ModelT]
     ) -> None:
@@ -51,7 +50,10 @@ class UpdatePublicService[
 
 class UpdateAuthorizedService[
     ModelT: Base, RepoT: BaseUpdateRepositoryInterface, SchemaT: BaseModel
-](BaseUpdateEngine[ModelT, RepoT, SchemaT, [int, UUID]]):
+](
+    BaseUpdateEngine[ModelT, RepoT, SchemaT],
+    UpdateAuthorizedServiceInterface[ModelT, SchemaT],
+):
     def __init__(
         self, read_lock_auth_service: ReadLockAuthorizedServiceInterface[ModelT]
     ) -> None:

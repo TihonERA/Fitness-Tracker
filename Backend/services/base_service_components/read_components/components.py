@@ -18,11 +18,11 @@ RepoT = TypeVar("RepoT")
 class BaseReadEngine(BaseService[ModelT, RepoT]):
     @property
     @abstractmethod
-    def get_func(self) -> Callable[..., Awaitable[ModelT | None]]:
+    def _get_func(self) -> Callable[..., Awaitable[ModelT | None]]:
         pass
 
     async def _base_fetch(self, id: int) -> ModelT:
-        instance = await self.get_func(id)
+        instance = await self._get_func(id)
 
         if instance is None:
             raise NotFound()

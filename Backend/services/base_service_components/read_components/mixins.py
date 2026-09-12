@@ -14,8 +14,10 @@ from Backend.services.base_service_components.read_components.components import 
     BaseReadPublicService,
 )
 from Backend.services.base_service_components.interfaces import (
+    ReadAuthorizedServiceInterface,
     ReadLockAuthorizedServiceInterface,
     ReadLockPublicServiceInterface,
+    ReadRelationAuthorizedServiceInterface,
 )
 
 ModelT = TypeVar("ModelT", bound=Base)
@@ -27,7 +29,7 @@ ReadRepoT = TypeVar("ReadRepoT", bound=BaseReadRepositoryInterface)
 
 class ReadPublicService(BaseReadPublicService[ModelT, ReadRepoT]):
     @property
-    def get_func(self) -> Callable[..., Awaitable[ModelT | None]]:
+    def _get_func(self) -> Callable[..., Awaitable[ModelT | None]]:
         return self.repository.get
 
 
@@ -37,10 +39,11 @@ ReadRelationRepoT = TypeVar(
 
 
 class ReadRelationAuthorizedService(
-    BaseReadAuthorizedService[ModelT, ReadRelationRepoT]
+    BaseReadAuthorizedService[ModelT, ReadRelationRepoT],
+    ReadRelationAuthorizedServiceInterface[ModelT],
 ):
     @property
-    def get_func(self) -> Callable[..., Awaitable[ModelT | None]]:
+    def _get_func(self) -> Callable[..., Awaitable[ModelT | None]]:
         return self.repository.get_loaded
 
 
@@ -52,7 +55,7 @@ class ReadLockAuthorizedService(
     ReadLockAuthorizedServiceInterface[ModelT],
 ):
     @property
-    def get_func(self) -> Callable[..., Awaitable[ModelT | None]]:
+    def _get_func(self) -> Callable[..., Awaitable[ModelT | None]]:
         return self.repository.get_for_update
 
 
@@ -60,5 +63,5 @@ class ReadLockPublicService(
     BaseReadPublicService[ModelT, BaseLockRepoT], ReadLockPublicServiceInterface[ModelT]
 ):
     @property
-    def get_func(self) -> Callable[..., Awaitable[ModelT | None]]:
+    def _get_func(self) -> Callable[..., Awaitable[ModelT | None]]:
         return self.repository.get_for_update
