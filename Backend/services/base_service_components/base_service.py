@@ -17,25 +17,3 @@ class BaseService[ModelT: Base, RepoT]:
     @abstractmethod
     def repository(self) -> RepoT:
         pass
-
-    async def delete_existing_instance(
-        self, id: int | UUID, repo: SQLAlchemyAbstractRepository
-    ) -> ModelT:
-        instance = await self._get_existing_instance(
-            identifier=id, repo_get_func=repo.get_instance_for_update
-        )
-
-        await repo.delete_by_id(id)
-
-        return instance
-
-    async def delete_instance_with_access(
-        self, user_id: UUID, id: int | UUID, repo: SQLAlchemyAbstractRepository
-    ) -> ModelT:
-        instance = await self._get_instance_with_access(
-            identifier=id, user_id=user_id, repo_get_func=repo.get_instance_for_update
-        )
-
-        await repo.delete_by_id(id)
-
-        return instance
