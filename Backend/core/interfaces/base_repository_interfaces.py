@@ -61,5 +61,5 @@ class BaseUpdateRepositoryInterface[ModelT: Base](ABC):
 
 class BaseDeleteRepositoryInterface[ModelT: Base](ABC):
     @abstractmethod
-    async def delete(self, id: int | UUID) -> int:
+    async def delete(self, instance: ModelT) -> None:
         pass

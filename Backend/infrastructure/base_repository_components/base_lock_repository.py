@@ -3,13 +3,18 @@ from uuid import UUID
 from sqlalchemy import inspect, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from Backend.core.interfaces.base_repository_interfaces import (
+    BaseLockRepositoryInterface,
+)
 from Backend.infrastructure.base_repository_components.base_repository import (
     BaseRepository,
 )
 from Backend.models.base import Base
 
 
-class BaseLockRepository[ModelT: Base](BaseRepository[ModelT]):
+class BaseLockRepository[ModelT: Base](
+    BaseRepository[ModelT], BaseLockRepositoryInterface[ModelT]
+):
     def __init__(self, session: AsyncSession, model: type[ModelT]):
         self.model = model
         self.pk_column = inspect(self.model).primary_key[0]

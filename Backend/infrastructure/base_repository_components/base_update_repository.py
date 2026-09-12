@@ -6,6 +6,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.lambdas import insp
 
+from Backend.core.interfaces.base_repository_interfaces import (
+    BaseUpdateRepositoryInterface,
+)
 from Backend.infrastructure.base_repository_components.base_lock_repository import (
     BaseLockRepository,
 )
@@ -16,7 +19,9 @@ from Backend.models.base import Base
 from Backend.utils.exceptions import DBErrorHandler
 
 
-class BaseUpdateRepository[ModelT: Base](BaseRepository[ModelT]):
+class BaseUpdateRepository[ModelT: Base](
+    BaseRepository[ModelT], BaseUpdateRepositoryInterface[ModelT]
+):
     def __init__(
         self,
         session: AsyncSession,

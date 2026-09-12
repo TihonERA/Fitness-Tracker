@@ -1,6 +1,9 @@
 from typing import Sequence
 from uuid import UUID
 
+from Backend.core.interfaces.base_repository_interfaces import (
+    BaseReadRepositoryInterface,
+)
 from Backend.infrastructure.base_repository_components.base_repository import (
     BaseRepository,
 )
@@ -13,7 +16,9 @@ from sqlalchemy.orm.interfaces import ORMOption
 from Backend.models.base import Base
 
 
-class BaseReadRepository[ModelT: Base](BaseRepository[ModelT]):
+class BaseReadRepository[ModelT: Base](
+    BaseRepository[ModelT], BaseReadRepositoryInterface[ModelT]
+):
     def __init__(self, session: AsyncSession, model: type[ModelT]) -> None:
         self.model = model
         self.pk_column = inspect(self.model).primary_key[0]
