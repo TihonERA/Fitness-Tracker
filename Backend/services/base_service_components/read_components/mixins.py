@@ -13,8 +13,9 @@ from Backend.services.base_service_components.read_components.components import 
     BaseReadAuthorizedService,
     BaseReadPublicService,
 )
-from Backend.services.base_service_components.update_components.interfaces import (
+from Backend.services.base_service_components.interfaces import (
     ReadLockAuthorizedServiceInterface,
+    ReadLockPublicServiceInterface,
 )
 
 ModelT = TypeVar("ModelT", bound=Base)
@@ -55,7 +56,9 @@ class ReadLockAuthorizedService(
         return self.repository.get_for_update
 
 
-class ReadLockPublicService(BaseReadPublicService[ModelT, BaseLockRepoT]):
+class ReadLockPublicService(
+    BaseReadPublicService[ModelT, BaseLockRepoT], ReadLockPublicServiceInterface[ModelT]
+):
     @property
     def get_func(self) -> Callable[..., Awaitable[ModelT | None]]:
         return self.repository.get_for_update

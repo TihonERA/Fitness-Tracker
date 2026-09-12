@@ -43,6 +43,12 @@ class BaseReadAllRepositoryInterface[ModelT: Base, FilterDTOT: BaseModel](ABC):
         pass
 
 
+class BaseLockRepositoryInterface[ModelT: Base](ABC):
+    @abstractmethod
+    async def get_for_update(self, id: int | UUID) -> ModelT | None:
+        pass
+
+
 class BaseUpdateRepositoryInterface[ModelT: Base](ABC):
     @abstractmethod
     async def get_for_update(self, id: int | UUID) -> ModelT | None:
