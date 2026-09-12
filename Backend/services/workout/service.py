@@ -1,15 +1,13 @@
 from typing import Sequence
 
-from Backend.services.base_service_components.interfaces import (
-    DeleteAuthorizedServiceInterface,
-    ReadAllServiceInterface,
-    ReadRelationAuthorizedServiceInterface,
-    RegisterServiceInterface,
-    UpdateAuthorizedServiceInterface,
-)
 from Backend.services.workout.interfaces import (
+    WorkoutDeleteAuthServiceInterface,
+    WorkoutReadAllServiceInterface,
+    WorkoutReadRelationAuthServiceInterface,
+    WorkoutRegisterServiceInterface,
     WorkoutRepositoryInterface,
     WorkoutUOWInterface,
+    WorkoutUpdateAuthServiceInterface,
 )
 from Backend.schemas.workout import (
     WorkoutCreate,
@@ -30,11 +28,11 @@ class WorkoutService:
     def __init__(
         self,
         uow: WorkoutUOWInterface,
-        create_service: RegisterServiceInterface[Workout, WorkoutCreate],
-        read_relation_auth_service: ReadRelationAuthorizedServiceInterface[Workout],
-        read_all_service: ReadAllServiceInterface[Workout, WorkoutGetAllFilter],
-        update_auth_service: UpdateAuthorizedServiceInterface[Workout, WorkoutUpdate],
-        delete_auth_service: DeleteAuthorizedServiceInterface[Workout],
+        create_service: WorkoutRegisterServiceInterface,
+        read_relation_auth_service: WorkoutReadRelationAuthServiceInterface,
+        read_all_service: WorkoutReadAllServiceInterface,
+        update_auth_service: WorkoutUpdateAuthServiceInterface,
+        delete_auth_service: WorkoutDeleteAuthServiceInterface,
     ) -> None:
         self.uow = uow
         self.create_service = create_service

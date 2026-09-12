@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from Backend.schemas.workout import WorkoutCreate, WorkoutGetAllFilter, WorkoutUpdate
 
 from Backend.core.interfaces.base_repository_interfaces import (
     BaseCreateRepositoryInterface,
@@ -8,9 +9,15 @@ from Backend.core.interfaces.base_repository_interfaces import (
     BaseReadRepositoryInterface,
     BaseUpdateRepositoryInterface,
 )
-from Backend.models.workout import Workout
+from Backend.services.base_service_components.interfaces import (
+    DeleteAuthorizedServiceInterface,
+    ReadAllServiceInterface,
+    ReadRelationAuthorizedServiceInterface,
+    RegisterServiceInterface,
+    UpdateAuthorizedServiceInterface,
+)
 
-from Backend.schemas.workout import WorkoutGetAllFilterDTO
+from Backend.models.workout import Workout
 
 from Backend.core.interfaces.uow import BaseUOWInterface
 
@@ -20,7 +27,7 @@ from typing import Sequence
 class WorkoutRepositoryInterface(
     BaseCreateRepositoryInterface[Workout],
     BaseReadRelationRepositoryInterface[Workout],
-    BaseReadAllRepositoryInterface[Workout, WorkoutGetAllFilterDTO],
+    BaseReadAllRepositoryInterface[Workout, WorkoutGetAllFilter],
     BaseUpdateRepositoryInterface[Workout],
     BaseDeleteRepositoryInterface[Workout],
 ):
@@ -32,3 +39,29 @@ class WorkoutUOWInterface(BaseUOWInterface):
     @abstractmethod
     def workout(self) -> WorkoutRepositoryInterface:
         pass
+
+
+class WorkoutRegisterServiceInterface(RegisterServiceInterface[Workout, WorkoutCreate]):
+    pass
+
+
+class WorkoutReadRelationAuthServiceInterface(
+    ReadRelationAuthorizedServiceInterface[Workout]
+):
+    pass
+
+
+class WorkoutReadAllServiceInterface(
+    ReadAllServiceInterface[Workout, WorkoutGetAllFilter]
+):
+    pass
+
+
+class WorkoutUpdateAuthServiceInterface(
+    UpdateAuthorizedServiceInterface[Workout, WorkoutUpdate]
+):
+    pass
+
+
+class WorkoutDeleteAuthServiceInterface(DeleteAuthorizedServiceInterface[Workout]):
+    pass
