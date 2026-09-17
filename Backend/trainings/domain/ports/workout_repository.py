@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from Backend.trainings.domain.workout_model import Workout
+from Backend.trainings.infrastructure.models.workout import WorkoutModel
 
 
 class IWorkoutRepository(ABC):
@@ -17,4 +18,4 @@ class IWorkoutRepository(ABC):
     async def update(self, workout: Workout) -> Workout: ...
 
     @abstractmethod
-    async def delete(self, workout: Workout) -> None: ...
+    async def delete(self, id: int) -> None: ...

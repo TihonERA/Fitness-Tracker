@@ -1,6 +1,5 @@
 from Backend.trainings.application.dto.workout import UpdateWorkoutCommand
 from Backend.trainings.domain.exceptions.workout_exceptions import (
-    Forbidden,
     WorkoutNotFound,
 )
 from Backend.trainings.domain.ports.workout_repository import IWorkoutRepository
@@ -17,8 +16,7 @@ class UpdateWorkoutUseCase:
         if workout is None:
             raise WorkoutNotFound(command.workout_id)
 
-        if workout.user_id != command.user_id:
-            raise Forbidden()
+        workout.ensure_ownership(command.user_id)
 
         workout.update(
             name=command.name, description=command.description, public=command.public

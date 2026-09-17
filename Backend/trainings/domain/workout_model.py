@@ -5,6 +5,7 @@ from uuid import UUID
 from Backend.trainings.domain.exceptions.workout_exceptions import (
     DayExerciseNotFound,
     TrainingDayNotFound,
+    WorkoutAccessDenied,
 )
 from Backend.trainings.domain.training_day_model import TrainingDay
 
@@ -34,6 +35,10 @@ class Workout:
             public=public,
             training_days=[],
         )
+
+    def ensure_ownership(self, user_id: UUID) -> None:
+        if self.user_id != user_id:
+            raise WorkoutAccessDenied()
 
     def update(
         self,
