@@ -25,7 +25,6 @@ class Workout:
         name: str,
         description: str | None = None,
         public: bool = False,
-        training_days: list[TrainingDay] | None = None,
     ) -> "Workout":
         return cls(
             id=None,
@@ -33,7 +32,7 @@ class Workout:
             name=name,
             description=description,
             public=public,
-            training_days=training_days or [],
+            training_days=[],
         )
 
     def update(

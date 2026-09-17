@@ -1,10 +1,11 @@
 from os import stat
+import re
 
 from sqlalchemy import desc, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import descriptor_props, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.orm.interfaces import ORMOption
 from Backend.trainings.domain.day_exercise_model import DayExercise
 from Backend.trainings.domain.exceptions.workout_exceptions import WorkoutNotFound
 from Backend.trainings.domain.ports.workout_repository import IWorkoutRepository
@@ -40,28 +41,13 @@ class WorkoutRepository(IWorkoutRepository):
             ],
         )
 
-    def _make_workout_model(self, workout_model: WorkoutModel) -> Workout:
-        return Workout(
-            id=workout_model.id,
-            user_id=workout_model.user_id,
-            name=workout_model.name,
-            description=workout_model.description,
-            public=workout_model.public,
-            training_days=[
-                self._make_training_day_model(d) for d in workout_model.training_days
-            ],
-        )
+    async def _get_template(
+        self, id: int, options: list[ORMOption] | None = None
+    ) -> Workout | None:
+        stmt = select(WorkoutModel).where(WorkoutModel.id == id)
 
-    async def get_loaded(self, id: int) -> Workout | None:
-        stmt = (
-            select(WorkoutModel)
-            .where(WorkoutModel.id == id)
-            .options(
-                selectinload(WorkoutModel.training_days).selectinload(
-                    TrainingDayModel.day_exercises
-                )
-            )
-        )
+        if options:
+            stmt = stmt.options(*options)
 
         result = await self.session.execute(stmt)
         result = result.scalar_one_or_none()
@@ -69,7 +55,31 @@ class WorkoutRepository(IWorkoutRepository):
         if result is None:
             return None
 
-        return self._make_workout_model(result)
+        return Workout(
+            id=result.id,
+            user_id=result.user_id,
+            name=result.name,
+            description=result.description,
+            public=result.public,
+            training_days=(
+                [self._make_training_day_model(d) for d in result.training_days]
+                if options
+                else []
+            ),
+        )
+
+    async def get(self, id: int) -> Workout | None:
+        return await self._get_template(id)
+
+    async def get_loaded(self, id: int) -> Workout | None:
+        return await self._get_template(
+            id=id,
+            options=[
+                selectinload(WorkoutModel.training_days).selectinload(
+                    TrainingDayModel.day_exercises
+                )
+            ],
+        )
 
     async def create(self, workout: Workout) -> Workout:
         try:
@@ -99,7 +109,7 @@ class WorkoutRepository(IWorkoutRepository):
             workout_model = await self.session.get(WorkoutModel, workout.id)
 
             if workout_model is None:
-                raise WorkoutNotFound(workout.id)
+                raise WorkoutNotFound()
 
             workout_model.name = workout.name
             workout_model.description = workout.description
@@ -118,6 +128,14 @@ class WorkoutRepository(IWorkoutRepository):
         except IntegrityError as e:
             raise NotImplementedError("Не реализован обработчик ошибки integrity")
 
+    async def delete(self, workout: Workout) -> None:
+        try:
+            await self.session.delete(workout)
+            await self.session.flush()
+        except IntegrityError as e:
+            raise NotImplementedError("Не реализован обработчик ошибки integrity")
+
+    # Справочный матерьял для рефакторинга метода get_all
     # async def get_all(self, data: WorkoutGetAllFilterDTO) -> Sequence[Workout]:
     #     stmt = select(Workout)
     #     if data.target_user_id:
