@@ -1,10 +1,6 @@
 from dataclasses import dataclass
 
 from Backend.trainings.domain.day_exercise_model import DayExercise
-from Backend.trainings.domain.exceptions.workout_exceptions import (
-    NameException,
-    TrainingDayOrderException,
-)
 from Backend.trainings.domain.value_objects.day_order import DayOrder
 from Backend.trainings.domain.value_objects.title import EntityTitle
 

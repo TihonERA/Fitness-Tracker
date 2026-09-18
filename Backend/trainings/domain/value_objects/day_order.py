@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from Backend.trainings.domain.exceptions.training_day_exceptions import (
-    TrainingDayOrderException,
+    TrainingDayOrderError,
 )
 
 
@@ -11,4 +11,4 @@ class DayOrder:
 
     def __post_init__(self) -> None:
         if not (1 <= self.value <= 7):
-            raise TrainingDayOrderException(self.value)
+            raise TrainingDayOrderError(self.value)

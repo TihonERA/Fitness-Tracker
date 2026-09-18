@@ -10,9 +10,9 @@ class WorkoutNotFound(DomainError):
         )
 
 
-class NameException(DomainError):
-    def __init__(self) -> None:
-        super().__init__(f"Name cant be longer than 100 symbols")
+class TitleError(DomainError):
+    def __init__(self, name_length: int) -> None:
+        super().__init__(f"Name's length must be between 0 and 100, got {name_length}")
 
 
 class WorkoutAccessDenied(DomainError):

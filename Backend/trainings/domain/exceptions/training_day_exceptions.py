@@ -6,7 +6,6 @@ class TrainingDayNotFound(DomainError):
         super().__init__(f"Day with id: {day_id} was not found")
 
 
-class TrainingDayOrderException(DomainError):
+class TrainingDayOrderError(DomainError):
     def __init__(self, day_order: int) -> None:
-        self.detail = f"Day order cant be {'less' if day_order < 1 else 'higher'} than {day_order}"
-        super().__init__(self.detail)
+        super().__init__(f"Day order must be between 1 and 7, got {day_order}")

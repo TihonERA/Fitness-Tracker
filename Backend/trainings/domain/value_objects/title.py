@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from Backend.trainings.domain.exceptions.workout_exceptions import NameException
+from Backend.trainings.domain.exceptions.workout_exceptions import TitleError
 
 
 @dataclass(frozen=True)
@@ -9,7 +9,8 @@ class EntityTitle:
 
     def __post_init__(self) -> None:
         cleaned = self.value.strip()
-        if len(cleaned) > 100:
-            raise NameException()
+        length = len(cleaned)
+        if not (1 <= length <= 100):
+            raise TitleError(length)
 
         object.__setattr__(self, "value", cleaned)
