@@ -1,13 +1,20 @@
+from typing import Protocol
+
 from Backend.trainings.application.dto.workout import UpdateWorkoutCommand
 from Backend.trainings.domain.exceptions.workout_exceptions import (
     WorkoutNotFound,
 )
-from Backend.trainings.domain.ports.workout_repository import IWorkoutRepository
 from Backend.trainings.domain.workout_model import Workout
 
 
+class WorkoutUpdater(Protocol):
+    async def get(self, id: int) -> Workout | None: ...
+
+    async def update(self, workout: Workout) -> Workout: ...
+
+
 class UpdateWorkoutUseCase:
-    def __init__(self, workout_repo: IWorkoutRepository) -> None:
+    def __init__(self, workout_repo: WorkoutUpdater) -> None:
         self.workout_repo = workout_repo
 
     async def __call__(self, command: UpdateWorkoutCommand) -> Workout:

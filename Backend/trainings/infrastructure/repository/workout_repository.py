@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.interfaces import ORMOption
 from Backend.trainings.domain.day_exercise_model import DayExercise
 from Backend.trainings.domain.exceptions.workout_exceptions import WorkoutNotFound
-from Backend.trainings.domain.ports.workout_repository import IWorkoutRepository
 from Backend.trainings.domain.training_day_model import TrainingDay
 from Backend.trainings.domain.workout_model import Workout
 from Backend.trainings.infrastructure.mappers.workout_mapper import WorkoutMapper
@@ -16,8 +15,7 @@ from typing import Sequence, Any, final
 from uuid import UUID
 
 
-@final
-class WorkoutRepository(IWorkoutRepository):
+class WorkoutRepository:
 
     def __init__(self, session: AsyncSession, mapper: WorkoutMapper):
         self.session = session

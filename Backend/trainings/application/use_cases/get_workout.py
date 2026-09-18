@@ -1,14 +1,19 @@
+from typing import Protocol
 from uuid import UUID
 
 from Backend.trainings.domain.exceptions.workout_exceptions import (
     WorkoutNotFound,
 )
-from Backend.trainings.domain.ports.workout_repository import IWorkoutRepository
+
 from Backend.trainings.domain.workout_model import Workout
 
 
+class WorkoutGetter(Protocol):
+    async def get_loaded(self, id: int) -> Workout | None: ...
+
+
 class GetLoadedWorkoutUseCase:
-    def __init__(self, workout_repo: IWorkoutRepository) -> None:
+    def __init__(self, workout_repo: WorkoutGetter) -> None:
         self.workout_repo = workout_repo
 
     async def __call__(self, user_id: UUID, workout_id: int) -> Workout:
