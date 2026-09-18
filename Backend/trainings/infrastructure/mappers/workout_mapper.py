@@ -11,7 +11,7 @@ class WorkoutMapper:
         return DayExercise(
             day_id=exercise_model.day_id,
             exercise_id=exercise_model.exercise_id,
-            day_order=exercise_model.day_order,
+            exercise_order=exercise_model.exercise_order,
         )
 
     def _make_training_day(self, day_model: TrainingDayModel) -> TrainingDay:
@@ -19,6 +19,7 @@ class WorkoutMapper:
             id=day_model.id,
             workout_id=day_model.workout_id,
             name=day_model.name,
+            day_order=day_model.day_order,
             day_exercises=[self._make_day_exercise(e) for e in day_model.day_exercises],
         )
 

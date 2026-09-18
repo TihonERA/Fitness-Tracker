@@ -5,4 +5,4 @@ from dataclasses import dataclass
 class DayExercise:
     day_id: int
     exercise_id: int
-    day_order: int
+    exercise_order: int

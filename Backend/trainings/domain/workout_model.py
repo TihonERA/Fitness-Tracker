@@ -4,17 +4,19 @@ from uuid import UUID
 
 from Backend.trainings.domain.exceptions.workout_exceptions import (
     DayExerciseNotFound,
+    NameException,
     TrainingDayNotFound,
     WorkoutAccessDenied,
 )
 from Backend.trainings.domain.training_day_model import TrainingDay
+from Backend.trainings.domain.value_objects.title import EntityTitle
 
 
 @dataclass
 class Workout:
     id: int | None
     user_id: UUID
-    name: str
+    name: EntityTitle
     description: str | None
     public: bool
     training_days: list[TrainingDay]
@@ -23,7 +25,7 @@ class Workout:
     def create(
         cls,
         user_id: UUID,
-        name: str,
+        name: EntityTitle,
         description: str | None = None,
         public: bool = False,
     ) -> "Workout":
@@ -42,7 +44,7 @@ class Workout:
 
     def update(
         self,
-        name: str | None = None,
+        name: EntityTitle | None = None,
         description: str | None = None,
         public: bool | None = None,
     ) -> None:

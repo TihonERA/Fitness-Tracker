@@ -1,15 +1,16 @@
 from typing import Protocol
 
 from Backend.trainings.application.dto.workout import CreateWorkoutCommand
+from Backend.trainings.domain.value_objects.title import EntityTitle
 from Backend.trainings.domain.workout_model import Workout
 
 
-class WorkoutCreater(Protocol):
+class WorkoutCreator(Protocol):
     async def create(self, workout: Workout) -> Workout: ...
 
 
 class CreateWorkoutUseCase:
-    def __init__(self, workout_repo: WorkoutCreater) -> None:
+    def __init__(self, workout_repo: WorkoutCreator) -> None:
         self.workout_repo = workout_repo
 
     async def __call__(self, command: CreateWorkoutCommand) -> Workout:

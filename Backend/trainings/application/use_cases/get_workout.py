@@ -8,12 +8,12 @@ from Backend.trainings.domain.exceptions.workout_exceptions import (
 from Backend.trainings.domain.workout_model import Workout
 
 
-class WorkoutGetter(Protocol):
+class WorkoutReader(Protocol):
     async def get_loaded(self, id: int) -> Workout | None: ...
 
 
 class GetLoadedWorkoutUseCase:
-    def __init__(self, workout_repo: WorkoutGetter) -> None:
+    def __init__(self, workout_repo: WorkoutReader) -> None:
         self.workout_repo = workout_repo
 
     async def __call__(self, user_id: UUID, workout_id: int) -> Workout:

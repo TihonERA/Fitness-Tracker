@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+from Backend.trainings.domain.value_objects.title import EntityTitle
+
 
 @dataclass
 class CreateWorkoutCommand:
     user_id: UUID
-    name: str
+    name: EntityTitle
     description: str | None = None
     public: bool = False
 
@@ -14,6 +16,6 @@ class CreateWorkoutCommand:
 class UpdateWorkoutCommand:
     user_id: UUID
     workout_id: int
-    name: str | None = None
+    name: EntityTitle | None = None
     description: str | None = None
     public: bool | None = None

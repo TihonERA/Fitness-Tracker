@@ -10,14 +10,14 @@ class WorkoutNotFound(DomainError):
         )
 
 
+class NameException(DomainError):
+    def __init__(self) -> None:
+        super().__init__(f"Name cant be longer than 100 symbols")
+
+
 class WorkoutAccessDenied(DomainError):
     def __init__(self) -> None:
         super().__init__(f"Access to this workout was denied")
-
-
-class TrainingDayNotFound(DomainError):
-    def __init__(self, day_id: int) -> None:
-        super().__init__(f"Day with id: {day_id} was not found")
 
 
 class DayExerciseNotFound(DomainError):
