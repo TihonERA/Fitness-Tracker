@@ -2,8 +2,10 @@ from Backend.trainings.domain.exceptions.workout_exceptions import DomainError
 
 
 class TrainingDayNotFound(DomainError):
-    def __init__(self, day_id: int) -> None:
-        super().__init__(f"Day with id: {day_id} was not found")
+    def __init__(self, day_id: int | None = None) -> None:
+        super().__init__(
+            f"Day with id: {day_id or 'not_created_instance'} was not found"
+        )
 
 
 class TrainingDayOrderError(DomainError):
