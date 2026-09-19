@@ -18,6 +18,11 @@ class TrainingDayNotCreatedError(DomainError):
         super().__init__("Cant save changes in training day that was not created")
 
 
+class TrainingDayAccessDenied(DomainError):
+    def __init__(self) -> None:
+        super().__init__(f"Access to this training_day was denied")
+
+
 class DayExerciseNotFound(DomainError):
     def __init__(self, exercise_id: int) -> None:
         super().__init__(f"TrainingDay dont contain exercise with id: {exercise_id}")

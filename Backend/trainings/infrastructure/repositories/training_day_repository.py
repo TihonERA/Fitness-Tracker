@@ -90,3 +90,15 @@ class TrainingDayRepository:
             return self.mapper.to_domain(training_day_model)
         except IntegrityError as e:
             raise NotImplementedError()
+
+    async def delete(self, training_day: TrainingDay) -> None:
+        try:
+            if training_day.id is None:
+                raise TrainingDayNotCreatedError()
+
+            training_day_model = await self._get_model(training_day.id)
+
+            await self.session.delete(training_day_model)
+            await self.session.flush()
+        except IntegrityError as e:
+            raise NotImplementedError()

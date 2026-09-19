@@ -4,6 +4,7 @@ from Backend.trainings.domain.day_exercise_model import DayExercise
 from Backend.trainings.domain.exceptions.training_day_exceptions import (
     DayExerciseNotFound,
     DayExerciseOrderIntegrityError,
+    TrainingDayAccessDenied,
 )
 from Backend.trainings.domain.value_objects import exercise_order
 from Backend.trainings.domain.value_objects.day_order import DayOrder
@@ -39,6 +40,10 @@ class TrainingDay:
 
         if day_order:
             self.day_order = day_order
+
+    def ensure_ownership(self, workout_id: int) -> None:
+        if self.workout_id != workout_id:
+            raise TrainingDayAccessDenied()
 
     def _sort_day_exercises_by_order(self) -> None:
         self.day_exercises.sort(key=lambda x: x.exercise_order.value)
