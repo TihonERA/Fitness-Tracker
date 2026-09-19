@@ -11,3 +11,13 @@ class TrainingDayNotFound(DomainError):
 class TrainingDayOrderError(DomainError):
     def __init__(self, day_order: int) -> None:
         super().__init__(f"Day order must be between 1 and 7, got {day_order}")
+
+
+class DayExerciseNotFound(DomainError):
+    def __init__(self, exercise_id: int) -> None:
+        super().__init__(f"TrainingDay dont contain exercise with id: {exercise_id}")
+
+
+class DayExerciseOrderIntegrityError(DomainError):
+    def __init__(self, detail: str) -> None:
+        super().__init__(detail)
