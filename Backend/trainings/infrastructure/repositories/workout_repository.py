@@ -44,7 +44,7 @@ class WorkoutRepository:
             workout_model = await self.session.get(WorkoutModel, workout.id)
 
             if workout_model is None:
-                raise WorkoutNotFound()
+                raise WorkoutNotFound(workout.id)
 
             workout_model.name = workout.name.value
             workout_model.description = workout.description

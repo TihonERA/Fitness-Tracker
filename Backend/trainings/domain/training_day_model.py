@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-import enum
-from itertools import zip_longest
 
 from Backend.trainings.domain.day_exercise_model import DayExercise
 from Backend.trainings.domain.exceptions.training_day_exceptions import (
