@@ -26,7 +26,7 @@ class FakeWorkoutRepository:
         workout.id = last_id + 1
 
         self.fake_db[workout.id] = workout
-        return workout
+        return copy(workout)
 
     async def save(self, workout: Workout) -> Workout | None:
         if workout.id is None:
