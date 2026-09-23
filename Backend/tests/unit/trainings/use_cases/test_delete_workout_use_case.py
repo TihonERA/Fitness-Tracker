@@ -39,7 +39,9 @@ async def test_not_found(use_case: DeleteWorkoutUseCase) -> None:
 
 
 async def test_access_denied(
-    create_workout: CreateWorkout, use_case: DeleteWorkoutUseCase
+    create_workout: CreateWorkout,
+    use_case: DeleteWorkoutUseCase,
+    repo: FakeWorkoutRepository,
 ) -> None:
     workout = await create_workout()
     workout_id = workout.id
@@ -48,3 +50,5 @@ async def test_access_denied(
 
     with pytest.raises(WorkoutAccessDenied):
         await use_case(user_id=uuid4(), workout_id=workout_id)
+
+    assert await repo.get(workout_id) is not None

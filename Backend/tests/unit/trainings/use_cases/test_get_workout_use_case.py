@@ -1,6 +1,5 @@
 from uuid import uuid4
 
-from annotated_types import Ge
 import pytest
 
 from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepository
@@ -15,11 +14,22 @@ from Backend.trainings.domain.exceptions.workout_exceptions import (
     WorkoutAccessDenied,
     WorkoutNotFound,
 )
+from Backend.trainings.domain.workout_model import Workout
 
 
 @pytest.fixture
 def use_case(repo: FakeWorkoutRepository) -> GetLoadedWorkoutUseCase:
     return GetLoadedWorkoutUseCase(repo)
+
+
+def _assert_same_workouts(first_workout: Workout, second_workout: Workout) -> bool:
+    assert first_workout.id == second_workout.id
+    assert first_workout.user_id == second_workout.user_id
+    assert first_workout.name.value == second_workout.name.value
+    assert first_workout.description == second_workout.description
+    assert first_workout.public == second_workout.public
+
+    return True
 
 
 async def test_success(
@@ -34,7 +44,7 @@ async def test_success(
 
     assert fetched_workout is not None
 
-    assert fetched_workout.id == workout_id
+    assert _assert_same_workouts(workout, fetched_workout)
 
 
 async def test_not_found(
@@ -56,7 +66,7 @@ async def test_read_public(
 
     assert fetched_workout is not None
 
-    assert fetched_workout.id == workout_id
+    assert _assert_same_workouts(workout, fetched_workout)
 
 
 async def test_access_denied(

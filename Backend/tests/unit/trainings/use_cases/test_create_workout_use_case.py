@@ -5,7 +5,6 @@ from Backend.tests.unit.trainings.workout_factories import WorkoutDTOFactory
 from Backend.trainings.application.use_cases.workout.create_workout import (
     CreateWorkoutUseCase,
 )
-from Backend.trainings.domain.exceptions.workout_exceptions import TitleError
 
 
 @pytest.fixture
