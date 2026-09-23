@@ -8,7 +8,7 @@ from Backend.trainings.domain.value_objects.title import EntityTitle
 @dataclass
 class CreateWorkoutCommand:
     user_id: UUID
-    name: EntityTitle
+    name: str
     description: str | None = None
     public: bool = False
 
@@ -17,7 +17,7 @@ class CreateWorkoutCommand:
 class UpdateWorkoutCommand:
     user_id: UUID
     workout_id: int
-    name: EntityTitle | None = None
+    name: str | None = None
     description: str | None = None
     public: bool | None = None
 

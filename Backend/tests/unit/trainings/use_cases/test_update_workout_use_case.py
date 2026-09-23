@@ -1,9 +1,13 @@
+from typing import Any
 from uuid import uuid4
 
 import pytest
 
 from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepository
-from Backend.tests.unit.trainings.use_cases.conftest import CreateWorkout
+from Backend.tests.unit.trainings.use_cases.conftest import (
+    CreateWorkout,
+    workout_dto_factory,
+)
 from Backend.tests.unit.trainings.workout_factories import WorkoutDTOFactory
 from Backend.trainings.application.use_cases.workout.update_workout import (
     UpdateWorkoutUseCase,
@@ -12,6 +16,7 @@ from Backend.trainings.domain.exceptions.workout_exceptions import (
     WorkoutAccessDenied,
     WorkoutNotFound,
 )
+from Backend.trainings.domain.value_objects.title import EntityTitle
 
 
 @pytest.fixture
@@ -46,9 +51,90 @@ async def test_success(
 
     assert workout is not None
 
-    assert command.name.value == workout.name.value
+    assert command.name == workout.name.value
     assert command.description == workout.description
     assert command.public == workout.public
+
+
+async def test_partial_name(
+    create_workout: CreateWorkout,
+    workout_dto_factory: WorkoutDTOFactory,
+    use_case: UpdateWorkoutUseCase,
+    repo: FakeWorkoutRepository,
+) -> None:
+    workout = await create_workout(description="ftestag")
+    workout_id = workout.id
+
+    assert workout_id is not None
+
+    command = workout_dto_factory.make_update_workout_command(
+        user_id=workout.user_id, workout_id=workout_id, name="n"
+    )
+
+    await use_case(command)
+
+    updated_workout = await repo.get(workout_id)
+
+    assert updated_workout is not None
+
+    assert updated_workout.name.value == command.name
+
+    assert updated_workout.description == workout.description
+    assert updated_workout.public == workout.public
+
+
+async def test_partial_description(
+    create_workout: CreateWorkout,
+    workout_dto_factory: WorkoutDTOFactory,
+    use_case: UpdateWorkoutUseCase,
+    repo: FakeWorkoutRepository,
+) -> None:
+    workout = await create_workout(description="ftestag")
+    workout_id = workout.id
+
+    assert workout_id is not None
+
+    command = workout_dto_factory.make_update_workout_command(
+        user_id=workout.user_id, workout_id=workout_id, description="n"
+    )
+
+    await use_case(command)
+
+    updated_workout = await repo.get(workout_id)
+
+    assert updated_workout is not None
+
+    assert updated_workout.description == command.description
+
+    assert updated_workout.name.value == workout.name.value
+    assert updated_workout.public == workout.public
+
+
+async def test_partial_public(
+    create_workout: CreateWorkout,
+    workout_dto_factory: WorkoutDTOFactory,
+    use_case: UpdateWorkoutUseCase,
+    repo: FakeWorkoutRepository,
+) -> None:
+    workout = await create_workout(description="ftestag")
+    workout_id = workout.id
+
+    assert workout_id is not None
+
+    command = workout_dto_factory.make_update_workout_command(
+        user_id=workout.user_id, workout_id=workout_id, public=True
+    )
+
+    await use_case(command)
+
+    updated_workout = await repo.get(workout_id)
+
+    assert updated_workout is not None
+
+    assert updated_workout.public == command.public
+
+    assert updated_workout.name.value == workout.name.value
+    assert updated_workout.description == workout.description
 
 
 async def test_not_found(

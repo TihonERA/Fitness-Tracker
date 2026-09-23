@@ -39,12 +39,12 @@ class WorkoutRepository:
         except IntegrityError as e:
             raise NotImplementedError("Не реализован обработчик ошибки integrity")
 
-    async def save(self, workout: Workout) -> Workout:
+    async def save(self, workout: Workout) -> Workout | None:
         try:
             workout_model = await self.session.get(WorkoutModel, workout.id)
 
             if workout_model is None:
-                raise WorkoutNotFound(workout.id)
+                return None
 
             workout_model.name = workout.name.value
             workout_model.description = workout.description

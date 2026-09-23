@@ -18,9 +18,6 @@ class WorkoutDTOFactory:
     def __init__(self, faker: Faker) -> None:
         self.faker = faker
 
-    def _arg_name_or_faker_name(self, name: str | None) -> EntityTitle:
-        return EntityTitle(name if name is not None else self.faker.name())
-
     def make_create_workout_command(
         self,
         name: str | None = None,
@@ -29,7 +26,7 @@ class WorkoutDTOFactory:
     ) -> CreateWorkoutCommand:
         return CreateWorkoutCommand(
             user_id=uuid4(),
-            name=self._arg_name_or_faker_name(name),
+            name=name if name is not None else self.faker.name(),
             description=description,
             public=public,
         )
@@ -45,7 +42,7 @@ class WorkoutDTOFactory:
         return UpdateWorkoutCommand(
             user_id=user_id,
             workout_id=workout_id,
-            name=self._arg_name_or_faker_name(name),
+            name=name,
             description=description,
             public=public,
         )

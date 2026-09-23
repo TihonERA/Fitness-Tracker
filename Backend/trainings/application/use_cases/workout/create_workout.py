@@ -16,7 +16,7 @@ class CreateWorkoutUseCase:
     async def __call__(self, command: CreateWorkoutCommand) -> Workout:
         workout = Workout.create(
             user_id=command.user_id,
-            name=command.name,
+            name=EntityTitle(command.name),
             description=command.description,
             public=command.public,
         )

@@ -4,13 +4,14 @@ from Backend.trainings.application.dto.workout import UpdateWorkoutCommand
 from Backend.trainings.domain.exceptions.workout_exceptions import (
     WorkoutNotFound,
 )
+from Backend.trainings.domain.value_objects.title import EntityTitle
 from Backend.trainings.domain.workout_model import Workout
 
 
 class WorkoutUpdater(Protocol):
     async def get(self, id: int) -> Workout | None: ...
 
-    async def update(self, workout: Workout) -> Workout: ...
+    async def save(self, workout: Workout) -> Workout | None: ...
 
 
 class UpdateWorkoutUseCase:
@@ -26,7 +27,14 @@ class UpdateWorkoutUseCase:
         workout.ensure_ownership(command.user_id)
 
         workout.update(
-            name=command.name, description=command.description, public=command.public
+            name=EntityTitle(command.name) if command.name else None,
+            description=command.description,
+            public=command.public,
         )
 
-        return await self.workout_repo.update(workout)
+        workout = await self.workout_repo.save(workout)
+
+        if workout is None:
+            raise WorkoutNotFound(command.workout_id)
+
+        return workout

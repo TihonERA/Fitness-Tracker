@@ -18,14 +18,14 @@ class FakeWorkoutRepository:
     async def create(self, workout: Workout) -> Workout:
         if len(self.fake_db) == 0:
             workout.id = 1
-            self.fake_db[workout.id] = workout
+            self.fake_db[workout.id] = copy(workout)
 
-            return workout
+            return copy(workout)
 
         last_id = list(self.fake_db.keys())[-1]
         workout.id = last_id + 1
 
-        self.fake_db[workout.id] = workout
+        self.fake_db[workout.id] = copy(workout)
         return copy(workout)
 
     async def save(self, workout: Workout) -> Workout | None:

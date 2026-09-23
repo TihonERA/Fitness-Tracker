@@ -28,6 +28,6 @@ async def test_create_success(
 
     assert workout is not None
 
-    assert command.name.value == workout.name.value
+    assert command.name == workout.name.value
     assert command.description == workout.description
     assert command.public == workout.public
