@@ -43,7 +43,5 @@ class FakeWorkoutRepository:
 
         return copy(workout_db)
 
-    async def delete(self, workout: Workout) -> None:
-        if workout.id is None:
-            return
-        self.fake_db.pop(workout.id)
+    async def delete(self, id: int) -> None:
+        self.fake_db.pop(id)
