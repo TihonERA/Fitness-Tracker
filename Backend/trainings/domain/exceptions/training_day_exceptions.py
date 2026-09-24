@@ -13,11 +13,6 @@ class TrainingDayOrderError(DomainError):
         super().__init__(f"Day order must be between 1 and 7, got {day_order}")
 
 
-class TrainingDayNotCreatedError(DomainError):
-    def __init__(self) -> None:
-        super().__init__("Cant save changes in training day that was not created")
-
-
 class TrainingDayAccessDenied(DomainError):
     def __init__(self) -> None:
         super().__init__(f"Access to this training_day was denied")

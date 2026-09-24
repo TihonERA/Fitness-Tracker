@@ -7,7 +7,7 @@ from Backend.trainings.application.ports.training_day import (
 from Backend.trainings.domain.training_day_model import TrainingDay
 
 
-class GetDayExerciseUseCase:
+class GetTrainingDayUseCase:
     def __init__(self, access_service: TrainingDayAccessServicePort) -> None:
         self.access_service = access_service
 

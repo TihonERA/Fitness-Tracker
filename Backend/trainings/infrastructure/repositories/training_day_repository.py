@@ -2,11 +2,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from Backend.trainings.domain.day_exercise_model import DayExercise
-from Backend.trainings.domain.exceptions.training_day_exceptions import (
+from Backend.trainings.application.exceptions.training_day import (
+    TrainingDayConcurrencyError,
     TrainingDayNotCreatedError,
-    TrainingDayNotFound,
 )
+from Backend.trainings.domain.day_exercise_model import DayExercise
 from Backend.trainings.domain.training_day_model import TrainingDay
 from Backend.trainings.infrastructure.mappers.training_day_mapper import (
     TrainingDayMapper,
@@ -21,18 +21,17 @@ class TrainingDayRepository:
         self.session = session
         self.mapper = mapper
 
-    async def _get_model(self, id: int) -> TrainingDayModel:
+    async def _get_model(self, id: int) -> TrainingDayModel | None:
         training_day_model = await self.session.get(
             TrainingDayModel, id, options=[selectinload(TrainingDayModel.day_exercises)]
         )
-
-        if training_day_model is None:
-            raise TrainingDayNotFound(id)
-
         return training_day_model
 
-    async def get(self, id: int) -> TrainingDay:
+    async def get(self, id: int) -> TrainingDay | None:
         training_day_model = await self._get_model(id)
+
+        if training_day_model is None:
+            return None
 
         return self.mapper.to_domain(training_day_model)
 
@@ -77,7 +76,11 @@ class TrainingDayRepository:
         try:
             if training_day.id is None:
                 raise TrainingDayNotCreatedError()
+
             training_day_model = await self._get_model(training_day.id)
+
+            if training_day_model is None:
+                raise TrainingDayConcurrencyError(training_day.id)
 
             training_day_model.name = training_day.name.value
             training_day_model.day_order = training_day.day_order.value
