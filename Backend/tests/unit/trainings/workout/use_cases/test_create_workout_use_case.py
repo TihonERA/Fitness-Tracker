@@ -1,21 +1,21 @@
 import pytest
 
 from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepository
-from Backend.tests.unit.trainings.workout_factories import WorkoutDTOFactory
+from Backend.tests.unit.trainings.workout.workout_factories import WorkoutDTOFactory
 from Backend.trainings.application.use_cases.workout.create_workout import (
     CreateWorkoutUseCase,
 )
 
 
 @pytest.fixture
-def use_case(repo: FakeWorkoutRepository) -> CreateWorkoutUseCase:
-    return CreateWorkoutUseCase(repo)
+def use_case(workout_repo: FakeWorkoutRepository) -> CreateWorkoutUseCase:
+    return CreateWorkoutUseCase(workout_repo)
 
 
 async def test_create_success(
     use_case: CreateWorkoutUseCase,
     workout_dto_factory: WorkoutDTOFactory,
-    repo: FakeWorkoutRepository,
+    workout_repo: FakeWorkoutRepository,
 ) -> None:
     command = workout_dto_factory.make_create_workout_command()
 
@@ -23,7 +23,7 @@ async def test_create_success(
 
     assert workout.id is not None
 
-    workout = await repo.get(workout.id)
+    workout = await workout_repo.get(workout.id)
 
     assert workout is not None
 

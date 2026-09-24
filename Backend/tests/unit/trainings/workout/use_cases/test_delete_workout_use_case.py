@@ -3,7 +3,7 @@ from uuid import uuid4
 import pytest
 
 from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepository
-from Backend.tests.unit.trainings.use_cases.conftest import CreateWorkout
+from Backend.tests.unit.trainings.workout.use_cases.conftest import CreateWorkout
 from Backend.trainings.application.use_cases.workout.delete_workout import (
     DeleteWorkoutUseCase,
 )
@@ -14,14 +14,14 @@ from Backend.trainings.domain.exceptions.workout_exceptions import (
 
 
 @pytest.fixture
-def use_case(repo: FakeWorkoutRepository) -> DeleteWorkoutUseCase:
-    return DeleteWorkoutUseCase(repo)
+def use_case(workout_repo: FakeWorkoutRepository) -> DeleteWorkoutUseCase:
+    return DeleteWorkoutUseCase(workout_repo)
 
 
 async def test_success(
     create_workout: CreateWorkout,
     use_case: DeleteWorkoutUseCase,
-    repo: FakeWorkoutRepository,
+    workout_repo: FakeWorkoutRepository,
 ) -> None:
     workout = await create_workout()
     workout_id = workout.id
@@ -30,7 +30,7 @@ async def test_success(
 
     await use_case(workout.user_id, workout_id)
 
-    assert await repo.get(workout_id) is None
+    assert await workout_repo.get(workout_id) is None
 
 
 async def test_not_found(use_case: DeleteWorkoutUseCase) -> None:
@@ -41,7 +41,7 @@ async def test_not_found(use_case: DeleteWorkoutUseCase) -> None:
 async def test_access_denied(
     create_workout: CreateWorkout,
     use_case: DeleteWorkoutUseCase,
-    repo: FakeWorkoutRepository,
+    workout_repo: FakeWorkoutRepository,
 ) -> None:
     workout = await create_workout()
     workout_id = workout.id
@@ -51,4 +51,4 @@ async def test_access_denied(
     with pytest.raises(WorkoutAccessDenied):
         await use_case(user_id=uuid4(), workout_id=workout_id)
 
-    assert await repo.get(workout_id) is not None
+    assert await workout_repo.get(workout_id) is not None

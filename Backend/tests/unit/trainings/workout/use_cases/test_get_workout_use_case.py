@@ -3,7 +3,7 @@ from uuid import uuid4
 import pytest
 
 from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepository
-from Backend.tests.unit.trainings.use_cases.conftest import (
+from Backend.tests.unit.trainings.workout.use_cases.conftest import (
     CreateWorkout,
 )
 from Backend.trainings.application.use_cases.workout.get_workout import (
@@ -17,8 +17,8 @@ from Backend.trainings.domain.workout_model import Workout
 
 
 @pytest.fixture
-def use_case(repo: FakeWorkoutRepository) -> GetLoadedWorkoutUseCase:
-    return GetLoadedWorkoutUseCase(repo)
+def use_case(workout_repo: FakeWorkoutRepository) -> GetLoadedWorkoutUseCase:
+    return GetLoadedWorkoutUseCase(workout_repo)
 
 
 def assert_same_workouts(first_workout: Workout, second_workout: Workout) -> None:
