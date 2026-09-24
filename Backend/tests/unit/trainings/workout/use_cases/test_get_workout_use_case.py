@@ -3,7 +3,7 @@ from uuid import uuid4
 import pytest
 
 from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepository
-from Backend.tests.unit.trainings.workout.use_cases.conftest import (
+from Backend.tests.unit.trainings.conftest import (
     CreateWorkout,
 )
 from Backend.trainings.application.use_cases.workout.get_workout import (

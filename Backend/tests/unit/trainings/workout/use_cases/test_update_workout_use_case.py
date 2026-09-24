@@ -4,9 +4,8 @@ from uuid import uuid4
 import pytest
 
 from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepository
-from Backend.tests.unit.trainings.workout.use_cases.conftest import (
+from Backend.tests.unit.trainings.conftest import (
     CreateWorkout,
-    workout_dto_factory,
 )
 from Backend.tests.unit.trainings.workout.workout_factories import WorkoutDTOFactory
 from Backend.trainings.application.use_cases.workout.update_workout import (
