@@ -5,23 +5,21 @@ from Backend.trainings.application.dto.training_day import (
     TrainingDayReadDTO,
 )
 from Backend.trainings.application.dto.workout import WorkoutDetailDTO
-from Backend.trainings.domain.exceptions.workout_exceptions import WorkoutNotFound
 from Backend.trainings.infrastructure.models.trainingday import TrainingDayModel
 from Backend.trainings.infrastructure.models.workout import WorkoutModel
-from Backend.trainings.infrastructure.models.dayexercise import DayExerciseModel
 
 
 class WorkoutReader:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def get_loaded(self, id: int) -> WorkoutDetailDTO:
+    async def get_loaded(self, id: int) -> WorkoutDetailDTO | None:
         workout = await self.session.get(
             WorkoutModel, id, options=[selectinload(WorkoutModel.training_days)]
         )
 
         if workout is None:
-            raise WorkoutNotFound(id)
+            return None
 
         return self._to_dto(workout)
 

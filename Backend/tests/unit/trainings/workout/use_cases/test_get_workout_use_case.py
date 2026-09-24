@@ -6,6 +6,7 @@ from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepo
 from Backend.tests.unit.trainings.conftest import (
     CreateWorkout,
 )
+from Backend.trainings.application.dto.workout import WorkoutDetailDTO
 from Backend.trainings.application.use_cases.workout.get_workout import (
     GetLoadedWorkoutUseCase,
 )
@@ -21,10 +22,12 @@ def use_case(workout_repo: FakeWorkoutRepository) -> GetLoadedWorkoutUseCase:
     return GetLoadedWorkoutUseCase(workout_repo)
 
 
-def assert_same_workouts(first_workout: Workout, second_workout: Workout) -> None:
+def assert_same_workouts(
+    first_workout: Workout, second_workout: WorkoutDetailDTO
+) -> None:
     assert first_workout.id == second_workout.id
     assert first_workout.user_id == second_workout.user_id
-    assert first_workout.name.value == second_workout.name.value
+    assert first_workout.name.value == second_workout.name
     assert first_workout.description == second_workout.description
     assert first_workout.public == second_workout.public
 

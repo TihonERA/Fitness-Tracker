@@ -1,3 +1,4 @@
+from Backend.trainings.application.dto.workout import WorkoutDetailDTO
 from Backend.trainings.domain.workout_model import Workout
 from copy import copy
 
@@ -9,8 +10,20 @@ class FakeWorkoutRepository:
     def _get_from_db(self, id: int) -> Workout | None:
         return self.fake_db.get(id, None)
 
-    async def get_loaded(self, id: int) -> Workout | None:
-        return copy(self._get_from_db(id))
+    async def get_loaded(self, id: int) -> WorkoutDetailDTO | None:
+        workout = self._get_from_db(id)
+
+        if workout is None:
+            return None
+
+        return WorkoutDetailDTO(
+            id=id,
+            user_id=workout.user_id,
+            name=workout.name.value,
+            description=workout.description,
+            public=workout.public,
+            training_days=[],
+        )
 
     async def get(self, id: int) -> Workout | None:
         return copy(self._get_from_db(id))
