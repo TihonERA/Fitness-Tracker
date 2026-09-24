@@ -1,12 +1,14 @@
-from typing import Awaitable, Callable
-
 from random import randint
+from typing import Awaitable, Callable
 
 from faker import Faker
 import pytest
 
 from Backend.tests.unit.trainings.training_day.fake_training_day_repository import (
     FakeTrainingDayRepository,
+)
+from Backend.tests.unit.trainings.training_day.training_day_factories import (
+    TrainingDayDTOFactory,
 )
 from Backend.trainings.domain.training_day_model import TrainingDay
 from Backend.trainings.domain.value_objects.day_order import DayOrder
@@ -23,7 +25,8 @@ CreateTrainingDay = Callable[..., Awaitable[TrainingDay]]
 
 @pytest.fixture
 def create_training_day(
-    tr_day_repo: FakeTrainingDayRepository, faker: Faker
+    tr_day_repo: FakeTrainingDayRepository,
+    faker: Faker,
 ) -> CreateTrainingDay:
     async def _create(
         workout_id: int, name: str | None = None, day_order: int | None = None
@@ -37,3 +40,8 @@ def create_training_day(
         return await tr_day_repo.create(training_day)
 
     return _create
+
+
+@pytest.fixture
+def tr_day_dto_factory(faker: Faker) -> TrainingDayDTOFactory:
+    return TrainingDayDTOFactory(faker)
