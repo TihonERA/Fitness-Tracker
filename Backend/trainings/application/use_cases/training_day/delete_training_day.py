@@ -13,7 +13,7 @@ from Backend.trainings.domain.training_day_model import TrainingDay
 class TrainingDayDeleter(Protocol):
     async def get(self, id) -> TrainingDay: ...
 
-    async def delete(self, training_day: TrainingDay) -> None: ...
+    async def delete(self, id: int) -> None: ...
 
 
 class DeleteTrainingDayUseCase:
@@ -30,4 +30,4 @@ class DeleteTrainingDayUseCase:
             user_id, workout_id, day_id
         )
 
-        await self.tr_day_repo.delete(training_day)
+        await self.tr_day_repo.delete(day_id)

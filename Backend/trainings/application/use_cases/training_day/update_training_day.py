@@ -26,6 +26,9 @@ class UpdateTrainingDay:
             command.user_id, command.workout_id, command.day_id
         )
 
-        training_day.update(command.name, command.day_order)
+        training_day.update(
+            EntityTitle(command.name) if command.name else None,
+            DayOrder(command.day_order) if command.day_order else None,
+        )
 
         return await self.tr_day_repo.save(training_day)

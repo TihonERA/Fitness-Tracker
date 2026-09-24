@@ -6,6 +6,7 @@ from Backend.trainings.application.ports.training_day import (
     TrainingDayRepositoryPort,
 )
 from Backend.trainings.domain.training_day_model import TrainingDay
+from Backend.trainings.domain.value_objects.exercise_order import ExerciseOrder
 
 
 class CreateDayExerciseUseCase:
@@ -22,6 +23,6 @@ class CreateDayExerciseUseCase:
             command.user_id, command.workout_id, command.day_id
         )
 
-        training_day.add_exercise(command.exercise_id, command.exercise_order.value)
+        training_day.add_exercise(command.exercise_id, command.exercise_order)
 
         return await self.tr_day_repo.save(training_day)

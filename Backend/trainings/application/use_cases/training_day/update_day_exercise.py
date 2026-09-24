@@ -20,6 +20,6 @@ class UpdateDayExerciseUseCase:
             command.user_id, command.workout_id, command.day_id
         )
 
-        training_day.update_exercise(command.exercise_id, command.exercise_order.value)
+        training_day.update_exercise(command.exercise_id, command.exercise_order)
 
         return await self.tr_day_repo.save(training_day)

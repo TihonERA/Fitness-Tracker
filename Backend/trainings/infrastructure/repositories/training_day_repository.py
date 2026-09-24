@@ -1,3 +1,4 @@
+from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -94,14 +95,11 @@ class TrainingDayRepository:
         except IntegrityError as e:
             raise NotImplementedError()
 
-    async def delete(self, training_day: TrainingDay) -> None:
+    async def delete(self, id: int) -> None:
         try:
-            if training_day.id is None:
-                raise TrainingDayNotCreatedError()
+            stmt = delete(TrainingDayModel).where(TrainingDayModel.id == id)
 
-            training_day_model = await self._get_model(training_day.id)
-
-            await self.session.delete(training_day_model)
+            await self.session.execute(stmt)
             await self.session.flush()
         except IntegrityError as e:
             raise NotImplementedError()

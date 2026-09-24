@@ -10,8 +10,8 @@ from Backend.trainings.domain.value_objects.title import EntityTitle
 class CreateTrainingDayCommand:
     user_id: UUID
     workout_id: int
-    name: EntityTitle
-    day_order: DayOrder
+    name: str
+    day_order: int
 
 
 @dataclass(frozen=True)
@@ -19,8 +19,8 @@ class UpdateTrainingDayCommand:
     user_id: UUID
     workout_id: int
     day_id: int
-    name: EntityTitle | None = None
-    day_order: DayOrder | None = None
+    name: str | None = None
+    day_order: int | None = None
 
 
 @dataclass(frozen=True)
@@ -34,7 +34,7 @@ class BaseDayExerciseCommand:
     workout_id: int
     day_id: int
     exercise_id: int
-    exercise_order: ExerciseOrder
+    exercise_order: int
 
 
 @dataclass(frozen=True)
