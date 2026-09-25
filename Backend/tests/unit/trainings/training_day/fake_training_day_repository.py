@@ -1,3 +1,7 @@
+from Backend.trainings.application.exceptions.training_day import (
+    TrainingDayConcurrencyError,
+    TrainingDayNotCreatedError,
+)
 from Backend.trainings.domain.training_day_model import TrainingDay
 
 from copy import deepcopy
@@ -26,14 +30,14 @@ class FakeTrainingDayRepository:
         self.fake_db[training_day.id] = deepcopy(training_day)
         return deepcopy(training_day)
 
-    async def save(self, training_day: TrainingDay) -> TrainingDay | None:
+    async def save(self, training_day: TrainingDay) -> TrainingDay:
         if training_day.id is None:
-            return None
+            raise TrainingDayNotCreatedError()
 
         training_day_db = self._get_from_db(training_day.id)
 
         if training_day_db is None:
-            return None
+            raise TrainingDayConcurrencyError(training_day.id)
 
         training_day_db = deepcopy(training_day)
 
