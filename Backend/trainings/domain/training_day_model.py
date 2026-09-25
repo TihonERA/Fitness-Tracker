@@ -6,7 +6,6 @@ from Backend.trainings.domain.exceptions.training_day_exceptions import (
     DayExerciseOrderIntegrityError,
     TrainingDayAccessDenied,
 )
-from Backend.trainings.domain.value_objects import exercise_order
 from Backend.trainings.domain.value_objects.day_order import DayOrder
 from Backend.trainings.domain.value_objects.exercise_order import ExerciseOrder
 from Backend.trainings.domain.value_objects.title import EntityTitle
@@ -49,15 +48,22 @@ class TrainingDay:
         self.day_exercises.sort(key=lambda x: x.exercise_order.value)
 
     def _validate_exercise_order_in_sorted_day_exercises(
-        self, exercise_order: int
+        self, exercise_order: int, max_allowed: int
     ) -> None:
-        if self.day_exercises == []:
-            return
-
-        if exercise_order - 1 > self.day_exercises[-1].exercise_order.value:
+        if not (1 <= exercise_order <= max_allowed):
             raise DayExerciseOrderIntegrityError(
                 f"New exercise order must be between existing exercises, got {exercise_order}"
             )
+
+    def _validate_exercise_order_for_add(self, exercise_order: int) -> None:
+        self._validate_exercise_order_in_sorted_day_exercises(
+            exercise_order=exercise_order, max_allowed=len(self.day_exercises) + 1
+        )
+
+    def _validate_exercise_order_for_update(self, exercise_order: int) -> None:
+        self._validate_exercise_order_in_sorted_day_exercises(
+            exercise_order=exercise_order, max_allowed=len(self.day_exercises)
+        )
 
     def _reindex(self) -> None:
         for order, day in enumerate(self.day_exercises, start=1):
@@ -65,7 +71,7 @@ class TrainingDay:
 
     def add_exercise(self, exercise_id: int, exercise_order: int) -> None:
         self._sort_day_exercises_by_order()
-        self._validate_exercise_order_in_sorted_day_exercises(exercise_order)
+        self._validate_exercise_order_for_add(exercise_order)
 
         exercise = DayExercise(
             day_id=self.id,
@@ -89,7 +95,7 @@ class TrainingDay:
 
     def update_exercise(self, exercise_id: int, exercise_order: int) -> None:
         self._sort_day_exercises_by_order()
-        self._validate_exercise_order_in_sorted_day_exercises(exercise_order)
+        self._validate_exercise_order_for_update(exercise_order)
 
         exercise = self._find_exercise(exercise_id)
         exercise.exercise_order = ExerciseOrder(exercise_order)
