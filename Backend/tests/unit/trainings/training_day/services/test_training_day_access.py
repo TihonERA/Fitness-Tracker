@@ -3,12 +3,15 @@ from uuid import uuid4
 
 import pytest
 
-from Backend.tests.unit.trainings.conftest import CreateWorkout
 from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepository
-from Backend.tests.unit.trainings.training_day.conftest import CreateTrainingDay
 from Backend.tests.unit.trainings.training_day.fake_training_day_repository import (
     FakeTrainingDayRepository,
 )
+from Backend.tests.unit.trainings.training_day.helpers import assert_same_tr_days
+from Backend.tests.unit.trainings.training_day.training_day_factories import (
+    TrainingDayFactory,
+)
+from Backend.tests.unit.trainings.workout_factories import WorkoutFactory
 from Backend.trainings.application.dto import training_day
 from Backend.trainings.application.services.training_day_access_service import (
     TrainingDayAccessService,
@@ -24,16 +27,15 @@ from Backend.trainings.domain.exceptions.workout_exceptions import (
 
 
 async def test_success(
-    create_workout: CreateWorkout,
-    create_training_day: CreateTrainingDay,
+    workout_factory: WorkoutFactory,
+    tr_day_factory: TrainingDayFactory,
     access_service: TrainingDayAccessService,
-    assert_same_tr_days: Callable,
 ) -> None:
-    workout = await create_workout()
+    workout = await workout_factory.create_workout()
 
     assert workout.id is not None
 
-    training_day = await create_training_day(workout_id=workout.id)
+    training_day = await tr_day_factory.create_tr_day(workout_id=workout.id)
 
     assert training_day.id is not None
 
@@ -45,11 +47,13 @@ async def test_success(
 
 
 async def test_workout_not_found(
-    create_workout: CreateWorkout,
-    create_training_day: CreateTrainingDay,
+    workout_factory: WorkoutFactory,
+    tr_day_factory: TrainingDayFactory,
     access_service: TrainingDayAccessService,
 ) -> None:
-    training_day = await create_training_day(workout_id=0)
+    NOT_BINDED_TO_WORKOUT = 0
+
+    training_day = await tr_day_factory.create_tr_day(workout_id=NOT_BINDED_TO_WORKOUT)
 
     assert training_day.id is not None
 
@@ -60,15 +64,15 @@ async def test_workout_not_found(
 
 
 async def test_workout_access_denied(
-    create_workout: CreateWorkout,
-    create_training_day: CreateTrainingDay,
+    workout_factory: WorkoutFactory,
+    tr_day_factory: TrainingDayFactory,
     access_service: TrainingDayAccessService,
 ) -> None:
-    workout = await create_workout()
+    workout = await workout_factory.create_workout()
 
     assert workout.id is not None
 
-    training_day = await create_training_day(workout_id=workout.id)
+    training_day = await tr_day_factory.create_tr_day(workout_id=workout.id)
 
     assert training_day.id is not None
 
@@ -79,9 +83,9 @@ async def test_workout_access_denied(
 
 
 async def test_tr_day_not_found(
-    create_workout: CreateWorkout, access_service: TrainingDayAccessService
+    workout_factory: WorkoutFactory, access_service: TrainingDayAccessService
 ) -> None:
-    workout = await create_workout()
+    workout = await workout_factory.create_workout()
 
     assert workout.id is not None
 
@@ -92,15 +96,15 @@ async def test_tr_day_not_found(
 
 
 async def test_tr_day_access_denied(
-    create_workout: CreateWorkout,
-    create_training_day: CreateTrainingDay,
+    workout_factory: WorkoutFactory,
+    tr_day_factory: TrainingDayFactory,
     access_service: TrainingDayAccessService,
 ) -> None:
-    workout = await create_workout()
+    workout = await workout_factory.create_workout()
 
     assert workout.id is not None
 
-    training_day = await create_training_day(workout_id=-1)
+    training_day = await tr_day_factory.create_tr_day(workout_id=-1)
 
     assert training_day.id is not None
 
