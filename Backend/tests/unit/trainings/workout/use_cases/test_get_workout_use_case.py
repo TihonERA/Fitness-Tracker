@@ -3,9 +3,7 @@ from uuid import uuid4
 import pytest
 
 from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepository
-from Backend.tests.unit.trainings.conftest import (
-    CreateWorkout,
-)
+from Backend.tests.unit.trainings.workout_factories import WorkoutFactory
 from Backend.trainings.application.dto.workout import WorkoutDetailDTO
 from Backend.trainings.application.use_cases.workout.get_workout import (
     GetLoadedWorkoutUseCase,
@@ -33,9 +31,9 @@ def assert_same_workouts(
 
 
 async def test_success(
-    create_workout: CreateWorkout, use_case: GetLoadedWorkoutUseCase
+    workout_factory: WorkoutFactory, use_case: GetLoadedWorkoutUseCase
 ) -> None:
-    workout = await create_workout()
+    workout = await workout_factory.create_workout()
     workout_id = workout.id
 
     assert workout_id is not None
@@ -47,17 +45,15 @@ async def test_success(
     assert_same_workouts(workout, fetched_workout)
 
 
-async def test_not_found(
-    create_workout: CreateWorkout, use_case: GetLoadedWorkoutUseCase
-) -> None:
+async def test_not_found(use_case: GetLoadedWorkoutUseCase) -> None:
     with pytest.raises(WorkoutNotFound):
         await use_case(user_id=uuid4(), workout_id=-1)
 
 
 async def test_read_public(
-    create_workout: CreateWorkout, use_case: GetLoadedWorkoutUseCase
+    workout_factory: WorkoutFactory, use_case: GetLoadedWorkoutUseCase
 ) -> None:
-    workout = await create_workout(public=True)
+    workout = await workout_factory.create_workout(public=True)
     workout_id = workout.id
 
     assert workout_id is not None
@@ -70,9 +66,9 @@ async def test_read_public(
 
 
 async def test_access_denied(
-    create_workout: CreateWorkout, use_case: GetLoadedWorkoutUseCase
+    workout_factory: WorkoutFactory, use_case: GetLoadedWorkoutUseCase
 ) -> None:
-    workout = await create_workout()
+    workout = await workout_factory.create_workout()
     workout_id = workout.id
 
     assert workout_id is not None

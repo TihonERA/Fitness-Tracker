@@ -1,6 +1,6 @@
 from faker import Faker
 import pytest
-from Backend.tests.unit.trainings.workout.workout_factories import WorkoutDTOFactory
+from Backend.tests.unit.trainings.workout_factories import WorkoutDTOFactory
 
 
 @pytest.fixture

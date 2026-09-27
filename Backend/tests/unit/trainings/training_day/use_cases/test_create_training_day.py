@@ -2,7 +2,7 @@ from uuid import uuid4
 
 import pytest
 
-from Backend.tests.unit.trainings.conftest import CreateWorkout
+from Backend.tests.unit.trainings.conftest import WorkoutFactory
 from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepository
 from Backend.tests.unit.trainings.training_day.fake_training_day_repository import (
     FakeTrainingDayRepository,
@@ -27,12 +27,12 @@ def use_case(
 
 
 async def test_success(
-    create_workout: CreateWorkout,
+    workout_factory: WorkoutFactory,
     tr_day_dto_factory: TrainingDayDTOFactory,
     use_case: CreateTrainingDayUseCase,
     tr_day_repo: FakeTrainingDayRepository,
 ) -> None:
-    workout = await create_workout()
+    workout = await workout_factory.create_workout()
     workout_id = workout.id
 
     assert workout_id is not None
@@ -67,11 +67,11 @@ async def test_workout_not_found(
 
 
 async def test_workout_access_denied(
-    create_workout: CreateWorkout,
+    workout_factory: WorkoutFactory,
     tr_day_dto_factory: TrainingDayDTOFactory,
     use_case: CreateTrainingDayUseCase,
 ) -> None:
-    workout = await create_workout()
+    workout = await workout_factory.create_workout()
     workout_id = workout.id
 
     assert workout_id is not None

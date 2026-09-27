@@ -5,6 +5,7 @@ import pytest
 
 from faker import Faker
 
+from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepository
 from Backend.trainings.application.dto.workout import (
     CreateWorkoutCommand,
     UpdateWorkoutCommand,
@@ -46,3 +47,24 @@ class WorkoutDTOFactory:
             description=description,
             public=public,
         )
+
+
+class WorkoutFactory:
+    def __init__(self, workout_repo: FakeWorkoutRepository, faker: Faker) -> None:
+        self.workout_repo = workout_repo
+        self.faker = faker
+
+    async def create_workout(
+        self,
+        name: str | None = None,
+        description: str | None = None,
+        public: bool = False,
+    ) -> Workout:
+        workout = Workout.create(
+            user_id=uuid4(),
+            name=EntityTitle(name if name is not None else self.faker.name()),
+            description=description,
+            public=public,
+        )
+
+        return await self.workout_repo.create(workout)

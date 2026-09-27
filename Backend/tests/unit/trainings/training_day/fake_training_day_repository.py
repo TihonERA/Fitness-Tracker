@@ -4,7 +4,7 @@ from Backend.trainings.application.exceptions.training_day import (
 )
 from Backend.trainings.domain.training_day_model import TrainingDay
 
-from copy import deepcopy
+from copy import deepcopy, copy
 
 
 class FakeTrainingDayRepository:
@@ -39,7 +39,9 @@ class FakeTrainingDayRepository:
         if training_day_db is None:
             raise TrainingDayConcurrencyError(training_day.id)
 
-        training_day_db = deepcopy(training_day)
+        training_day_db.name = training_day.name
+        training_day_db.day_order = training_day.day_order
+        training_day_db.day_exercises = copy(training_day.day_exercises)
 
         return deepcopy(training_day)
 

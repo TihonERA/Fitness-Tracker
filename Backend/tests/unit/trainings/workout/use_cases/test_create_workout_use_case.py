@@ -1,7 +1,7 @@
 import pytest
 
 from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepository
-from Backend.tests.unit.trainings.workout.workout_factories import WorkoutDTOFactory
+from Backend.tests.unit.trainings.workout_factories import WorkoutDTOFactory
 from Backend.trainings.application.use_cases.workout.create_workout import (
     CreateWorkoutUseCase,
 )

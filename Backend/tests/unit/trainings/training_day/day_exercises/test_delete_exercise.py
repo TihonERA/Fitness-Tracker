@@ -5,7 +5,9 @@ from Backend.tests.unit.trainings.training_day.day_exercises.helpers import (
     get_exercise_id_order,
     get_exercise_order,
 )
-from Backend.trainings.domain.exceptions.workout_exceptions import DayExerciseNotFound
+from Backend.trainings.domain.exceptions.training_day_exceptions import (
+    DayExerciseNotFound,
+)
 
 
 def test_success() -> None:
