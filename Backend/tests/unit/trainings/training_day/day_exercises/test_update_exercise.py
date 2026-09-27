@@ -8,6 +8,7 @@ from Backend.tests.unit.trainings.training_day.day_exercises.helpers import (
     get_exercise_order,
 )
 from Backend.trainings.domain.exceptions.training_day_exceptions import (
+    DayExerciseNotFound,
     DayExerciseOrderIntegrityError,
 )
 
@@ -103,3 +104,12 @@ def test_invalid_order() -> None:
 
     with pytest.raises(DayExerciseOrderIntegrityError):
         training_day.update_exercise(exercise_id=1, exercise_order=0)
+
+
+def test_not_found() -> None:
+    training_day = create_tr_day_with_day_exercises()
+
+    assert get_exercise_id_order(training_day) == [1, 2, 3]
+
+    with pytest.raises(DayExerciseNotFound):
+        training_day.update_exercise(exercise_id=4, exercise_order=1)
