@@ -4,9 +4,9 @@ from Backend.tests.unit.trainings.training_day.day_exercises.helpers import (
     create_day_exercises,
     create_tr_day,
     create_tr_day_with_day_exercises,
-    get_exercise_id_order,
     get_exercise_order,
 )
+from Backend.tests.unit.trainings.training_day.helpers import get_exercise_id_order
 from Backend.trainings.domain.exceptions.training_day_exceptions import (
     DayExerciseNotFound,
     DayExerciseOrderIntegrityError,

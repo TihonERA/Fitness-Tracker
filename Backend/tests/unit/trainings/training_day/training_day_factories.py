@@ -1,3 +1,4 @@
+import enum
 from random import randint
 from uuid import UUID
 
@@ -6,6 +7,7 @@ from faker import Faker
 from Backend.tests.unit.trainings.training_day.fake_training_day_repository import (
     FakeTrainingDayRepository,
 )
+from Backend.tests.unit.trainings.training_day.helpers import create_day_exercises
 from Backend.tests.unit.trainings.workout_factories import WorkoutFactory
 from Backend.trainings.application.dto.training_day import (
     CreateDayExerciseCommand,
@@ -54,6 +56,13 @@ class TrainingDayFactory:
         )
 
         return await self.tr_day_repo.create(training_day)
+
+    async def create_day_exercises_in_training_day(
+        self, training_day: TrainingDay, count_of_day_exercises: int = 3
+    ) -> None:
+        create_day_exercises(training_day, count=count_of_day_exercises)
+
+        await self.tr_day_repo.save(training_day)
 
 
 class DayExerciseDTOFactory:
