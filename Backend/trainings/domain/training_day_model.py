@@ -65,7 +65,7 @@ class TrainingDay:
             exercise_order=exercise_order, max_allowed=len(self.day_exercises)
         )
 
-    def _reindex(self) -> None:
+    def _reorder(self) -> None:
         for order, day in enumerate(self.day_exercises, start=1):
             day.exercise_order = ExerciseOrder(order)
 
@@ -81,7 +81,7 @@ class TrainingDay:
 
         self.day_exercises.insert(exercise_order - 1, exercise)
 
-        self._reindex()
+        self._reorder()
 
     def _find_exercise(self, exercise_id: int) -> DayExercise:
         exercise = next(
@@ -103,7 +103,7 @@ class TrainingDay:
         self.day_exercises.remove(exercise)
         self.day_exercises.insert(exercise_order - 1, exercise)
 
-        self._reindex()
+        self._reorder()
 
     def delete_exercise(self, exercise_id: int) -> None:
         self._sort_day_exercises_by_order()
@@ -111,4 +111,4 @@ class TrainingDay:
 
         self.day_exercises.remove(exercise)
 
-        self._reindex()
+        self._reorder()
