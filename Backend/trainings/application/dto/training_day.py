@@ -46,8 +46,20 @@ class UpdateDayExerciseCommand(BaseDayExerciseCommand): ...
 
 
 @dataclass(frozen=True)
+class DayExerciseReadDTO:
+    day_id: int
+    exercise_id: int
+    exercise_order: int
+
+
+@dataclass(frozen=True)
 class TrainingDayReadDTO:
     id: int
     workout_id: int
     name: str
     day_order: int
+
+
+@dataclass(frozen=True)
+class TrainingDayDetailDTO(TrainingDayReadDTO):
+    day_exercises: list[DayExerciseReadDTO] = []

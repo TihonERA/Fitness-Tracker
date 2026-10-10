@@ -3,13 +3,8 @@ from typing import Any
 from uuid import UUID
 
 from Backend.trainings.domain.exceptions.workout_exceptions import (
-    DayExerciseNotFound,
     WorkoutAccessDenied,
 )
-from Backend.trainings.domain.exceptions.training_day_exceptions import (
-    TrainingDayNotFound,
-)
-from Backend.trainings.domain.training_day_model import TrainingDay
 from Backend.trainings.domain.value_objects.title import EntityTitle
 
 

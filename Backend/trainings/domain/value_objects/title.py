@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from Backend.trainings.domain.exceptions.workout_exceptions import TitleError
+from Backend.trainings.domain.exceptions.base import TitleError
 
 
 @dataclass(frozen=True)

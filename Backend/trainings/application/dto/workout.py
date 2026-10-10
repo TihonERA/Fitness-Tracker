@@ -23,10 +23,14 @@ class UpdateWorkoutCommand:
 
 
 @dataclass(frozen=True)
-class WorkoutDetailDTO:
+class WorkoutReadDTO:
     id: int
     user_id: UUID
     name: str
     description: str | None
     public: bool
+
+
+@dataclass(frozen=True)
+class WorkoutDetailDTO(WorkoutReadDTO):
     training_days: list[TrainingDayReadDTO]

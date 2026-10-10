@@ -1,3 +1,7 @@
+from Backend.trainings.application.dto.training_day import (
+    DayExerciseReadDTO,
+    TrainingDayDetailDTO,
+)
 from Backend.trainings.domain.day_exercise_model import DayExercise
 from Backend.trainings.domain.training_day_model import TrainingDay
 from Backend.trainings.domain.value_objects.day_order import DayOrder
@@ -37,13 +41,32 @@ class TrainingDayMapper:
             for d in day_exercises
         ]
 
-    def to_domain(self, training_day_model: TrainingDayModel) -> TrainingDay:
+    @classmethod
+    def to_domain(cls, training_day_model: TrainingDayModel) -> TrainingDay:
         return TrainingDay(
             id=training_day_model.id,
             workout_id=training_day_model.workout_id,
             name=EntityTitle(training_day_model.name),
             day_order=DayOrder(training_day_model.day_order),
-            day_exercises=self.to_domain_day_exercises(
-                training_day_model.day_exercises
-            ),
+            day_exercises=cls.to_domain_day_exercises(training_day_model.day_exercises),
+        )
+
+    @staticmethod
+    def _to_dto_day_exercise(day_exercise: DayExerciseModel) -> DayExerciseReadDTO:
+        return DayExerciseReadDTO(
+            day_id=day_exercise.day_id,
+            exercise_id=day_exercise.exercise_id,
+            exercise_order=day_exercise.exercise_order,
+        )
+
+    @classmethod
+    def to_dto(cls, training_day: TrainingDayModel) -> TrainingDayDetailDTO:
+        return TrainingDayDetailDTO(
+            id=training_day.id,
+            workout_id=training_day.workout_id,
+            name=training_day.name,
+            day_order=training_day.day_order,
+            day_exercises=[
+                cls._to_dto_day_exercise(d) for d in training_day.day_exercises
+            ],
         )

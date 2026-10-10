@@ -2,40 +2,35 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm.interfaces import ORMOption
-from Backend.trainings.domain.day_exercise_model import DayExercise
-from Backend.trainings.domain.exceptions.workout_exceptions import WorkoutNotFound
-from Backend.trainings.domain.training_day_model import TrainingDay
 from Backend.trainings.domain.workout_model import Workout
 from Backend.trainings.infrastructure.mappers.workout_mapper import WorkoutMapper
-from Backend.trainings.infrastructure.models.dayexercise import DayExerciseModel
-from Backend.trainings.infrastructure.models.trainingday import TrainingDayModel
 from Backend.trainings.infrastructure.models.workout import WorkoutModel
-from typing import Sequence, Any, final
 from uuid import UUID
 
 
 class WorkoutRepository:
 
-    def __init__(self, session: AsyncSession, mapper: WorkoutMapper):
+    def __init__(self, session: AsyncSession):
         self.session = session
-        self.mapper = mapper
+
+    async def _get_model(self, id: int) -> WorkoutModel | None:
+        return await self.session.get(WorkoutModel, id, with_for_update=True)
 
     async def get(self, id: int) -> Workout | None:
-        workout_model = await self.session.get(WorkoutModel, id)
+        workout_model = await self._get_model(id)
 
         if workout_model is None:
             return None
 
-        return self.mapper.to_domain(workout_model)
+        return WorkoutMapper.to_domain(workout_model)
 
     async def create(self, workout: Workout) -> Workout:
         try:
-            workout_model = self.mapper.to_orm(workout)
+            workout_model = WorkoutMapper.to_orm(workout)
             self.session.add(workout_model)
             await self.session.flush()
 
-            return self.mapper.to_domain(workout_model)
+            return WorkoutMapper.to_domain(workout_model)
         except IntegrityError as e:
             raise NotImplementedError("Не реализован обработчик ошибки integrity")
 
@@ -52,7 +47,7 @@ class WorkoutRepository:
 
             await self.session.flush()
 
-            return self.mapper.to_domain(workout_model)
+            return WorkoutMapper.to_domain(workout_model)
         except IntegrityError as e:
             raise NotImplementedError("Не реализован обработчик ошибки integrity")
 
@@ -63,17 +58,3 @@ class WorkoutRepository:
             await self.session.flush()
         except IntegrityError as e:
             raise NotImplementedError("Не реализован обработчик ошибки integrity")
-
-    # Справочный матерьял для рефакторинга метода get_all
-    # async def get_all(self, data: WorkoutGetAllFilterDTO) -> Sequence[Workout]:
-    #     stmt = select(Workout)
-    #     if data.target_user_id:
-    #         stmt = stmt.where(
-    #             Workout.user_id == data.target_user_id,
-    #         )
-    #     if data.public:
-    #         stmt = stmt.where(Workout.public == data.public)
-    #     stmt = stmt.offset(data.skip).limit(data.limit)
-    #
-    #     result = await self.execute(stmt)
-    #     return result.scalars().all()

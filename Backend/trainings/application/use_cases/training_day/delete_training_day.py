@@ -11,8 +11,6 @@ from Backend.trainings.domain.training_day_model import TrainingDay
 
 
 class TrainingDayDeleter(Protocol):
-    async def get(self, id) -> TrainingDay: ...
-
     async def delete(self, id: int) -> None: ...
 
 

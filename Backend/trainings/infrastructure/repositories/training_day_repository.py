@@ -12,15 +12,13 @@ from Backend.trainings.domain.training_day_model import TrainingDay
 from Backend.trainings.infrastructure.mappers.training_day_mapper import (
     TrainingDayMapper,
 )
-from Backend.trainings.infrastructure.models import workout
 from Backend.trainings.infrastructure.models.dayexercise import DayExerciseModel
 from Backend.trainings.infrastructure.models.trainingday import TrainingDayModel
 
 
 class TrainingDayRepository:
-    def __init__(self, session: AsyncSession, mapper: TrainingDayMapper) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         self.session = session
-        self.mapper = mapper
 
     async def _get_model(self, id: int) -> TrainingDayModel | None:
         training_day_model = await self.session.get(
@@ -34,16 +32,16 @@ class TrainingDayRepository:
         if training_day_model is None:
             return None
 
-        return self.mapper.to_domain(training_day_model)
+        return TrainingDayMapper.to_domain(training_day_model)
 
     async def create(self, training_day: TrainingDay) -> TrainingDay:
         try:
-            training_day_model = self.mapper.to_orm(training_day)
+            training_day_model = TrainingDayMapper.to_orm(training_day)
 
             self.session.add(training_day_model)
             await self.session.flush()
 
-            return self.mapper.to_domain(training_day_model)
+            return TrainingDayMapper.to_domain(training_day_model)
         except IntegrityError as e:
             raise NotImplementedError("Integrity")
 
@@ -66,7 +64,7 @@ class TrainingDayRepository:
             (
                 self._save_exercise(existing_exercises[e.exercise_id], e)
                 if e.exercise_id in existing_exercises
-                else self.mapper.to_orm_day_exercise(e)
+                else TrainingDayMapper.to_orm_day_exercise(e)
             )
             for e in day_exercises
         ]
@@ -91,7 +89,7 @@ class TrainingDayRepository:
 
             await self.session.flush()
 
-            return self.mapper.to_domain(training_day_model)
+            return TrainingDayMapper.to_domain(training_day_model)
         except IntegrityError as e:
             raise NotImplementedError()
 
