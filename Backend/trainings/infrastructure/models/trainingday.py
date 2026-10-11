@@ -1,4 +1,4 @@
-from .base import Base
+from Backend.shared.infrastructure.base import Base
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 from sqlalchemy import String, ForeignKey, UniqueConstraint
 from typing import TYPE_CHECKING
@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .workout import WorkoutModel
     from .dayexercise import DayExerciseModel
-    from .training_day_history import TrainingDayHistory
 
 
 class TrainingDayModel(Base):
@@ -25,10 +24,6 @@ class TrainingDayModel(Base):
     day_exercises: Mapped[list["DayExerciseModel"]] = relationship(
         back_populates="training_day", cascade="all, delete-orphan"
     )
-    training_days_history: Mapped["TrainingDayHistory"] = relationship(
-        back_populates="training_day"
-    )
-
     __table_args__ = (
         UniqueConstraint("workout_id", "day_order", name="uq_workout_day_order"),
     )

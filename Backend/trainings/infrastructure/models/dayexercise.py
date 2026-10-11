@@ -1,4 +1,4 @@
-from .base import Base
+from Backend.shared.infrastructure.base import Base
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 from sqlalchemy import ForeignKey
 from typing import TYPE_CHECKING

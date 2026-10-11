@@ -5,16 +5,14 @@ from uuid import UUID
 from sqlalchemy import Float, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
+from Backend.shared.infrastructure.base import Base
 
 if TYPE_CHECKING:
-    from .user import User
-    from .training_day_history import TrainingDayHistory
-    from .exercise import Exercise
+    from .training_day_history import TrainingDayHistoryModel
     from .sets_history import SetsHistory
 
 
-class ExerciseHistory(Base):
+class ExerciseHistoryModel(Base):
     __tablename__ = "exercisehistory"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -31,11 +29,7 @@ class ExerciseHistory(Base):
     )
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
-    user: Mapped["User"] = relationship(
-        back_populates="exercises_history",
-    )
-    exercise: Mapped["Exercise"] = relationship(back_populates="exercises_history")
-    training_day_history: Mapped["TrainingDayHistory"] = relationship(
+    training_day_history: Mapped["TrainingDayHistoryModel"] = relationship(
         back_populates="exercises_history"
     )
     sets_history: Mapped[list["SetsHistory"]] = relationship(

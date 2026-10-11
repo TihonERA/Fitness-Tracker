@@ -5,10 +5,10 @@ from datetime import datetime
 from sqlalchemy import Float, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
+from Backend.shared.infrastructure.base import Base
 
 if TYPE_CHECKING:
-    from .exercise_history import ExerciseHistory
+    from .exercise_history import ExerciseHistoryModel
 
 
 class SetsHistory(Base):
@@ -23,6 +23,6 @@ class SetsHistory(Base):
     weight: Mapped[float | None] = mapped_column(Float(2), nullable=True)
     time_for_set: Mapped[datetime | None] = mapped_column(nullable=True)
 
-    exercise_history: Mapped["ExerciseHistory"] = relationship(
+    exercise_history: Mapped["ExerciseHistoryModel"] = relationship(
         back_populates="sets_history"
     )
