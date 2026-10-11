@@ -6,7 +6,7 @@ from Backend.trainings.domain.day_exercise_model import DayExercise
 from Backend.trainings.domain.training_day_model import TrainingDay
 from Backend.trainings.domain.value_objects.day_order import DayOrder
 from Backend.trainings.domain.value_objects.exercise_order import ExerciseOrder
-from Backend.trainings.domain.value_objects.title import EntityTitle
+from Backend.shared.domain.value_objects.entity_title import EntityTitle
 from Backend.trainings.infrastructure.models.dayexercise import DayExerciseModel
 from Backend.trainings.infrastructure.models.trainingday import TrainingDayModel
 

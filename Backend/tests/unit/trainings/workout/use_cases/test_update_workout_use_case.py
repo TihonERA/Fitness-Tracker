@@ -15,7 +15,7 @@ from Backend.trainings.domain.exceptions.workout_exceptions import (
     WorkoutAccessDenied,
     WorkoutNotFound,
 )
-from Backend.trainings.domain.value_objects.title import EntityTitle
+from Backend.shared.domain.value_objects.entity_title import EntityTitle
 
 
 @pytest.fixture

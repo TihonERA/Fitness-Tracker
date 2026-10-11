@@ -1,4 +1,4 @@
-from Backend.trainings.domain.exceptions.base import DomainError
+from Backend.shared.domain.exceptions import DomainError
 
 
 class TrainingDayNotFound(DomainError):

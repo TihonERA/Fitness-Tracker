@@ -1,7 +1,7 @@
 import pytest
 
-from Backend.trainings.domain.exceptions.workout_exceptions import TitleError
-from Backend.trainings.domain.value_objects.title import EntityTitle
+from Backend.shared.domain.exceptions import TitleError
+from Backend.shared.domain.value_objects.entity_title import EntityTitle
 
 from faker import Faker
 

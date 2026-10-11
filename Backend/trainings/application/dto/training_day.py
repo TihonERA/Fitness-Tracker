@@ -3,7 +3,6 @@ from uuid import UUID
 
 from Backend.trainings.domain.value_objects.day_order import DayOrder
 from Backend.trainings.domain.value_objects.exercise_order import ExerciseOrder
-from Backend.trainings.domain.value_objects.title import EntityTitle
 
 
 @dataclass(frozen=True)
@@ -62,4 +61,4 @@ class TrainingDayReadDTO:
 
 @dataclass(frozen=True)
 class TrainingDayDetailDTO(TrainingDayReadDTO):
-    day_exercises: list[DayExerciseReadDTO] = []
+    day_exercises: list[DayExerciseReadDTO] | None = None

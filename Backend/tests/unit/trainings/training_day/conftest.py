@@ -18,7 +18,6 @@ from Backend.trainings.application.services.training_day_access_service import (
 )
 from Backend.trainings.domain.training_day_model import TrainingDay
 from Backend.trainings.domain.value_objects.day_order import DayOrder
-from Backend.trainings.domain.value_objects.title import EntityTitle
 
 
 @pytest.fixture

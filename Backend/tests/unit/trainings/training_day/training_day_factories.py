@@ -15,7 +15,7 @@ from Backend.trainings.application.dto.training_day import (
 )
 from Backend.trainings.domain.training_day_model import TrainingDay
 from Backend.trainings.domain.value_objects.day_order import DayOrder
-from Backend.trainings.domain.value_objects.title import EntityTitle
+from Backend.shared.domain.value_objects.entity_title import EntityTitle
 
 
 class TrainingDayDTOFactory:

@@ -5,7 +5,6 @@ from faker import Faker
 import pytest
 from Backend.tests.unit.trainings.fake_workout_repository import FakeWorkoutRepository
 from Backend.tests.unit.trainings.workout_factories import WorkoutFactory
-from Backend.trainings.domain.value_objects.title import EntityTitle
 from Backend.trainings.domain.workout_model import Workout
 
 

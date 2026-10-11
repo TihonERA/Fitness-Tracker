@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from Backend.trainings.application.dto.training_day import TrainingDayReadDTO
-from Backend.trainings.domain.value_objects.title import EntityTitle
 
 
 @dataclass

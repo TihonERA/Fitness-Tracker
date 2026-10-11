@@ -1,6 +1,4 @@
-class ApplicationError(Exception):
-    def __init__(self, detail: str) -> None:
-        super().__init__(detail)
+from Backend.shared.application.exceptions import ApplicationError
 
 
 class TrainingDayNotCreatedError(ApplicationError):

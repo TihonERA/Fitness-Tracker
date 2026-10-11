@@ -4,7 +4,7 @@ from Backend.trainings.application.dto.workout import UpdateWorkoutCommand
 from Backend.trainings.domain.exceptions.workout_exceptions import (
     WorkoutNotFound,
 )
-from Backend.trainings.domain.value_objects.title import EntityTitle
+from Backend.shared.domain.value_objects.entity_title import EntityTitle
 from Backend.trainings.domain.workout_model import Workout
 
 

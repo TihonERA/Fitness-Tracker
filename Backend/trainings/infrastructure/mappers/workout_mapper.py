@@ -1,6 +1,6 @@
 from Backend.trainings.application.dto.training_day import TrainingDayReadDTO
 from Backend.trainings.application.dto.workout import WorkoutDetailDTO, WorkoutReadDTO
-from Backend.trainings.domain.value_objects.title import EntityTitle
+from Backend.shared.domain.value_objects.entity_title import EntityTitle
 from Backend.trainings.domain.workout_model import Workout
 from Backend.trainings.infrastructure.models.trainingday import TrainingDayModel
 from Backend.trainings.infrastructure.models.workout import WorkoutModel
