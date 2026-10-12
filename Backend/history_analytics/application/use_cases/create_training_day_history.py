@@ -1,9 +1,9 @@
 from typing import Protocol
 
-from Backend.analytics.application.dto.training_day_history import (
+from Backend.history_analytics.application.dto.training_day_history import (
     CreateTrainingDayHistoryCommand,
 )
-from Backend.analytics.domain.training_day_history import TrainingDayHistory
+from Backend.history_analytics.domain.training_day_history import TrainingDayHistory
 from Backend.shared.domain.value_objects.entity_title import EntityTitle
 
 
